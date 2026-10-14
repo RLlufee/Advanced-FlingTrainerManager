@@ -1,5 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { Gamepad2, RefreshCw } from "lucide-react";
+import { convertFileSrc } from "@tauri-apps/api/core";
+
+// 格式化图片地址：若是本地文件系统绝对路径，转换为 Tauri 安全 asset 协议
+const resolveSrc = (url: string): string => {
+  if (
+    url.startsWith("http://") ||
+    url.startsWith("https://") ||
+    url.startsWith("asset://") ||
+    url.startsWith("data:")
+  ) {
+    return url;
+  }
+  try {
+    return convertFileSrc(url);
+  } catch {
+    return url;
+  }
+};
 
 export interface GamePosterProps {
   primarySrc?: string | null;
@@ -146,7 +164,7 @@ export const GamePoster: React.FC<GamePosterProps> = ({
         </div>
       )}
       <img
-        src={finalSrc}
+        src={resolveSrc(finalSrc)}
         alt="" // 关键：空 alt 防止原生浏览器在容器内渲染原生破损图标与折行文本
         onLoad={() => {
           setLoaded(true);

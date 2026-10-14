@@ -63,8 +63,8 @@ export interface InstalledTrainerRecord {
 }
 
 export const trainerApi = {
-  fetchTrainers: async (page = 1): Promise<PaginatedTrainers> => {
-    return await invoke<PaginatedTrainers>("fetch_trainers", { page });
+  fetchTrainers: async (page = 1, forceRefresh = false): Promise<PaginatedTrainers> => {
+    return await invoke<PaginatedTrainers>("fetch_trainers", { page, forceRefresh });
   },
 
   searchTrainers: async (query: string, page = 1): Promise<PaginatedTrainers> => {

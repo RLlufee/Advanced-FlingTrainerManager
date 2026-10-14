@@ -42,6 +42,28 @@ fn save_cache_to_disk() {
     }
 }
 
+/// 从缓存中查询已有的游戏元数据（优先 ID，次选清洗后的游戏名称）
+pub fn get_cached_game_meta(trainer_id: &str, game_name: &str) -> Option<GameMetaCacheItem> {
+    if let Ok(cache) = META_CACHE.lock() {
+        if let Some(item) = cache.get(trainer_id) {
+            return Some(item.clone());
+        }
+
+        let cleaned = clean_game_name(game_name).to_lowercase();
+        for (k, v) in cache.iter() {
+            if clean_game_name(k).to_lowercase() == cleaned {
+                return Some(v.clone());
+            }
+            if let Some(zh) = &v.chinese_name {
+                if zh.to_lowercase() == cleaned {
+                    return Some(v.clone());
+                }
+            }
+        }
+    }
+    None
+}
+
 /// 定位本地 `fling_translations.db` 路径
 fn find_translations_db_path() -> Option<PathBuf> {
     let candidates = [

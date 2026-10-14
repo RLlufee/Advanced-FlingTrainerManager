@@ -12,13 +12,27 @@ pub async fn download_and_install_trainer<R: Runtime>(
     app: AppHandle<R>,
     mut trainer: Trainer,
 ) -> Result<InstalledTrainerRecord, String> {
-    // 1. 如果没有下载链接，先抓取详情获取
-    if trainer.download_url.is_empty() {
-        let detail = scraper::get_trainer_detail(&trainer.id).await?;
-        trainer.download_url = detail.download_url;
-        if trainer.download_url.is_empty() {
-            return Err("未能在官网上找到该修改器的下载直链".to_string());
+    // 1. 如果没有下载链接或详情，先抓取详情获取
+    if trainer.download_url.is_empty() || trainer.options.is_empty() {
+        if let Ok(detail) = scraper::get_trainer_detail(&trainer.id).await {
+            trainer.download_url = detail.download_url;
+            if trainer.options.is_empty() {
+                trainer.options = detail.options;
+                trainer.option_items = detail.option_items;
+            }
+            if trainer.description.is_empty() {
+                trainer.description = detail.description;
+            }
+            if trainer.game_version.is_empty() {
+                trainer.game_version = detail.game_version;
+            }
         }
+    }
+    // 确保补齐 Steam 官方高清原画与胶囊元数据
+    crate::services::game_meta::enrich_trainer(&mut trainer).await;
+
+    if trainer.download_url.is_empty() {
+        return Err("未能在官网上找到该修改器的下载直链".to_string());
     }
 
     let download_dir = storage::get_download_dir();
@@ -117,7 +131,30 @@ pub async fn download_and_install_trainer<R: Runtime>(
     let exe_path = process_package(&temp_file_path, &target_dir, &trainer.id)?;
     let _ = fs::remove_file(&temp_file_path);
 
-    // 4. 构造并保存已安装记录 (写入子文件夹下的 trainer.json)
+    // 4. 尝试将封面图下载到本地子目录中 (cover.jpg)，确保断网/重启纯本地 0ms 秒开
+    let cover_file = target_dir.join("cover.jpg");
+    if !cover_file.exists() {
+        let img_url = trainer.capsule_image.as_deref().unwrap_or(&trainer.thumbnail);
+        if !img_url.is_empty() {
+            if let Ok(client) = scraper::create_client() {
+                if let Ok(resp) = client.get(img_url).send().await {
+                    if resp.status().is_success() {
+                        if let Ok(bytes) = resp.bytes().await {
+                            let _ = fs::write(&cover_file, bytes);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let final_capsule = if cover_file.exists() {
+        Some(cover_file.to_string_lossy().to_string())
+    } else {
+        trainer.capsule_image.clone()
+    };
+
+    // 5. 构造并保存已安装记录 (写入子文件夹下的 trainer.json)
     let exe_name = exe_path
         .file_name()
         .unwrap_or_default()
@@ -138,7 +175,7 @@ pub async fn download_and_install_trainer<R: Runtime>(
         steam_app_id: trainer.steam_app_id,
         thumbnail: trainer.thumbnail.clone(),
         hero_image: trainer.hero_image.clone(),
-        capsule_image: trainer.capsule_image.clone(),
+        capsule_image: final_capsule,
         description: trainer.description.clone(),
         options: trainer.options.clone(),
         option_items: trainer.option_items.clone(),

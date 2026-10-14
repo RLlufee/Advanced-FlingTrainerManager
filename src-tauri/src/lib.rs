@@ -6,9 +6,9 @@ use services::{downloader, launcher, scraper, storage};
 use tauri::AppHandle;
 
 #[tauri::command]
-async fn fetch_trainers(page: Option<u32>) -> Result<PaginatedTrainers, String> {
+async fn fetch_trainers(page: Option<u32>, force_refresh: Option<bool>) -> Result<PaginatedTrainers, String> {
     let p = page.unwrap_or(1);
-    scraper::fetch_trainers(p).await
+    scraper::fetch_trainers_ext(p, force_refresh.unwrap_or(false)).await
 }
 
 #[tauri::command]

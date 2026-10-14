@@ -36,7 +36,25 @@ pub fn create_client() -> Result<reqwest::Client, String> {
         .map_err(|e| format!("创建 HTTP 客户端失败: {}", e))
 }
 
+static HOME_LIST_CACHE: LazyLock<std::sync::Mutex<Option<(std::time::Instant, PaginatedTrainers)>>> =
+    LazyLock::new(|| std::sync::Mutex::new(None));
+
 pub async fn fetch_trainers(page: u32) -> Result<PaginatedTrainers, String> {
+    fetch_trainers_ext(page, false).await
+}
+
+pub async fn fetch_trainers_ext(page: u32, force_refresh: bool) -> Result<PaginatedTrainers, String> {
+    // 首页 15 个条目默认内存缓存 15 分钟，避免频繁切换页面重复请求官网
+    if page <= 1 && !force_refresh {
+        if let Ok(cache) = HOME_LIST_CACHE.lock() {
+            if let Some((instant, data)) = &*cache {
+                if instant.elapsed() < Duration::from_secs(900) {
+                    return Ok(data.clone());
+                }
+            }
+        }
+    }
+
     let client = create_client()?;
     let url = if page <= 1 {
         format!("{}/", BASE_URL)
@@ -66,11 +84,20 @@ pub async fn fetch_trainers(page: u32) -> Result<PaginatedTrainers, String> {
         t.chinese_name = crate::services::game_meta::query_local_chinese_name(&cleaned);
     }
 
-    Ok(PaginatedTrainers {
+    let result = PaginatedTrainers {
         trainers,
         page,
         total_pages: 50,
-    })
+    };
+
+    // 缓存第一页数据
+    if page <= 1 {
+        if let Ok(mut cache) = HOME_LIST_CACHE.lock() {
+            *cache = Some((std::time::Instant::now(), result.clone()));
+        }
+    }
+
+    Ok(result)
 }
 
 pub async fn search_trainers(query: &str, page: u32) -> Result<PaginatedTrainers, String> {

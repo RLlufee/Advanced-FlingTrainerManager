@@ -70,6 +70,42 @@ pub fn load_installed_records() -> Vec<InstalledTrainerRecord> {
                                     }
                                 }
                             }
+
+                            // 1. 优先检测子目录下是否存在本地封面图片 (零网络秒开)
+                            let cover_jpg = path.join("cover.jpg");
+                            let cover_png = path.join("cover.png");
+                            if cover_jpg.exists() {
+                                record.capsule_image = Some(cover_jpg.to_string_lossy().to_string());
+                            } else if cover_png.exists() {
+                                record.capsule_image = Some(cover_png.to_string_lossy().to_string());
+                            }
+
+                            // 2. 从本地元数据持久化缓存 (game_meta_cache.json) 补齐 Steam 胶囊图、原画与 AppID
+                            if record.capsule_image.is_none() || record.hero_image.is_none() || record.steam_app_id.is_none() || record.chinese_name.is_none() {
+                                if let Some(cached) = crate::services::game_meta::get_cached_game_meta(&record.id, &record.name) {
+                                    let mut need_save = false;
+                                    if record.capsule_image.is_none() && cached.capsule_image.is_some() {
+                                        record.capsule_image = cached.capsule_image;
+                                        need_save = true;
+                                    }
+                                    if record.hero_image.is_none() && cached.hero_image.is_some() {
+                                        record.hero_image = cached.hero_image;
+                                        need_save = true;
+                                    }
+                                    if record.steam_app_id.is_none() && cached.steam_app_id.is_some() {
+                                        record.steam_app_id = cached.steam_app_id;
+                                        need_save = true;
+                                    }
+                                    if (record.chinese_name.is_none() || record.chinese_name.as_deref() == Some(&record.name)) && cached.chinese_name.is_some() {
+                                        record.chinese_name = cached.chinese_name;
+                                        need_save = true;
+                                    }
+                                    if need_save {
+                                        let _ = save_installed_record(record.clone());
+                                    }
+                                }
+                            }
+
                             records.push(record);
                             continue;
                         }

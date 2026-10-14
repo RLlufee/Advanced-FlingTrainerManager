@@ -31,13 +31,34 @@ import {
   translateHotkeyTitle,
   formatAllHotkeys,
 } from "../lib/hotkeyTranslate";
+import { convertFileSrc } from "@tauri-apps/api/core";
+
+// 本地文件绝对路径转换为 Tauri 安全 asset 协议
+const resolveAssetUrl = (url?: string | null): string => {
+  if (!url) return "";
+  if (
+    url.startsWith("http://") ||
+    url.startsWith("https://") ||
+    url.startsWith("asset://") ||
+    url.startsWith("data:")
+  ) {
+    return url;
+  }
+  try {
+    return convertFileSrc(url);
+  } catch {
+    return url;
+  }
+};
 
 interface LaunchViewProps {
   onNavigateToDownload?: () => void;
+  isActive?: boolean;
 }
 
 export const LaunchView: React.FC<LaunchViewProps> = ({
   onNavigateToDownload,
+  isActive,
 }) => {
   const [trainers, setTrainers] = useState<InstalledTrainerRecord[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -85,6 +106,13 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
   useEffect(() => {
     loadTrainers();
   }, []);
+
+  // 当用户从其他 Tab 切换回启动页时，自动静默刷新已安装列表
+  useEffect(() => {
+    if (isActive) {
+      loadTrainers(selectedId || undefined);
+    }
+  }, [isActive]);
 
   // 当前选中的修改器对象
   const selectedTrainer = useMemo(() => {
@@ -445,7 +473,7 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
               {selectedTrainer.hero_image && (
                 <div
                   className="absolute inset-0 bg-cover bg-center opacity-30 blur-xs scale-105 transition-transform duration-700"
-                  style={{ backgroundImage: `url(${selectedTrainer.hero_image})` }}
+                  style={{ backgroundImage: `url(${resolveAssetUrl(selectedTrainer.hero_image)})` }}
                 />
               )}
               <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/90 to-slate-900/75" />

@@ -59,7 +59,7 @@ export const DownloadView: React.FC = () => {
   };
 
   // 2. 加载官网列表
-  const loadTrainers = async (targetPage = 1, query = "") => {
+  const loadTrainers = async (targetPage = 1, query = "", forceRefresh = false) => {
     try {
       setLoading(true);
       setErrorMsg(null);
@@ -67,7 +67,7 @@ export const DownloadView: React.FC = () => {
       if (query.trim()) {
         result = await trainerApi.searchTrainers(query.trim(), targetPage);
       } else {
-        result = await trainerApi.fetchTrainers(targetPage);
+        result = await trainerApi.fetchTrainers(targetPage, forceRefresh);
       }
       setTrainers(result.trainers);
       setPage(targetPage);
@@ -228,9 +228,9 @@ export const DownloadView: React.FC = () => {
           <button
             onClick={() => {
               setSearchQuery("");
-              loadTrainers(1, "");
+              loadTrainers(1, "", true);
             }}
-            title="刷新数据"
+            title="刷新数据（强制从风灵月影官网重新拉取）"
             className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
