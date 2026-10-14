@@ -221,7 +221,7 @@ pub fn parse_trainer_list(html: &str) -> Result<Vec<Trainer>, String> {
                 continue;
             }
 
-            let thumbnail = article
+            let mut thumbnail = article
                 .select(&thumb_sel)
                 .next()
                 .and_then(|img| {
@@ -232,6 +232,11 @@ pub fn parse_trainer_list(html: &str) -> Result<Vec<Trainer>, String> {
                 })
                 .unwrap_or_default()
                 .to_string();
+
+            if thumbnail.starts_with('/') {
+                thumbnail = format!("https://flingtrainer.com{}", thumbnail);
+            }
+
 
             let entry_html = article
                 .select(&entry_sel)
@@ -328,6 +333,11 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
             }
         }
     }
+
+    if thumbnail.starts_with('/') {
+        thumbnail = format!("https://flingtrainer.com{}", thumbnail);
+    }
+
 
     let entry_sel = Selector::parse(".entry")
         .map_err(|e| format!("选择器错误: {:?}", e))?;

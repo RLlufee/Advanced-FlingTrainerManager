@@ -17,12 +17,13 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
-  Sparkles,
   ExternalLink,
   Gamepad2,
   Copy,
   Check,
 } from "lucide-react";
+import { GamePoster } from "./GamePoster";
+
 
 export const DownloadView: React.FC = () => {
   const [trainers, setTrainers] = useState<Trainer[]>([]);
@@ -267,7 +268,6 @@ export const DownloadView: React.FC = () => {
                 const isSelected = selectedTrainer?.id === t.id;
                 const isInst = Boolean(installedMap[t.id]);
                 const dl = downloads[t.id];
-                const displayThumb = t.capsule_image || t.thumbnail;
 
                 return (
                   <div
@@ -279,20 +279,16 @@ export const DownloadView: React.FC = () => {
                         : "bg-white border-slate-200/70 hover:border-slate-300 hover:bg-slate-50/70"
                     }`}
                   >
-                    {/* 缩略图 */}
-                    <div className="w-16 h-14 rounded-lg bg-slate-100 overflow-hidden shrink-0 border border-slate-200/50 shadow-xs">
-                      {displayThumb ? (
-                        <img
-                          src={displayThumb}
-                          alt={t.name}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-300">
-                          <Layers className="w-6 h-6" />
-                        </div>
-                      )}
+                    {/* 缩略图 (多级平滑回退，防图裂) */}
+                    <div className="w-16 h-14 rounded-lg bg-slate-900 overflow-hidden shrink-0 border border-slate-200/50 shadow-xs">
+                      <GamePoster
+                        primarySrc={t.capsule_image}
+                        secondarySrc={t.steam_app_id ? `https://cdn.akamai.steamstatic.com/steam/apps/${t.steam_app_id}/header.jpg` : null}
+                        tertiarySrc={t.thumbnail}
+                        alt={t.chinese_name || t.name}
+                        className="w-full h-full object-cover"
+                        iconClassName="w-5 h-5"
+                      />
                     </div>
 
                     {/* 信息 */}
@@ -377,7 +373,6 @@ export const DownloadView: React.FC = () => {
               {/* 头部大卡片 (支持 Steam 宽屏原画 Hero 沉浸式背景) */}
               {(() => {
                 const hasHero = Boolean(selectedTrainer.hero_image);
-                const displayThumb = selectedTrainer.capsule_image || selectedTrainer.thumbnail;
 
                 return (
                   <div
@@ -402,19 +397,16 @@ export const DownloadView: React.FC = () => {
                     )}
 
                     <div className="relative z-10 flex gap-6 items-start">
-                      {/* 官方胶囊原画 / 封面 */}
-                      <div className="w-32 h-24 rounded-xl bg-slate-900/40 overflow-hidden shrink-0 border border-white/20 shadow-lg">
-                        {displayThumb ? (
-                          <img
-                            src={displayThumb}
-                            alt={selectedTrainer.name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-400">
-                            <Sparkles className="w-10 h-10" />
-                          </div>
-                        )}
+                      {/* 官方胶囊原画 / 封面 (多级平滑回退，防图裂) */}
+                      <div className="w-32 h-24 rounded-xl bg-slate-900/60 overflow-hidden shrink-0 border border-white/20 shadow-lg">
+                        <GamePoster
+                          primarySrc={selectedTrainer.capsule_image}
+                          secondarySrc={selectedTrainer.steam_app_id ? `https://cdn.akamai.steamstatic.com/steam/apps/${selectedTrainer.steam_app_id}/header.jpg` : null}
+                          tertiarySrc={selectedTrainer.thumbnail}
+                          alt={selectedTrainer.chinese_name || selectedTrainer.name}
+                          className="w-full h-full object-cover"
+                          iconClassName="w-8 h-8"
+                        />
                       </div>
 
                       <div className="flex-1 min-w-0">
