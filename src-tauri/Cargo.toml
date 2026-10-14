@@ -1,6 +1,6 @@
 [package]
 name = "advanced_fling_trainer_manager"
-version = "0.1.0"
+version = "0.2.3"
 description = "Advanced FlingTrainerManager Tauri Client"
 authors = ["you"]
 edition = "2024"

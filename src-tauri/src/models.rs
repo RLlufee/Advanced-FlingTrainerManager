@@ -53,9 +53,30 @@ pub struct DownloadProgressPayload {
 pub struct InstalledTrainerRecord {
     pub id: String,
     pub name: String,
+    #[serde(default)]
+    pub chinese_name: Option<String>,
     pub version: String,
+    #[serde(default)]
+    pub game_version: String,
     pub exe_path: String,
+    #[serde(default)]
+    pub exe_name: String,
     pub install_dir: String,
     pub installed_at: String,
+    #[serde(default)]
     pub last_launched_at: Option<String>,
+    #[serde(default)]
+    pub steam_app_id: Option<u32>,
+    #[serde(default)]
+    pub thumbnail: String,
+    #[serde(default)]
+    pub hero_image: Option<String>,
+    #[serde(default)]
+    pub capsule_image: Option<String>,
+    #[serde(default)]
+    pub description: String,
+    #[serde(default)]
+    pub options: Vec<String>,
+    #[serde(default)]
+    pub option_items: Vec<TrainerOptionItem>,
 }

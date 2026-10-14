@@ -45,11 +45,21 @@ export interface DownloadProgressPayload {
 export interface InstalledTrainerRecord {
   id: string;
   name: string;
+  chinese_name?: string | null;
   version: string;
+  game_version?: string;
   exe_path: string;
+  exe_name?: string;
   install_dir: string;
   installed_at: string;
   last_launched_at: string | null;
+  steam_app_id?: number | null;
+  thumbnail?: string;
+  hero_image?: string | null;
+  capsule_image?: string | null;
+  description?: string;
+  options?: string[];
+  option_items?: TrainerOptionItem[];
 }
 
 export const trainerApi = {
@@ -64,7 +74,6 @@ export const trainerApi = {
   getTrainerDetail: async (id: string, forceRefresh: boolean = false): Promise<Trainer> => {
     return await invoke<Trainer>("get_trainer_detail", { id, forceRefresh });
   },
-
 
   downloadTrainer: async (trainer: Trainer): Promise<InstalledTrainerRecord> => {
     return await invoke<InstalledTrainerRecord>("download_trainer", { trainer });
@@ -84,6 +93,22 @@ export const trainerApi = {
 
   openSteamStore: async (appId: number): Promise<void> => {
     return await invoke("open_steam_store", { appId });
+  },
+
+  openInstallDir: async (dirPath: string): Promise<void> => {
+    return await invoke("open_install_dir", { dirPath });
+  },
+
+  openTrainersRoot: async (): Promise<void> => {
+    return await invoke("open_trainers_root");
+  },
+
+  deleteInstalledTrainer: async (id: string): Promise<void> => {
+    return await invoke("delete_installed_trainer", { id });
+  },
+
+  launchGameAndTrainer: async (id: string, appId?: number | null): Promise<string> => {
+    return await invoke<string>("launch_game_and_trainer", { id, appId: appId ?? null });
   },
 
   onDownloadProgress: async (

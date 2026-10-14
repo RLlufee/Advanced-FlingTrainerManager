@@ -22,7 +22,8 @@ pub async fn download_and_install_trainer<R: Runtime>(
     }
 
     let download_dir = storage::get_download_dir();
-    let safe_folder_name = format!("{}_{}", sanitize_name(&trainer.name), trainer.id);
+    let display_name = trainer.chinese_name.as_deref().unwrap_or(&trainer.name);
+    let safe_folder_name = sanitize_game_folder_name(display_name);
     let target_dir = download_dir.join(&safe_folder_name);
     let _ = fs::create_dir_all(&target_dir);
 
@@ -116,15 +117,31 @@ pub async fn download_and_install_trainer<R: Runtime>(
     let exe_path = process_package(&temp_file_path, &target_dir, &trainer.id)?;
     let _ = fs::remove_file(&temp_file_path);
 
-    // 4. 构造并保存已安装记录
+    // 4. 构造并保存已安装记录 (写入子文件夹下的 trainer.json)
+    let exe_name = exe_path
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .to_string();
+
     let record = InstalledTrainerRecord {
         id: trainer.id.clone(),
         name: trainer.name.clone(),
+        chinese_name: trainer.chinese_name.clone(),
         version: trainer.version.clone(),
+        game_version: trainer.game_version.clone(),
         exe_path: exe_path.to_string_lossy().to_string(),
+        exe_name,
         install_dir: target_dir.to_string_lossy().to_string(),
         installed_at: Local::now().to_rfc3339(),
         last_launched_at: None,
+        steam_app_id: trainer.steam_app_id,
+        thumbnail: trainer.thumbnail.clone(),
+        hero_image: trainer.hero_image.clone(),
+        capsule_image: trainer.capsule_image.clone(),
+        description: trainer.description.clone(),
+        options: trainer.options.clone(),
+        option_items: trainer.option_items.clone(),
     };
 
     storage::save_installed_record(record.clone())?;
@@ -206,8 +223,31 @@ fn is_zip_file(path: &Path) -> bool {
     false
 }
 
-fn sanitize_name(name: &str) -> String {
-    name.chars()
-        .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
-        .collect()
+fn sanitize_game_folder_name(name: &str) -> String {
+    let invalid_chars = ['<', '>', ':', '"', '/', '\\', '|', '?', '*'];
+    let sanitized: String = name
+        .chars()
+        .map(|c| if invalid_chars.contains(&c) { ' ' } else { c })
+        .collect();
+
+    let trimmed = sanitized.trim().trim_matches('.').trim();
+    if trimmed.is_empty() {
+        "Unknown_Game".to_string()
+    } else {
+        // 合并连续空格
+        let mut result = String::new();
+        let mut last_space = false;
+        for c in trimmed.chars() {
+            if c == ' ' {
+                if !last_space {
+                    result.push(' ');
+                    last_space = true;
+                }
+            } else {
+                result.push(c);
+                last_space = false;
+            }
+        }
+        result
+    }
 }

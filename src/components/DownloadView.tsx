@@ -23,6 +23,8 @@ import {
   Check,
 } from "lucide-react";
 import { GamePoster } from "./GamePoster";
+import { matchHotkey, translateHotkeyTitle } from "../lib/hotkeyTranslate";
+
 
 
 export const DownloadView: React.FC = () => {
@@ -612,13 +614,20 @@ export const DownloadView: React.FC = () => {
                     <button
                       onClick={() => {
                         const items = selectedTrainer.option_items && selectedTrainer.option_items.length > 0
-                          ? selectedTrainer.option_items.map(i => i.note ? `${i.title} (${i.note})` : i.title).join("\n")
-                          : (selectedTrainer.options || []).join("\n");
+                          ? selectedTrainer.option_items.map(i => {
+                              const tag = translateHotkeyTitle(i.title);
+                              const tagStr = tag ? ` [${tag}]` : "";
+                              return i.note ? `${i.title}${tagStr} (${i.note})` : `${i.title}${tagStr}`;
+                            }).join("\n")
+                          : (selectedTrainer.options || []).map(opt => {
+                              const tag = translateHotkeyTitle(opt);
+                              return tag ? `${opt} [${tag}]` : opt;
+                            }).join("\n");
                         navigator.clipboard.writeText(items);
-                        setCopyFeedback("全部热键已复制");
+                        setCopyFeedback("全部热键（含中文标注）已复制");
                         setTimeout(() => setCopyFeedback(null), 2000);
                       }}
-                      title="复制所有热键至剪贴板"
+                      title="复制所有热键至剪贴板（附带中文标注）"
                       className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all cursor-pointer active:scale-95 shrink-0"
                     >
                       <Copy className="w-3 h-3" />
@@ -634,69 +643,86 @@ export const DownloadView: React.FC = () => {
                 </div>
 
                 {(() => {
-                  const filterLower = hotkeyFilter.trim().toLowerCase();
                   const filteredItems = (selectedTrainer.option_items || []).filter(item =>
-                    !filterLower || item.title.toLowerCase().includes(filterLower) || (item.note && item.note.toLowerCase().includes(filterLower))
+                    matchHotkey(item.title, item.note, hotkeyFilter)
                   );
                   const filteredPlain = (selectedTrainer.options || []).filter(opt =>
-                    !filterLower || opt.toLowerCase().includes(filterLower)
+                    matchHotkey(opt, null, hotkeyFilter)
                   );
 
                   return (
                     <div className="mt-4">
                       {filteredItems.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                          {filteredItems.map((item, idx) => (
-                            <div
-                              key={idx}
-                              onClick={() => {
-                                navigator.clipboard.writeText(item.title);
-                                setCopyFeedback(`已复制: ${item.title}`);
-                                setTimeout(() => setCopyFeedback(null), 1500);
-                              }}
-                              title="点击复制此项热键"
-                              className="group flex flex-col p-3 rounded-xl bg-slate-50/80 border border-slate-200/70 hover:bg-slate-100/90 hover:border-cyan-300 transition-all gap-1.5 cursor-pointer"
-                            >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex items-start gap-2">
-                                  <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-xs shrink-0 mt-1" />
-                                  <span className="text-xs text-slate-800 font-semibold font-mono tracking-tight break-words">
-                                    {item.title}
-                                  </span>
+                          {filteredItems.map((item, idx) => {
+                            const cnTag = translateHotkeyTitle(item.title);
+                            return (
+                              <div
+                                key={idx}
+                                onClick={() => {
+                                  const copyText = cnTag ? `${item.title} [${cnTag}]` : item.title;
+                                  navigator.clipboard.writeText(copyText);
+                                  setCopyFeedback(`已复制: ${copyText}`);
+                                  setTimeout(() => setCopyFeedback(null), 1500);
+                                }}
+                                title="点击复制此项热键与中文说明"
+                                className="group flex flex-col p-3 rounded-xl bg-slate-50/80 border border-slate-200/70 hover:bg-slate-100/90 hover:border-cyan-300 transition-all gap-1.5 cursor-pointer"
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex items-start gap-2 flex-wrap flex-1">
+                                    <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-xs shrink-0 mt-1" />
+                                    <span className="text-xs text-slate-800 font-semibold font-mono tracking-tight break-words">
+                                      {item.title}
+                                    </span>
+                                    {cnTag && (
+                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-cyan-50 text-cyan-700 border border-cyan-200/80 shrink-0">
+                                        {cnTag}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <Copy className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
                                 </div>
-                                <Copy className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
+                                {item.note && (
+                                  <div className="pl-4 text-[11px] text-slate-500 bg-white/70 border border-slate-200/50 rounded-lg p-1.5 leading-relaxed font-sans">
+                                    <span className="font-medium text-cyan-700 mr-1">ℹ️ 生效说明:</span>
+                                    {item.note}
+                                  </div>
+                                )}
                               </div>
-                              {item.note && (
-                                <div className="pl-4 text-[11px] text-slate-500 bg-white/70 border border-slate-200/50 rounded-lg p-1.5 leading-relaxed font-sans">
-                                  <span className="font-medium text-cyan-700 mr-1">ℹ️ 生效说明:</span>
-                                  {item.note}
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : filteredPlain.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                          {filteredPlain.map((opt, idx) => (
-                            <div
-                              key={idx}
-                              onClick={() => {
-                                navigator.clipboard.writeText(opt);
-                                setCopyFeedback(`已复制: ${opt}`);
-                                setTimeout(() => setCopyFeedback(null), 1500);
-                              }}
-                              title="点击复制此项热键"
-                              className="group flex items-center justify-between p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/60 hover:bg-slate-100/90 hover:border-cyan-300 transition-all cursor-pointer"
-                            >
-                              <div className="flex items-center gap-2.5">
-                                <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-xs shrink-0" />
-                                <span className="text-xs text-slate-700 font-medium font-mono">
-                                  {opt}
-                                </span>
+                          {filteredPlain.map((opt, idx) => {
+                            const cnTag = translateHotkeyTitle(opt);
+                            return (
+                              <div
+                                key={idx}
+                                onClick={() => {
+                                  const copyText = cnTag ? `${opt} [${cnTag}]` : opt;
+                                  navigator.clipboard.writeText(copyText);
+                                  setCopyFeedback(`已复制: ${copyText}`);
+                                  setTimeout(() => setCopyFeedback(null), 1500);
+                                }}
+                                title="点击复制此项热键"
+                                className="group flex items-center justify-between p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/60 hover:bg-slate-100/90 hover:border-cyan-300 transition-all cursor-pointer"
+                              >
+                                <div className="flex items-center gap-2 flex-wrap flex-1">
+                                  <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-xs shrink-0" />
+                                  <span className="text-xs text-slate-700 font-medium font-mono">
+                                    {opt}
+                                  </span>
+                                  {cnTag && (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-cyan-50 text-cyan-700 border border-cyan-200/80 shrink-0">
+                                      {cnTag}
+                                    </span>
+                                  )}
+                                </div>
+                                <Copy className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                               </div>
-                              <Copy className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : hotkeyFilter.trim() ? (
                         <div className="p-8 text-center text-xs text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
@@ -710,6 +736,7 @@ export const DownloadView: React.FC = () => {
                     </div>
                   );
                 })()}
+
 
               </div>
             </div>

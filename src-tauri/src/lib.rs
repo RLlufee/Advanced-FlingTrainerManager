@@ -58,6 +58,30 @@ fn open_steam_store(app_id: u32) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn open_install_dir(dir_path: String) -> Result<(), String> {
+    launcher::open_install_dir(&dir_path)
+}
+
+#[tauri::command]
+fn open_trainers_root() -> Result<(), String> {
+    launcher::open_trainers_root()
+}
+
+#[tauri::command]
+fn delete_installed_trainer(id: String) -> Result<(), String> {
+    launcher::delete_installed_trainer(&id)
+}
+
+#[tauri::command]
+async fn launch_game_and_trainer(id: String, app_id: Option<u32>) -> Result<String, String> {
+    if let Some(aid) = app_id {
+        let _ = launch_steam_game(aid);
+        tokio::time::sleep(tokio::time::Duration::from_millis(600)).await;
+    }
+    launcher::launch_trainer(&id)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -70,7 +94,11 @@ pub fn run() {
             get_installed_trainers,
             launch_trainer,
             launch_steam_game,
-            open_steam_store
+            open_steam_store,
+            open_install_dir,
+            open_trainers_root,
+            delete_installed_trainer,
+            launch_game_and_trainer
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
