@@ -16,8 +16,11 @@ static STYLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 static HTML_TAG_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"<[^>]+>").unwrap()
 });
-static TOOLTIP_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"toolTips\([^,]+,\s*'((?:[^'\\]|\\.)*)'\)").unwrap()
+static TOOLTIP_BLOCK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?is)(?:<span[^>]*tooltipsall[^>]*>.*?</span>\s*)?<script[^>]*>.*?toolTips\([^,]+,\s*'((?:[^'\\]|\\.)*)'\s*\);?.*?</script>").unwrap()
+});
+static TOOLTIP_EXTRACT_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"@@TOOLTIP_START@@(.*?)@@TOOLTIP_END@@").unwrap()
 });
 static JQUERY_CLEAN_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)jQuery\s*\(.*?\)\s*;?").unwrap()
@@ -133,7 +136,7 @@ fn urlencoding(input: &str) -> String {
 
 fn clean_html_entities(s: &str) -> String {
     s.replace("&#8211;", "-")
-        .replace("&#8212;", "—")
+        .replace("&#8212;", "-")
         .replace("&#8217;", "'")
         .replace("&#046;", ".")
         .replace("&amp;", "&")
@@ -141,6 +144,8 @@ fn clean_html_entities(s: &str) -> String {
         .replace("&quot;", "\"")
         .replace("&lt;", "<")
         .replace("&gt;", ">")
+        .replace('–', "-")
+        .replace('—', "-")
 }
 
 pub fn parse_trainer_list(html: &str) -> Result<Vec<Trainer>, String> {
@@ -287,18 +292,32 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
         .map(|c| c.inner_html())
         .unwrap_or_default();
 
-    // 1. 先从原始 HTML 中精准提取每一项功能及内联 Tooltip 注意事项
-    let mut options = Vec::new();
-    let mut option_items = Vec::new();
+    // 1. 全局提取内联 ToolTip 提示内容，并在全文本级别原子替换为单行占位符，防止内部 <br/> 导致拆行破坏脚本标签闭合
+    let with_tooltips_extracted = TOOLTIP_BLOCK_REGEX.replace_all(&raw_entry_html, |caps: &regex::Captures| {
+        let note_content = &caps[1];
+        let safe_note = note_content
+            .replace('\r', " ")
+            .replace('\n', " ")
+            .replace("<br />", "__BR__")
+            .replace("<br/>", "__BR__")
+            .replace("<br>", "__BR__");
+        format!(" @@TOOLTIP_START@@{}@@TOOLTIP_END@@ ", safe_note)
+    });
 
-    // 将 HTML 按行或按 <br> 划分，方便逐项捕获
-    let normalized_html = raw_entry_html
+    // 2. 彻底清除全文本中所有剩余的 <script>...</script> 和 <style>...</style>
+    let no_script = SCRIPT_REGEX.replace_all(&with_tooltips_extracted, "");
+    let no_style = STYLE_REGEX.replace_all(&no_script, "");
+
+    // 3. 将 HTML 按段落与换行标签规范化为换行符 \n
+    let normalized_html = no_style
         .replace("<br />", "\n")
         .replace("<br/>", "\n")
         .replace("<br>", "\n")
         .replace("</p>", "\n")
         .replace("</div>", "\n");
 
+    let mut options = Vec::new();
+    let mut option_items = Vec::new();
     let mut in_options_section = false;
 
     for line in normalized_html.lines() {
@@ -324,24 +343,37 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
                 break;
             }
 
-            // 提取该项的 Tooltip 说明 (括号内的注意事项，彻底还原转义字符)
-            let note = TOOLTIP_REGEX.captures(trimmed_line).map(|cap| {
+            // 提取该项绑定的 Tooltip 说明
+            let note = TOOLTIP_EXTRACT_REGEX.captures(trimmed_line).map(|cap| {
                 cap[1]
+                    .replace("__BR__", " ")
                     .replace("\\'", "'")
                     .replace("\\\"", "\"")
                     .replace("\\.", ".")
                     .replace("\\,", ",")
                     .replace("\\-", "-")
-                    .trim()
-                    .to_string()
+                    .replace("\\(", "(")
+                    .replace("\\)", ")")
+                    .split_whitespace()
+                    .collect::<Vec<_>>()
+                    .join(" ")
             });
 
-            // 彻底剥离 <script>...</script>、<style>...</style> 和所有 HTML 标签
-            let without_scripts = SCRIPT_REGEX.replace_all(trimmed_line, "");
-            let without_styles = STYLE_REGEX.replace_all(&without_scripts, "");
-            let without_jquery = JQUERY_CLEAN_REGEX.replace_all(&without_styles, "");
-            let without_tags = HTML_TAG_REGEX.replace_all(&without_jquery, "");
-            let cleaned_title = clean_html_entities(&without_tags).trim().to_string();
+            // 剥离占位符和所有剩余 HTML 标签
+            let line_without_tooltip = TOOLTIP_EXTRACT_REGEX.replace_all(trimmed_line, "");
+            let without_tags = HTML_TAG_REGEX.replace_all(&line_without_tooltip, "");
+            let cleaned_entities = clean_html_entities(&without_tags);
+            let mut cleaned_title = cleaned_entities.trim().to_string();
+
+            // 双重保险：彻底截除任何潜在的 JS 脚本碎片关键字
+            if let Some(idx) = cleaned_title.find(".ready")
+                .or_else(|| cleaned_title.find("function("))
+                .or_else(|| cleaned_title.find("jQuery("))
+                .or_else(|| cleaned_title.find("toolTips("))
+                .or_else(|| cleaned_title.find("tooltip_"))
+            {
+                cleaned_title = cleaned_title[..idx].trim().to_string();
+            }
 
             // 校验是否为有效的功能项 (例如 "Num 1 - Infinite Health", "Ctrl+Num 1", "Alt+Num 1" 等)
             if !cleaned_title.is_empty() 
@@ -349,7 +381,7 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
                     || cleaned_title.starts_with("Ctrl") 
                     || cleaned_title.starts_with("Alt") 
                     || cleaned_title.starts_with("Shift") 
-                    || cleaned_title.starts_with('F') && cleaned_title.chars().nth(1).map_or(false, |c| c.is_ascii_digit())
+                    || (cleaned_title.starts_with('F') && cleaned_title.chars().nth(1).map_or(false, |c| c.is_ascii_digit()))
                     || cleaned_title.contains(" - ") 
                     || cleaned_title.contains(" – ")) 
             {
@@ -441,20 +473,29 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_clean_tooltip_and_extract_note() {
-        let sample = r#"Num 1 &#8211; God Mode/Ignore Hits <span class='tooltipsall'><img src='/icon.png'/></span><script type='text/javascript'>jQuery("document").ready(function(){ toolTips('.tooltip_id','When activated, enemies won\'t be able to damage you.'); });</script>"#;
+    fn test_clean_tooltip_and_extract_note_with_br() {
+        let sample = r#"
+        <div class="entry">
+        <h6>OPTIONS</h6>
+        <p style="padding-left: 40px;">Alt+Num 1 &#8211; Battle: God Mode <span class='tooltipsall tooltip_post_id_custom_f6cfc5874afaec59276453986baacb44 classtoolTipsCustomShortCode' style='border-bottom:2px dotted #888;'><img decoding="async" src="/wp-content/uploads/2022/07/tooltip-icon.png" width="12" height="12" style="cursor: pointer;"></span><script type="text/javascript">jQuery("document").ready(function(){ toolTips('.tooltip_post_id_custom_f6cfc5874afaec59276453986baacb44','When activated, player units will ignore most damages, but certain damages \(such as fall damage\) may still apply to player units\.<br/><br/>Only works in land battles, does not work in sea battles\.'); });</script><br />
+        Ctrl+Num / &#8211; Edit Mouse Hover Item Amount <span class='tooltipsall tooltip_post_id_custom_34f807772012d7ea6d93571e5e2b186b classtoolTipsCustomShortCode' style='border-bottom:2px dotted #888;'><img decoding="async" style="cursor: pointer;" src="/wp-content/uploads/2022/07/tooltip-icon.png" width="12" height="12" /></span><script type="text/javascript">jQuery("document").ready(function(){ toolTips('.tooltip_post_id_custom_34f807772012d7ea6d93571e5e2b186b','Open the inventory, then activate this option, then move the cursor over an item to change its amount\.<br/><br/>Note, the display amount won\'t update immediately, close and re\-open the inventory to update the display values\.'); });</script></p>
+        <p style="padding-left: 40px;">Alt+Num 1 &#8211; Loyalty <span class='tooltipsall tooltip_post_id_custom_65b8f370bed5c234ee5b2a5555773d43 classtoolTipsCustomShortCode' style='border-bottom:2px dotted #888;'><img decoding="async" style="cursor: pointer;" src="/wp-content/uploads/2022/07/tooltip-icon.png" width="12" height="12" /></span><script type="text/javascript">jQuery("document").ready(function(){ toolTips('.tooltip_post_id_custom_65b8f370bed5c234ee5b2a5555773d43','Takes effect when you open the character details menu of the character you want to edit\.'); });</script><br />
+        <h6>NOTES</h6>
+        </div>
+        "#;
         
-        let note = TOOLTIP_REGEX.captures(sample).map(|cap| {
-            cap[1].replace("\\'", "'").replace("\\\"", "\"").trim().to_string()
-        });
+        let trainer = parse_trainer_detail(sample, "test-slug").unwrap();
+        
+        assert_eq!(trainer.option_items.len(), 3);
+        assert_eq!(trainer.option_items[0].title, "Alt+Num 1 - Battle: God Mode");
+        assert!(trainer.option_items[0].note.as_ref().unwrap().contains("When activated, player units will ignore most damages"));
+        assert!(trainer.option_items[0].note.as_ref().unwrap().contains("Only works in land battles"));
 
-        assert_eq!(note, Some("When activated, enemies won't be able to damage you.".to_string()));
+        assert_eq!(trainer.option_items[1].title, "Ctrl+Num / - Edit Mouse Hover Item Amount");
+        assert!(trainer.option_items[1].note.as_ref().unwrap().contains("Open the inventory, then activate this option"));
 
-        let without_scripts = SCRIPT_REGEX.replace_all(sample, "");
-        let without_tags = HTML_TAG_REGEX.replace_all(&without_scripts, "");
-        let cleaned = clean_html_entities(&without_tags).trim().to_string();
-
-        assert_eq!(cleaned, "Num 1 - God Mode/Ignore Hits");
+        assert_eq!(trainer.option_items[2].title, "Alt+Num 1 - Loyalty");
+        assert_eq!(trainer.option_items[2].note.as_ref().unwrap(), "Takes effect when you open the character details menu of the character you want to edit.");
     }
 }
 

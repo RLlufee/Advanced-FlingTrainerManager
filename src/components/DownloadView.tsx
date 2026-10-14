@@ -464,9 +464,9 @@ export const DownloadView: React.FC = () => {
                           key={idx}
                           className="flex flex-col p-3 rounded-xl bg-slate-50/80 border border-slate-200/70 hover:bg-slate-100/70 hover:border-slate-300 transition-all gap-1.5"
                         >
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-xs shrink-0" />
-                            <span className="text-xs text-slate-800 font-semibold font-mono tracking-tight">
+                          <div className="flex items-start gap-2">
+                            <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-xs shrink-0 mt-1" />
+                            <span className="text-xs text-slate-800 font-semibold font-mono tracking-tight break-words">
                               {item.title}
                             </span>
                           </div>
