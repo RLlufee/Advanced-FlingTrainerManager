@@ -157,7 +157,8 @@ const TRANSLATION_PATTERNS: Array<{ regex: RegExp; label: string }> = [
  * 根据英文功能标题提取或匹配中文译名标签
  * 例如: "Num 1 - Infinite Health" -> "无限生命"
  */
-export function translateHotkeyTitle(title: string): string | null {
+export function translateHotkeyTitle(title: string | undefined | null): string | null {
+  if (!title || typeof title !== "string") return null;
   for (const item of TRANSLATION_PATTERNS) {
     if (item.regex.test(title)) {
       return item.label;
@@ -170,15 +171,16 @@ export function translateHotkeyTitle(title: string): string | null {
  * 智能过滤：支持纯英文、纯中文同义词、数字键位混合匹配
  */
 export function matchHotkey(
-  title: string,
+  title: string | undefined | null,
   note: string | undefined | null,
   query: string
 ): boolean {
-  const q = query.trim().toLowerCase();
+  if (!title || typeof title !== "string") return false;
+  const q = (query || "").trim().toLowerCase();
   if (!q) return true;
 
   const titleLower = title.toLowerCase();
-  const noteLower = (note || "").toLowerCase();
+  const noteLower = (note && typeof note === "string") ? note.toLowerCase() : "";
 
   // 1. 直接英文或键位命中 (例如 "health", "num 1", "ctrl", "damage")
   if (titleLower.includes(q) || noteLower.includes(q)) {

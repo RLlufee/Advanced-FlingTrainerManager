@@ -147,7 +147,20 @@ export const GamePoster: React.FC<GamePosterProps> = ({
   }
 
   // 拼接重试时间戳避免命中浏览器缓存中的 404 / 失败状态
-  const rawUrl = candidates[currentIdx];
+  const safeIdx = currentIdx < candidates.length ? currentIdx : 0;
+  const rawUrl = candidates[safeIdx] || "";
+
+  if (!rawUrl) {
+    return (
+      <div
+        className={`w-full h-full flex flex-col items-center justify-center select-none bg-gradient-to-br from-slate-900 via-indigo-950/80 to-slate-950 text-slate-300 relative overflow-hidden group border border-slate-800/80 ${containerClassName}`}
+        title={alt}
+      >
+        <Gamepad2 className={`${iconClassName} text-cyan-400/80`} />
+      </div>
+    );
+  }
+
   const finalSrc =
     retryKey > 0
       ? rawUrl.includes("?")

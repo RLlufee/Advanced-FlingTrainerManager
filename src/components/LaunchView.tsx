@@ -134,12 +134,20 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
   // 当前选中修改器的热键项规范化
   const activeOptionItems = useMemo<TrainerOptionItem[]>(() => {
     if (!selectedTrainer) return [];
-    if (selectedTrainer.option_items && selectedTrainer.option_items.length > 0) {
-      return selectedTrainer.option_items;
+    if (selectedTrainer.option_items && Array.isArray(selectedTrainer.option_items) && selectedTrainer.option_items.length > 0) {
+      return selectedTrainer.option_items.filter(Boolean).map((item) => {
+        if (typeof item === "string") {
+          return { title: item, note: null };
+        }
+        return {
+          title: item.title || "",
+          note: item.note || null,
+        };
+      });
     }
-    if (selectedTrainer.options && selectedTrainer.options.length > 0) {
-      return selectedTrainer.options.map((title) => ({
-        title,
+    if (selectedTrainer.options && Array.isArray(selectedTrainer.options) && selectedTrainer.options.length > 0) {
+      return selectedTrainer.options.filter(Boolean).map((title) => ({
+        title: typeof title === "string" ? title : String(title),
         note: null,
       }));
     }
