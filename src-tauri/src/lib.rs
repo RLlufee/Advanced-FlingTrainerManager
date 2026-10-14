@@ -37,6 +37,26 @@ fn launch_trainer(id: String) -> Result<String, String> {
     launcher::launch_trainer(&id)
 }
 
+#[tauri::command]
+fn launch_steam_game(app_id: u32) -> Result<(), String> {
+    let url = format!("steam://run/{}", app_id);
+    let _ = std::process::Command::new("rundll32")
+        .args(["url.dll,FileProtocolHandler", &url])
+        .spawn()
+        .map_err(|e| format!("启动 Steam 游戏失败: {}", e))?;
+    Ok(())
+}
+
+#[tauri::command]
+fn open_steam_store(app_id: u32) -> Result<(), String> {
+    let url = format!("https://store.steampowered.com/app/{}/", app_id);
+    let _ = std::process::Command::new("rundll32")
+        .args(["url.dll,FileProtocolHandler", &url])
+        .spawn()
+        .map_err(|e| format!("打开 Steam 商店失败: {}", e))?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -47,7 +67,9 @@ pub fn run() {
             get_trainer_detail,
             download_trainer,
             get_installed_trainers,
-            launch_trainer
+            launch_trainer,
+            launch_steam_game,
+            open_steam_store
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

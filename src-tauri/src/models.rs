@@ -21,6 +21,14 @@ pub struct Trainer {
     pub option_items: Vec<TrainerOptionItem>,
     pub installed_path: Option<String>,
     pub is_installed: bool,
+    #[serde(default)]
+    pub chinese_name: Option<String>,
+    #[serde(default)]
+    pub steam_app_id: Option<u32>,
+    #[serde(default)]
+    pub hero_image: Option<String>,
+    #[serde(default)]
+    pub capsule_image: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

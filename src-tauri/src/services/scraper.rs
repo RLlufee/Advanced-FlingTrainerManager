@@ -58,7 +58,12 @@ pub async fn fetch_trainers(page: u32) -> Result<PaginatedTrainers, String> {
         .await
         .map_err(|e| format!("解析网页内容失败: {}", e))?;
 
-    let trainers = parse_trainer_list(&html)?;
+    let mut trainers = parse_trainer_list(&html)?;
+    for t in &mut trainers {
+        let cleaned = crate::services::game_meta::clean_game_name(&t.name);
+        t.chinese_name = crate::services::game_meta::query_local_chinese_name(&cleaned);
+    }
+
     Ok(PaginatedTrainers {
         trainers,
         page,
@@ -68,10 +73,18 @@ pub async fn fetch_trainers(page: u32) -> Result<PaginatedTrainers, String> {
 
 pub async fn search_trainers(query: &str, page: u32) -> Result<PaginatedTrainers, String> {
     let client = create_client()?;
-    let url = if page <= 1 {
-        format!("{}/?s={}", BASE_URL, urlencoding(query))
+    // 若输入中文，尝试从本地字典逆向映射为官网英文名
+    let actual_query = if query.chars().any(|c| ('\u{4e00}'..='\u{9fa5}').contains(&c)) {
+        crate::services::game_meta::reverse_lookup_english_by_chinese(query)
+            .unwrap_or_else(|| query.to_string())
     } else {
-        format!("{}/page/{}/?s={}", BASE_URL, page, urlencoding(query))
+        query.to_string()
+    };
+
+    let url = if page <= 1 {
+        format!("{}/?s={}", BASE_URL, urlencoding(&actual_query))
+    } else {
+        format!("{}/page/{}/?s={}", BASE_URL, page, urlencoding(&actual_query))
     };
 
     let response = client
@@ -90,7 +103,12 @@ pub async fn search_trainers(query: &str, page: u32) -> Result<PaginatedTrainers
         .await
         .map_err(|e| format!("解析搜索网页内容失败: {}", e))?;
 
-    let trainers = parse_trainer_list(&html)?;
+    let mut trainers = parse_trainer_list(&html)?;
+    for t in &mut trainers {
+        let cleaned = crate::services::game_meta::clean_game_name(&t.name);
+        t.chinese_name = crate::services::game_meta::query_local_chinese_name(&cleaned);
+    }
+
     Ok(PaginatedTrainers {
         trainers,
         page,
@@ -119,7 +137,11 @@ pub async fn get_trainer_detail(id: &str) -> Result<Trainer, String> {
         .await
         .map_err(|e| format!("解析详情网页失败: {}", e))?;
 
-    parse_trainer_detail(&html, slug)
+    let mut trainer = parse_trainer_detail(&html, slug)?;
+    // 异步富化本地中文名与 Steam 官方高清原画、AppID 元数据
+    crate::services::game_meta::enrich_trainer(&mut trainer).await;
+
+    Ok(trainer)
 }
 
 fn urlencoding(input: &str) -> String {
@@ -234,6 +256,10 @@ pub fn parse_trainer_list(html: &str) -> Result<Vec<Trainer>, String> {
                 option_items: Vec::new(),
                 installed_path: None,
                 is_installed: false,
+                chinese_name: None,
+                steam_app_id: None,
+                hero_image: None,
+                capsule_image: None,
             });
         }
     }
@@ -465,6 +491,10 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
         option_items,
         installed_path: None,
         is_installed: false,
+        chinese_name: None,
+        steam_app_id: None,
+        hero_image: None,
+        capsule_image: None,
     })
 }
 

@@ -20,6 +20,10 @@ export interface Trainer {
   option_items?: TrainerOptionItem[];
   installed_path?: string;
   is_installed: boolean;
+  chinese_name?: string | null;
+  steam_app_id?: number | null;
+  hero_image?: string | null;
+  capsule_image?: string | null;
 }
 
 export interface PaginatedTrainers {
@@ -71,6 +75,14 @@ export const trainerApi = {
 
   launchTrainer: async (id: string): Promise<string> => {
     return await invoke<string>("launch_trainer", { id });
+  },
+
+  launchSteamGame: async (appId: number): Promise<void> => {
+    return await invoke("launch_steam_game", { appId });
+  },
+
+  openSteamStore: async (appId: number): Promise<void> => {
+    return await invoke("open_steam_store", { appId });
   },
 
   onDownloadProgress: async (

@@ -1,0 +1,274 @@
+use crate::models::Trainer;
+use crate::services::storage::get_app_data_dir;
+use rusqlite::Connection;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fs;
+use std::path::PathBuf;
+use std::sync::{LazyLock, Mutex};
+use std::time::Duration;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GameMetaCacheItem {
+    pub chinese_name: Option<String>,
+    pub steam_app_id: Option<u32>,
+    pub hero_image: Option<String>,
+    pub capsule_image: Option<String>,
+}
+
+static META_CACHE: LazyLock<Mutex<HashMap<String, GameMetaCacheItem>>> = LazyLock::new(|| {
+    let mut map = HashMap::new();
+    let cache_file = get_cache_file_path();
+    if cache_file.exists() {
+        if let Ok(content) = fs::read_to_string(&cache_file) {
+            if let Ok(loaded) = serde_json::from_str::<HashMap<String, GameMetaCacheItem>>(&content) {
+                map = loaded;
+            }
+        }
+    }
+    Mutex::new(map)
+});
+
+fn get_cache_file_path() -> PathBuf {
+    get_app_data_dir().join("game_meta_cache.json")
+}
+
+fn save_cache_to_disk() {
+    if let Ok(cache) = META_CACHE.lock() {
+        let file = get_cache_file_path();
+        if let Ok(json) = serde_json::to_string_pretty(&*cache) {
+            let _ = fs::write(file, json);
+        }
+    }
+}
+
+/// 定位本地 `fling_translations.db` 路径
+fn find_translations_db_path() -> Option<PathBuf> {
+    let candidates = [
+        PathBuf::from("resources/fling_translations.db"),
+        PathBuf::from("src-tauri/resources/fling_translations.db"),
+        PathBuf::from("../resources/fling_translations.db"),
+        PathBuf::from("libs/FLiNG-Downloader/resources/fling_translations.db"),
+        get_app_data_dir().join("fling_translations.db"),
+    ];
+
+    for path in &candidates {
+        if path.exists() {
+            return Some(path.clone());
+        }
+    }
+    None
+}
+
+/// 清洗风灵月影修改器标题，提取核心游戏英文名
+pub fn clean_game_name(raw_name: &str) -> String {
+    let mut cleaned = raw_name.trim().to_string();
+
+    // 剔除常见的 Trainer / Cheat 等后缀
+    for suffix in &[
+        "Trainer/Cheat",
+        "Trainer / Cheat",
+        "Trainer",
+        "Cheats",
+        "Cheat",
+        "Mod",
+        "v1.0",
+        "Plus",
+    ] {
+        if let Some(idx) = cleaned.rfind(suffix) {
+            if idx > 0 {
+                cleaned = cleaned[..idx].trim().to_string();
+            }
+        }
+    }
+
+    // 去除尾部可能残留的连字符或空格
+    cleaned = cleaned.trim_end_matches(&['-', '—', '–', ' '][..]).trim().to_string();
+    cleaned
+}
+
+/// 从本地 SQLite 翻译数据库查询简体中文名
+pub fn query_local_chinese_name(game_name: &str) -> Option<String> {
+    let db_path = find_translations_db_path()?;
+    let conn = Connection::open_with_flags(
+        db_path,
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
+    )
+    .ok()?;
+
+    let normalized = game_name.to_lowercase();
+
+    // 1. 先通过归一化英文精确匹配
+    let mut stmt = conn
+        .prepare("SELECT chinese_simplified FROM games WHERE normalized_english = ?1 LIMIT 1")
+        .ok()?;
+
+    if let Ok(res) = stmt.query_row([&normalized], |row| row.get::<_, String>(0)) {
+        if !res.trim().is_empty() {
+            return Some(res.trim().to_string());
+        }
+    }
+
+    // 2. 若精确匹配未中，尝试忽略标点符号的模糊匹配
+    let like_query = format!("%{}%", game_name.replace(':', "").trim());
+    let mut stmt2 = conn
+        .prepare("SELECT chinese_simplified FROM games WHERE english LIKE ?1 OR normalized_english LIKE ?2 LIMIT 1")
+        .ok()?;
+
+    if let Ok(res) = stmt2.query_row([&like_query, &format!("%{}%", normalized)], |row| row.get::<_, String>(0)) {
+        if !res.trim().is_empty() {
+            return Some(res.trim().to_string());
+        }
+    }
+
+    None
+}
+
+/// 根据输入的中文游戏名反向查找风灵月影官网的标准英文名（支持中文直接搜索）
+pub fn reverse_lookup_english_by_chinese(chinese_keyword: &str) -> Option<String> {
+    let db_path = find_translations_db_path()?;
+    let conn = Connection::open_with_flags(
+        db_path,
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
+    )
+    .ok()?;
+
+    let pattern = format!("%{}%", chinese_keyword.trim());
+    let mut stmt = conn
+        .prepare("SELECT english FROM games WHERE chinese_simplified LIKE ?1 LIMIT 1")
+        .ok()?;
+
+    if let Ok(english) = stmt.query_row([&pattern], |row| row.get::<_, String>(0)) {
+        if !english.trim().is_empty() {
+            return Some(english.trim().to_string());
+        }
+    }
+
+    None
+}
+
+#[derive(Debug, Deserialize)]
+struct SteamSearchResponse {
+    items: Option<Vec<SteamSearchItem>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SteamSearchItem {
+    id: u32,
+    name: String,
+}
+
+/// 异步调用 Steam 官方 StoreSearch API 获取 AppID 与原画元数据
+pub async fn fetch_steam_meta(game_name: &str) -> Option<(u32, String, String, String)> {
+    let cleaned = clean_game_name(game_name);
+    if cleaned.is_empty() {
+        return None;
+    }
+
+    let url = format!(
+        "https://store.steampowered.com/api/storesearch/?term={}&l=schinese&cc=CN",
+        urlencoding(&cleaned)
+    );
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(4))
+        .user_agent("Mozilla/5.0")
+        .build()
+        .ok()?;
+
+    let resp = client.get(&url).send().await.ok()?;
+    if !resp.status().is_success() {
+        return None;
+    }
+
+    let data = resp.json::<SteamSearchResponse>().await.ok()?;
+    let items = data.items?;
+    let first = items.into_iter().next()?;
+
+    let app_id = first.id;
+    let steam_chinese_name = first.name;
+    let capsule_image = format!(
+        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{}/capsule_616x353.jpg",
+        app_id
+    );
+    let hero_image = format!(
+        "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{}/library_hero.jpg",
+        app_id
+    );
+
+    Some((app_id, steam_chinese_name, hero_image, capsule_image))
+}
+
+fn urlencoding(input: &str) -> String {
+    let mut encoded = String::new();
+    for byte in input.bytes() {
+        if byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_' || byte == b'.' || byte == b'~' {
+            encoded.push(byte as char);
+        } else {
+            encoded.push_str(&format!("%{:02X}", byte));
+        }
+    }
+    encoded
+}
+
+/// 为 Trainer 注入中文名称、Steam AppID 与官方高清原画
+pub async fn enrich_trainer(trainer: &mut Trainer) {
+    let cleaned_name = clean_game_name(&trainer.name);
+
+    // 1. 先检查内存/磁盘持久化缓存
+    if let Ok(cache) = META_CACHE.lock() {
+        if let Some(cached) = cache.get(&trainer.id) {
+            trainer.chinese_name = cached.chinese_name.clone();
+            trainer.steam_app_id = cached.steam_app_id;
+            trainer.hero_image = cached.hero_image.clone();
+            trainer.capsule_image = cached.capsule_image.clone();
+            return;
+        }
+    }
+
+    // 2. 本地 SQLite 翻译库快速命中中文名
+    let mut local_chinese = query_local_chinese_name(&cleaned_name);
+    if local_chinese.is_none() {
+        local_chinese = query_local_chinese_name(&trainer.name);
+    }
+
+    trainer.chinese_name = local_chinese.clone();
+
+    // 3. 异步请求 Steam StoreSearch API
+    if let Some((app_id, steam_name, hero, capsule)) = fetch_steam_meta(&cleaned_name).await {
+        trainer.steam_app_id = Some(app_id);
+        trainer.hero_image = Some(hero.clone());
+        trainer.capsule_image = Some(capsule.clone());
+
+        // 如果本地数据库未命中中文名，使用 Steam 官方中文名
+        if trainer.chinese_name.is_none() || trainer.chinese_name.as_deref() == Some(&trainer.name) {
+            trainer.chinese_name = Some(steam_name.clone());
+        }
+
+        // 保存进本地持久化缓存
+        let item = GameMetaCacheItem {
+            chinese_name: trainer.chinese_name.clone(),
+            steam_app_id: Some(app_id),
+            hero_image: Some(hero),
+            capsule_image: Some(capsule),
+        };
+
+        if let Ok(mut cache) = META_CACHE.lock() {
+            cache.insert(trainer.id.clone(), item);
+        }
+        save_cache_to_disk();
+    } else if let Some(zh) = local_chinese {
+        // 仅命中了本地中文
+        let item = GameMetaCacheItem {
+            chinese_name: Some(zh),
+            steam_app_id: None,
+            hero_image: None,
+            capsule_image: None,
+        };
+
+        if let Ok(mut cache) = META_CACHE.lock() {
+            cache.insert(trainer.id.clone(), item);
+        }
+        save_cache_to_disk();
+    }
+}
