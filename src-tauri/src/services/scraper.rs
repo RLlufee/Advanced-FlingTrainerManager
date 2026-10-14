@@ -17,7 +17,7 @@ static HTML_TAG_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"<[^>]+>").unwrap()
 });
 static TOOLTIP_BLOCK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?is)(?:<span[^>]*tooltipsall[^>]*>.*?</span>\s*)?<script[^>]*>.*?toolTips\([^,]+,\s*'((?:[^'\\]|\\.)*)'\s*\);?.*?</script>").unwrap()
+    Regex::new(r"(?is)(?:<span[^>]*tooltipsall[^>]*>.*?</span>\s*)?<script[^>]*>[^<]*?toolTips\([^,]+,\s*'((?:[^'\\]|\\.)*)'\s*\);?.*?</script>").unwrap()
 });
 static TOOLTIP_EXTRACT_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"@@TOOLTIP_START@@(.*?)@@TOOLTIP_END@@").unwrap()
@@ -496,6 +496,39 @@ mod tests {
 
         assert_eq!(trainer.option_items[2].title, "Alt+Num 1 - Loyalty");
         assert_eq!(trainer.option_items[2].note.as_ref().unwrap(), "Takes effect when you open the character details menu of the character you want to edit.");
+    }
+
+    #[test]
+    fn test_real_game_pages() {
+        let pages = [
+            ("scratch_beast.html", "beast-of-reincarnation-trainer", 30),
+            ("scratch_shogun.html", "total-war-shogun-2-complete-edition-trainer", 15),
+            ("scratch_3k.html", "legend-of-heroes-three-kingdoms-trainer", 30),
+        ];
+
+        for (filename, slug, expected_min) in pages {
+            let path = if std::path::Path::new(filename).exists() {
+                filename.to_string()
+            } else {
+                format!("../{}", filename)
+            };
+            if let Ok(content) = std::fs::read_to_string(&path) {
+                let trainer = parse_trainer_detail(&content, slug).unwrap();
+                println!("{}: parsed {} options", slug, trainer.option_items.len());
+                assert!(
+                    trainer.option_items.len() >= expected_min,
+                    "Page {} expected >= {} options, but got {}",
+                    filename,
+                    expected_min,
+                    trainer.option_items.len()
+                );
+                // 确保没有任何一项包含 .ready 或 toolTips 脚本残留
+                for item in &trainer.option_items {
+                    assert!(!item.title.contains("ready"), "Title contains ready: {}", item.title);
+                    assert!(!item.title.contains("toolTips"), "Title contains toolTips: {}", item.title);
+                }
+            }
+        }
     }
 }
 
