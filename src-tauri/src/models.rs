@@ -1,6 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TrainerOptionItem {
+    pub title: String,
+    pub note: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Trainer {
     pub id: String,
     pub name: String,
@@ -12,6 +18,7 @@ pub struct Trainer {
     pub download_count: u64,
     pub last_update: String,
     pub options: Vec<String>,
+    pub option_items: Vec<TrainerOptionItem>,
     pub installed_path: Option<String>,
     pub is_installed: bool,
 }

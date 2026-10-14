@@ -1,9 +1,27 @@
-use crate::models::{PaginatedTrainers, Trainer};
+use crate::models::{PaginatedTrainers, Trainer, TrainerOptionItem};
+use regex::Regex;
 use scraper::{Html, Selector};
+use std::sync::LazyLock;
 use std::time::Duration;
 
 const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 const BASE_URL: &str = "https://flingtrainer.com";
+
+static SCRIPT_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?is)<script[^>]*>.*?</script>").unwrap()
+});
+static STYLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?is)<style[^>]*>.*?</style>").unwrap()
+});
+static HTML_TAG_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"<[^>]+>").unwrap()
+});
+static TOOLTIP_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"toolTips\([^,]+,\s*'((?:[^'\\]|\\.)*)'\)").unwrap()
+});
+static JQUERY_CLEAN_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)jQuery\s*\(.*?\)\s*;?").unwrap()
+});
 
 pub fn create_client() -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
@@ -41,7 +59,7 @@ pub async fn fetch_trainers(page: u32) -> Result<PaginatedTrainers, String> {
     Ok(PaginatedTrainers {
         trainers,
         page,
-        total_pages: 50, // 默认支持分页浏览
+        total_pages: 50,
     })
 }
 
@@ -79,7 +97,6 @@ pub async fn search_trainers(query: &str, page: u32) -> Result<PaginatedTrainers
 
 pub async fn get_trainer_detail(id: &str) -> Result<Trainer, String> {
     let client = create_client()?;
-    // 兼容 id 格式：如果传入包含完整 url 或只有 slug
     let slug = id.trim_matches('/').split('/').last().unwrap_or(id);
     let url = format!("{}/trainer/{}/", BASE_URL, slug);
 
@@ -112,6 +129,18 @@ fn urlencoding(input: &str) -> String {
         }
     }
     encoded
+}
+
+fn clean_html_entities(s: &str) -> String {
+    s.replace("&#8211;", "-")
+        .replace("&#8212;", "—")
+        .replace("&#8217;", "'")
+        .replace("&#046;", ".")
+        .replace("&amp;", "&")
+        .replace("&nbsp;", " ")
+        .replace("&quot;", "\"")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
 }
 
 pub fn parse_trainer_list(html: &str) -> Result<Vec<Trainer>, String> {
@@ -157,11 +186,17 @@ pub fn parse_trainer_list(html: &str) -> Result<Vec<Trainer>, String> {
                 .unwrap_or_default()
                 .to_string();
 
-            let entry_text = article
+            let entry_html = article
                 .select(&entry_sel)
                 .next()
-                .map(|c| c.text().collect::<String>())
+                .map(|c| c.inner_html())
                 .unwrap_or_default();
+
+            // 清洗掉所有 script 和 style 标签
+            let entry_no_script = SCRIPT_REGEX.replace_all(&entry_html, "");
+            let entry_no_style = STYLE_REGEX.replace_all(&entry_no_script, "");
+            let entry_clean = HTML_TAG_REGEX.replace_all(&entry_no_style, "");
+            let entry_text = clean_html_entities(&entry_clean);
 
             let mut version = String::new();
             let mut game_version = String::new();
@@ -191,6 +226,7 @@ pub fn parse_trainer_list(html: &str) -> Result<Vec<Trainer>, String> {
                 download_count: 0,
                 last_update,
                 options: Vec::new(),
+                option_items: Vec::new(),
                 installed_path: None,
                 is_installed: false,
             });
@@ -226,21 +262,101 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
 
     let entry_sel = Selector::parse(".entry")
         .map_err(|e| format!("选择器错误: {:?}", e))?;
-    let entry_text = document
+
+    let raw_entry_html = document
         .select(&entry_sel)
         .next()
-        .map(|c| c.text().collect::<String>())
+        .map(|c| c.inner_html())
         .unwrap_or_default();
 
+    // 1. 先从原始 HTML 中精准提取每一项功能及内联 Tooltip 注意事项
+    let mut options = Vec::new();
+    let mut option_items = Vec::new();
+
+    // 将 HTML 按行或按 <br> 划分，方便逐项捕获
+    let normalized_html = raw_entry_html
+        .replace("<br />", "\n")
+        .replace("<br/>", "\n")
+        .replace("<br>", "\n")
+        .replace("</p>", "\n")
+        .replace("</div>", "\n");
+
+    let mut in_options_section = false;
+
+    for line in normalized_html.lines() {
+        let trimmed_line = line.trim();
+        if trimmed_line.is_empty() {
+            continue;
+        }
+
+        // 识别 OPTIONS 区块
+        if trimmed_line.contains("OPTIONS") || trimmed_line.contains("Options</h6>") || (trimmed_line.contains("Options") && !trimmed_line.contains("Game Version:")) {
+            in_options_section = true;
+            continue;
+        }
+
+        if in_options_section {
+            // 遇到后续非修改项区块则结束
+            if trimmed_line.contains("DOWNLOAD") 
+                || trimmed_line.contains("Download") 
+                || trimmed_line.contains("NOTES") 
+                || trimmed_line.contains("Notes</h6>")
+                || trimmed_line.contains("SPECIAL NOTES")
+            {
+                break;
+            }
+
+            // 提取该项的 Tooltip 说明 (括号内的注意事项)
+            let note = TOOLTIP_REGEX.captures(trimmed_line).map(|cap| {
+                cap[1].replace("\\'", "'").replace("\\\"", "\"").trim().to_string()
+            });
+
+            // 彻底剥离 <script>...</script>、<style>...</style> 和所有 HTML 标签
+            let without_scripts = SCRIPT_REGEX.replace_all(trimmed_line, "");
+            let without_styles = STYLE_REGEX.replace_all(&without_scripts, "");
+            let without_jquery = JQUERY_CLEAN_REGEX.replace_all(&without_styles, "");
+            let without_tags = HTML_TAG_REGEX.replace_all(&without_jquery, "");
+            let cleaned_title = clean_html_entities(&without_tags).trim().to_string();
+
+            // 校验是否为有效的功能项 (例如 "Num 1 - Infinite Health", "Ctrl+Num 1", "Alt+Num 1" 等)
+            if !cleaned_title.is_empty() 
+                && (cleaned_title.starts_with("Num") 
+                    || cleaned_title.starts_with("Ctrl") 
+                    || cleaned_title.starts_with("Alt") 
+                    || cleaned_title.starts_with("Shift") 
+                    || cleaned_title.starts_with('F') && cleaned_title.chars().nth(1).map_or(false, |c| c.is_ascii_digit())
+                    || cleaned_title.contains(" - ") 
+                    || cleaned_title.contains(" – ")) 
+            {
+                options.push(cleaned_title.clone());
+                option_items.push(TrainerOptionItem {
+                    title: cleaned_title,
+                    note,
+                });
+            }
+        }
+    }
+
+    // 2. 生成纯净的 description（完全剔除脚本）
+    let clean_desc_html = SCRIPT_REGEX.replace_all(&raw_entry_html, "");
+    let clean_desc_html = STYLE_REGEX.replace_all(&clean_desc_html, "");
+    let clean_desc_html = JQUERY_CLEAN_REGEX.replace_all(&clean_desc_html, "");
+    let clean_desc_html = HTML_TAG_REGEX.replace_all(&clean_desc_html, "");
+    let clean_description = clean_html_entities(&clean_desc_html)
+        .lines()
+        .map(|l| l.trim())
+        .filter(|l| !l.is_empty())
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    // 3. 解析版本与更新日期
     let mut version = String::new();
     let mut game_version = String::new();
     let mut last_update = String::new();
 
-    // 寻找包含 Options 和 Game Version 的行
-    for line in entry_text.lines() {
-        let trimmed = line.trim();
-        if trimmed.contains("Options") && (trimmed.contains("Game Version:") || trimmed.contains("Last Updated:")) {
-            for part in trimmed.split('·') {
+    for line in clean_description.lines() {
+        if line.contains("Options") && (line.contains("Game Version:") || line.contains("Last Updated:")) {
+            for part in line.split('·') {
                 let p = part.trim();
                 if p.contains("Options") || p.contains("Option") {
                     version = p.to_string();
@@ -254,28 +370,7 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
         }
     }
 
-    // 提取修改项功能列表 (Options)
-    let mut options = Vec::new();
-    let mut in_options_block = false;
-
-    for line in entry_text.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with("OPTIONS") || trimmed.starts_with("Options") {
-            in_options_block = true;
-            continue;
-        }
-
-        if in_options_block {
-            if trimmed.starts_with("DOWNLOAD") || trimmed.starts_with("Download") || trimmed.starts_with("NOTES") || trimmed.starts_with("Notes") {
-                break;
-            }
-            if !trimmed.is_empty() && (trimmed.contains('-') || trimmed.contains(':') || trimmed.starts_with("Num") || trimmed.starts_with("Ctrl+") || trimmed.starts_with("Alt+")) {
-                options.push(trimmed.to_string());
-            }
-        }
-    }
-
-    // 提取下载链接
+    // 4. 提取下载链接
     let mut download_url = String::new();
     if let Ok(attach_sel) = Selector::parse("a.attachment-link, .da-attachments-table a") {
         for a in document.select(&attach_sel) {
@@ -288,7 +383,7 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
         }
     }
 
-    // 提取下载次数
+    // 5. 提取下载次数
     let download_count = if let Ok(cnt_sel) = Selector::parse(".attachment-downloads") {
         document
             .select(&cnt_sel)
@@ -305,12 +400,36 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
         version,
         game_version,
         download_url,
-        description: entry_text,
+        description: clean_description,
         thumbnail,
         download_count,
         last_update,
         options,
+        option_items,
         installed_path: None,
         is_installed: false,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_clean_tooltip_and_extract_note() {
+        let sample = r#"Num 1 &#8211; God Mode/Ignore Hits <span class='tooltipsall'><img src='/icon.png'/></span><script type='text/javascript'>jQuery("document").ready(function(){ toolTips('.tooltip_id','When activated, enemies won\'t be able to damage you.'); });</script>"#;
+        
+        let note = TOOLTIP_REGEX.captures(sample).map(|cap| {
+            cap[1].replace("\\'", "'").replace("\\\"", "\"").trim().to_string()
+        });
+
+        assert_eq!(note, Some("When activated, enemies won't be able to damage you.".to_string()));
+
+        let without_scripts = SCRIPT_REGEX.replace_all(sample, "");
+        let without_tags = HTML_TAG_REGEX.replace_all(&without_scripts, "");
+        let cleaned = clean_html_entities(&without_tags).trim().to_string();
+
+        assert_eq!(cleaned, "Num 1 - God Mode/Ignore Hits");
+    }
+}
+

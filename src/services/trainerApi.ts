@@ -1,6 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 
+export interface TrainerOptionItem {
+  title: string;
+  note: string | null;
+}
+
 export interface Trainer {
   id: string;
   name: string;
@@ -12,6 +17,7 @@ export interface Trainer {
   download_count: number;
   last_update: string;
   options: string[];
+  option_items?: TrainerOptionItem[];
   installed_path?: string;
   is_installed: boolean;
 }

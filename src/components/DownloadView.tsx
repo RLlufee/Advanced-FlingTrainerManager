@@ -453,7 +453,29 @@ export const DownloadView: React.FC = () => {
                 </div>
 
                 <div className="mt-4">
-                  {selectedTrainer.options && selectedTrainer.options.length > 0 ? (
+                  {selectedTrainer.option_items && selectedTrainer.option_items.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                      {selectedTrainer.option_items.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="flex flex-col p-3 rounded-xl bg-slate-50/80 border border-slate-200/70 hover:bg-slate-100/70 hover:border-slate-300 transition-all gap-1.5"
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-xs shrink-0" />
+                            <span className="text-xs text-slate-800 font-semibold font-mono tracking-tight">
+                              {item.title}
+                            </span>
+                          </div>
+                          {item.note && (
+                            <div className="pl-4 text-[11px] text-slate-500 bg-white/70 border border-slate-200/50 rounded-lg p-1.5 leading-relaxed font-sans">
+                              <span className="font-medium text-cyan-700 mr-1">ℹ️ 生效说明:</span>
+                              {item.note}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : selectedTrainer.options && selectedTrainer.options.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                       {selectedTrainer.options.map((opt, idx) => (
                         <div
