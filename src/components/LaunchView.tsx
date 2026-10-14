@@ -31,25 +31,6 @@ import {
   translateHotkeyTitle,
   formatAllHotkeys,
 } from "../lib/hotkeyTranslate";
-import { convertFileSrc } from "@tauri-apps/api/core";
-
-// 本地文件绝对路径转换为 Tauri 安全 asset 协议
-const resolveAssetUrl = (url?: string | null): string => {
-  if (!url) return "";
-  if (
-    url.startsWith("http://") ||
-    url.startsWith("https://") ||
-    url.startsWith("asset://") ||
-    url.startsWith("data:")
-  ) {
-    return url;
-  }
-  try {
-    return convertFileSrc(url);
-  } catch {
-    return url;
-  }
-};
 
 interface LaunchViewProps {
   onNavigateToDownload?: () => void;
@@ -475,22 +456,13 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
           </div>
         ) : (
           <div className="flex-1 flex flex-col">
-            {/* 顶部宽幅英雄区 (Hero Banner) */}
-            <div className="relative overflow-hidden bg-slate-900 text-white border-b border-slate-700/60 shadow-md shrink-0">
-              {/* 背景原画大图 + 毛玻璃与渐变遮罩 */}
-              {selectedTrainer.hero_image && (
-                <div
-                  className="absolute inset-0 bg-cover bg-center opacity-30 blur-xs scale-105 transition-transform duration-700"
-                  style={{ backgroundImage: `url(${resolveAssetUrl(selectedTrainer.hero_image)})` }}
-                />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/90 to-slate-900/75" />
-
+            {/* 顶部宽幅英雄区 (明亮纯白风格) */}
+            <div className="relative overflow-hidden bg-white text-slate-800 border-b border-slate-200/90 shadow-2xs shrink-0">
               {/* 核心内容区 */}
               <div className="relative p-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                 {/* 封面图与标题 */}
                 <div className="flex items-center gap-5 min-w-0">
-                  <div className="w-20 h-28 rounded-xl overflow-hidden shrink-0 border border-slate-600/60 shadow-xl bg-slate-800">
+                  <div className="w-20 h-28 rounded-xl overflow-hidden shrink-0 border border-slate-200 shadow-md bg-slate-100">
                     <GamePoster
                       primarySrc={selectedTrainer.capsule_image}
                       secondarySrc={selectedTrainer.thumbnail}
@@ -501,29 +473,29 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
 
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2.5 mb-1.5">
-                      <h1 className="text-xl font-extrabold text-white tracking-tight truncate">
+                      <h1 className="text-xl font-extrabold text-slate-900 tracking-tight truncate">
                         {selectedTrainer.chinese_name || selectedTrainer.name}
                       </h1>
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                         已就绪
                       </span>
                     </div>
 
                     {selectedTrainer.chinese_name && (
-                      <p className="text-xs text-slate-300/90 truncate mb-2">
+                      <p className="text-xs text-slate-400 truncate mb-2">
                         {selectedTrainer.name}
                       </p>
                     )}
 
                     {/* 属性与版本徽章 */}
                     <div className="flex flex-wrap items-center gap-2 text-[11px]">
-                      <span className="px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-medium">
+                      <span className="px-2 py-0.5 rounded-md bg-cyan-50 text-cyan-700 border border-cyan-200/80 font-medium">
                         修改器 {selectedTrainer.version}
                       </span>
 
                       {selectedTrainer.game_version && (
-                        <span className="px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-300 border border-slate-700/80">
+                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200/80">
                           支持游戏: {selectedTrainer.game_version}
                         </span>
                       )}
@@ -532,9 +504,9 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
                         <button
                           onClick={() => trainerApi.openSteamStore(selectedTrainer.steam_app_id!)}
                           title="在浏览器中查看 Steam 商店页"
-                          className="px-2 py-0.5 rounded-md bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 flex items-center gap-1 transition-colors"
+                          className="px-2 py-0.5 rounded-md bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200/80 flex items-center gap-1 transition-colors cursor-pointer"
                         >
-                          <Gamepad2 className="w-3 h-3 text-sky-400" />
+                          <Gamepad2 className="w-3 h-3 text-sky-600" />
                           <span>Steam #{selectedTrainer.steam_app_id}</span>
                           <ExternalLink className="w-2.5 h-2.5 opacity-60" />
                         </button>
@@ -556,7 +528,7 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
                   <button
                     onClick={handleLaunchTrainer}
                     disabled={isLaunching}
-                    className="flex-1 lg:flex-initial px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-95 text-slate-950 rounded-xl text-xs font-bold shadow-lg shadow-amber-900/40 hover:shadow-amber-900/60 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="flex-1 lg:flex-initial px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-95 text-slate-950 rounded-xl text-xs font-bold shadow-md shadow-amber-500/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     <Zap className="w-4 h-4 fill-slate-950" />
                     <span>{isLaunching ? "正在启动..." : "启动修改器"}</span>
@@ -568,7 +540,7 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
                       onClick={handleLaunchDual}
                       disabled={isLaunching}
                       title="先启动 Steam 游戏，随后自动唤醒修改器"
-                      className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-md shadow-cyan-950/40 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-md shadow-cyan-600/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                     >
                       <Play className="w-3.5 h-3.5 fill-white" />
                       <span>一键双启</span>
@@ -580,9 +552,9 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
                     <button
                       onClick={handleLaunchSteamOnly}
                       title="直接唤醒 Steam 客户端启动该游戏"
-                      className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5"
+                      className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 border border-slate-200/80 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                     >
-                      <Gamepad2 className="w-3.5 h-3.5 text-sky-400" />
+                      <Gamepad2 className="w-3.5 h-3.5 text-sky-600" />
                       <span>运行游戏</span>
                     </button>
                   )}
@@ -591,16 +563,16 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
                   <button
                     onClick={handleOpenInstallDir}
                     title="在系统资源管理器中打开当前修改器子目录"
-                    className="p-2.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 border border-slate-700 rounded-xl transition-all"
+                    className="p-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 border border-slate-200/80 rounded-xl transition-all cursor-pointer"
                   >
-                    <FolderOpen className="w-4 h-4 text-cyan-400" />
+                    <FolderOpen className="w-4 h-4 text-cyan-600" />
                   </button>
 
                   {/* 卸载/删除修改器 */}
                   <button
                     onClick={() => setDeleteConfirmId(selectedTrainer.id)}
                     title="删除此修改器及本地文件"
-                    className="p-2.5 bg-slate-800 hover:bg-rose-950/50 hover:text-rose-400 hover:border-rose-800/80 active:scale-95 text-slate-400 border border-slate-700 rounded-xl transition-all"
+                    className="p-2.5 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200/80 active:scale-95 text-slate-400 border border-slate-200/80 rounded-xl transition-all cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
