@@ -247,18 +247,36 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
         .map(|e| e.text().collect::<String>().trim().to_string())
         .unwrap_or_else(|| slug.replace('-', " ").to_uppercase());
 
-    let img_sel = Selector::parse(".entry img.aligncenter, .post-details-thumb img")
-        .map_err(|e| format!("选择器错误: {:?}", e))?;
-    let thumbnail = document
-        .select(&img_sel)
-        .next()
-        .and_then(|img| {
-            img.value()
-                .attr("src")
-                .or_else(|| img.value().attr("data-src"))
+    // 优先从 OpenGraph meta 提取官方游戏大封面图 (og:image / twitter:image)
+    let og_image_sel = Selector::parse("meta[property='og:image'], meta[name='twitter:image']").ok();
+    let mut thumbnail = og_image_sel
+        .as_ref()
+        .and_then(|sel| {
+            document
+                .select(sel)
+                .next()
+                .and_then(|el| el.value().attr("content"))
+                .map(|s| s.to_string())
         })
-        .unwrap_or_default()
-        .to_string();
+        .unwrap_or_default();
+
+    // 如果未从 meta 标签获取到有效图片，则在正文中挑选真实游戏封面（严格排除作者 Gravatar 头像与插件图标）
+    if thumbnail.is_empty() || thumbnail.contains("gravatar.com") || thumbnail.contains("avatar") {
+        if let Ok(entry_img_sel) = Selector::parse(".entry img.aligncenter, .entry img, .post-details-thumb img") {
+            for img in document.select(&entry_img_sel) {
+                if let Some(src) = img.value().attr("src").or_else(|| img.value().attr("data-src")) {
+                    if !src.contains("gravatar.com")
+                        && !src.contains("avatar")
+                        && !src.contains("tooltip-icon")
+                        && !src.ends_with(".gif")
+                    {
+                        thumbnail = src.to_string();
+                        break;
+                    }
+                }
+            }
+        }
+    }
 
     let entry_sel = Selector::parse(".entry")
         .map_err(|e| format!("选择器错误: {:?}", e))?;
@@ -306,9 +324,16 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
                 break;
             }
 
-            // 提取该项的 Tooltip 说明 (括号内的注意事项)
+            // 提取该项的 Tooltip 说明 (括号内的注意事项，彻底还原转义字符)
             let note = TOOLTIP_REGEX.captures(trimmed_line).map(|cap| {
-                cap[1].replace("\\'", "'").replace("\\\"", "\"").trim().to_string()
+                cap[1]
+                    .replace("\\'", "'")
+                    .replace("\\\"", "\"")
+                    .replace("\\.", ".")
+                    .replace("\\,", ",")
+                    .replace("\\-", "-")
+                    .trim()
+                    .to_string()
             });
 
             // 彻底剥离 <script>...</script>、<style>...</style> 和所有 HTML 标签

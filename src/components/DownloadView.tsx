@@ -77,7 +77,11 @@ export const DownloadView: React.FC = () => {
     try {
       setDetailLoading(true);
       const detail = await trainerApi.getTrainerDetail(t.id);
-      setSelectedTrainer(detail);
+      const isBadThumb = !detail.thumbnail || detail.thumbnail.includes("gravatar") || detail.thumbnail.includes("avatar");
+      setSelectedTrainer({
+        ...detail,
+        thumbnail: isBadThumb ? t.thumbnail : detail.thumbnail,
+      });
     } catch (e) {
       console.warn("获取详情失败，使用基本信息", e);
     } finally {
