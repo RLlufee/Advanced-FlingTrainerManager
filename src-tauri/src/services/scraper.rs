@@ -1,4 +1,6 @@
 use crate::models::{PaginatedTrainers, Trainer, TrainerOptionItem};
+use crate::services::storage;
+
 use regex::Regex;
 use scraper::{Html, Selector};
 use std::sync::LazyLock;
@@ -117,8 +119,22 @@ pub async fn search_trainers(query: &str, page: u32) -> Result<PaginatedTrainers
 }
 
 pub async fn get_trainer_detail(id: &str) -> Result<Trainer, String> {
-    let client = create_client()?;
+    get_trainer_detail_ext(id, false).await
+}
+
+pub async fn get_trainer_detail_ext(id: &str, force_refresh: bool) -> Result<Trainer, String> {
     let slug = id.trim_matches('/').split('/').last().unwrap_or(id);
+
+    // 1. 若非强制刷新，优先检查磁盘持久化缓存 (有效期 7 天)
+    if !force_refresh {
+        if let Some(cached) = storage::load_cached_trainer(slug, 7 * 86400) {
+            if !cached.options.is_empty() || !cached.option_items.is_empty() {
+                return Ok(cached);
+            }
+        }
+    }
+
+    let client = create_client()?;
     let url = format!("{}/trainer/{}/", BASE_URL, slug);
 
     let response = client
@@ -141,8 +157,12 @@ pub async fn get_trainer_detail(id: &str) -> Result<Trainer, String> {
     // 异步富化本地中文名与 Steam 官方高清原画、AppID 元数据
     crate::services::game_meta::enrich_trainer(&mut trainer).await;
 
+    // 写入持久化缓存
+    storage::save_cached_trainer(&trainer);
+
     Ok(trainer)
 }
+
 
 fn urlencoding(input: &str) -> String {
     let mut encoded = String::new();

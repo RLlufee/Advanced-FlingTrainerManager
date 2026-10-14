@@ -55,3 +55,46 @@ pub fn remove_installed_record(id: &str) -> Result<(), String> {
     fs::write(&file, json).map_err(|e| format!("写入文件失败: {}", e))?;
     Ok(())
 }
+
+use crate::models::Trainer;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CachedTrainerDetail {
+    pub cached_at: i64,
+    pub trainer: Trainer,
+}
+
+pub fn get_trainer_cache_dir() -> PathBuf {
+    let dir = get_app_data_dir().join("trainer_cache");
+    let _ = fs::create_dir_all(&dir);
+    dir
+}
+
+pub fn load_cached_trainer(slug: &str, max_age_secs: u64) -> Option<Trainer> {
+    let file = get_trainer_cache_dir().join(format!("{}.json", slug));
+    if file.exists() {
+        if let Ok(content) = fs::read_to_string(&file) {
+            if let Ok(cached) = serde_json::from_str::<CachedTrainerDetail>(&content) {
+                let now = chrono::Utc::now().timestamp();
+                if now - cached.cached_at < max_age_secs as i64 {
+                    return Some(cached.trainer);
+                }
+            }
+        }
+    }
+    None
+}
+
+pub fn save_cached_trainer(trainer: &Trainer) {
+    let slug = trainer.id.trim_matches('/').split('/').last().unwrap_or(&trainer.id);
+    let file = get_trainer_cache_dir().join(format!("{}.json", slug));
+    let cached = CachedTrainerDetail {
+        cached_at: chrono::Utc::now().timestamp(),
+        trainer: trainer.clone(),
+    };
+    if let Ok(json) = serde_json::to_string_pretty(&cached) {
+        let _ = fs::write(file, json);
+    }
+}
+

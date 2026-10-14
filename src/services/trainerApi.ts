@@ -61,9 +61,10 @@ export const trainerApi = {
     return await invoke<PaginatedTrainers>("search_trainers", { query, page });
   },
 
-  getTrainerDetail: async (id: string): Promise<Trainer> => {
-    return await invoke<Trainer>("get_trainer_detail", { id });
+  getTrainerDetail: async (id: string, forceRefresh: boolean = false): Promise<Trainer> => {
+    return await invoke<Trainer>("get_trainer_detail", { id, forceRefresh });
   },
+
 
   downloadTrainer: async (trainer: Trainer): Promise<InstalledTrainerRecord> => {
     return await invoke<InstalledTrainerRecord>("download_trainer", { trainer });

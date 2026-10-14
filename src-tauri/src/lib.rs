@@ -18,9 +18,10 @@ async fn search_trainers(query: String, page: Option<u32>) -> Result<PaginatedTr
 }
 
 #[tauri::command]
-async fn get_trainer_detail(id: String) -> Result<Trainer, String> {
-    scraper::get_trainer_detail(&id).await
+async fn get_trainer_detail(id: String, force_refresh: Option<bool>) -> Result<Trainer, String> {
+    scraper::get_trainer_detail_ext(&id, force_refresh.unwrap_or(false)).await
 }
+
 
 #[tauri::command]
 async fn download_trainer(app: AppHandle, trainer: Trainer) -> Result<InstalledTrainerRecord, String> {
