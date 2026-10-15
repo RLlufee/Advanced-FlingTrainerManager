@@ -3,3 +3,4 @@ pub mod downloader;
 pub mod launcher;
 pub mod storage;
 pub mod game_meta;
+pub mod key_simulator;

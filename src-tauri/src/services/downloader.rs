@@ -155,6 +155,16 @@ pub async fn download_and_install_trainer<R: Runtime>(
     };
 
     // 5. 构造并保存已安装记录 (写入子文件夹下的 trainer.json)
+    // 自动继承已有的开关预设与上次启动时间，实现无感平滑升级
+    let existing_records = storage::load_installed_records();
+    let existing = existing_records.into_iter().find(|r| r.id == trainer.id);
+
+    let (saved_toggles, last_launched_at) = if let Some(old) = existing {
+        (old.saved_toggles, old.last_launched_at)
+    } else {
+        (std::collections::HashMap::new(), None)
+    };
+
     let exe_name = exe_path
         .file_name()
         .unwrap_or_default()
@@ -171,7 +181,7 @@ pub async fn download_and_install_trainer<R: Runtime>(
         exe_name,
         install_dir: target_dir.to_string_lossy().to_string(),
         installed_at: Local::now().to_rfc3339(),
-        last_launched_at: None,
+        last_launched_at,
         steam_app_id: trainer.steam_app_id,
         thumbnail: trainer.thumbnail.clone(),
         hero_image: trainer.hero_image.clone(),
@@ -179,6 +189,7 @@ pub async fn download_and_install_trainer<R: Runtime>(
         description: trainer.description.clone(),
         options: trainer.options.clone(),
         option_items: trainer.option_items.clone(),
+        saved_toggles,
     };
 
     storage::save_installed_record(record.clone())?;
@@ -287,4 +298,56 @@ fn sanitize_game_folder_name(name: &str) -> String {
         }
         result
     }
+}
+
+use crate::models::TrainerUpdateInfo;
+
+/// 检测所有已安装修改器是否有新版本
+pub async fn check_trainers_update() -> Result<Vec<TrainerUpdateInfo>, String> {
+    let installed = storage::load_installed_records();
+    let mut results = Vec::new();
+
+    for item in installed {
+        // 请求风灵月影官网该修改器的最新详情
+        let latest_opt = scraper::get_trainer_detail_ext(&item.id, true).await.ok();
+
+        if let Some(latest) = latest_opt {
+            let version_changed = item.version.trim() != latest.version.trim();
+            let game_ver_changed = !latest.game_version.trim().is_empty()
+                && item.game_version.trim() != latest.game_version.trim();
+            let options_added = latest.options.len() > item.options.len();
+
+            let has_update = version_changed || game_ver_changed || options_added;
+
+            results.push(TrainerUpdateInfo {
+                id: item.id.clone(),
+                has_update,
+                current_version: item.version.clone(),
+                latest_version: latest.version.clone(),
+                current_game_version: item.game_version.clone(),
+                latest_game_version: latest.game_version.clone(),
+                latest_trainer: if has_update { Some(latest) } else { None },
+            });
+        } else {
+            results.push(TrainerUpdateInfo {
+                id: item.id.clone(),
+                has_update: false,
+                current_version: item.version.clone(),
+                latest_version: item.version.clone(),
+                current_game_version: item.game_version.clone(),
+                latest_game_version: item.game_version.clone(),
+                latest_trainer: None,
+            });
+        }
+
+        tokio::time::sleep(tokio::time::Duration::from_millis(60)).await;
+    }
+
+    Ok(results)
+}
+
+/// 一键无感增量升级指定修改器为最新版
+pub async fn update_trainer_to_latest(app: AppHandle, id: &str) -> Result<InstalledTrainerRecord, String> {
+    let latest_trainer = scraper::get_trainer_detail_ext(id, true).await?;
+    download_and_install_trainer(app, latest_trainer).await
 }

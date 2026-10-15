@@ -79,4 +79,17 @@ pub struct InstalledTrainerRecord {
     pub options: Vec<String>,
     #[serde(default)]
     pub option_items: Vec<TrainerOptionItem>,
+    #[serde(default)]
+    pub saved_toggles: std::collections::HashMap<String, bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TrainerUpdateInfo {
+    pub id: String,
+    pub has_update: bool,
+    pub current_version: String,
+    pub latest_version: String,
+    pub current_game_version: String,
+    pub latest_game_version: String,
+    pub latest_trainer: Option<Trainer>,
 }

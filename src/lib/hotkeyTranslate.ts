@@ -222,3 +222,58 @@ export function formatAllHotkeys(
     })
     .join("\n");
 }
+
+/**
+ * 从可能包含描述的标题中提取出纯热键部分
+ * 例如: "Num 1 - Infinite Health" -> "Num 1"
+ */
+export function extractHotkey(title: string | undefined | null): string {
+  if (!title || typeof title !== "string") return "";
+  const t = title.trim();
+  if (t.includes(" – ")) {
+    return t.split(" – ")[0].trim();
+  }
+  if (t.includes(" - ")) {
+    return t.split(" - ")[0].trim();
+  }
+  if (t.includes(":")) {
+    return t.split(":")[0].trim();
+  }
+  return t;
+}
+
+/**
+ * 判断某个修改项是否属于二元开关类功能（Toggle）
+ * 数值、倍率、编辑输入类通常不是单纯开关
+ */
+export function isToggleableOption(
+  title: string | undefined | null,
+  note?: string | undefined | null
+): boolean {
+  if (!title || typeof title !== "string") return false;
+  const full = `${title} ${note || ""}`.toLowerCase();
+
+  // 典型数值或多档位关键词
+  const nonToggleKeywords = [
+    "multiplier",
+    "倍率",
+    "edit ",
+    "set ",
+    "custom",
+    "increase",
+    "decrease",
+    "speed",
+    "teleport",
+    "level",
+    "exp multiplier",
+    "damage multiplier",
+  ];
+
+  for (const kw of nonToggleKeywords) {
+    if (full.includes(kw)) {
+      return false;
+    }
+  }
+
+  return true;
+}

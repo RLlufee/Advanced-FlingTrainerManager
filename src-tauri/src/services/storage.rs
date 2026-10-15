@@ -144,6 +144,7 @@ pub fn load_installed_records() -> Vec<InstalledTrainerRecord> {
                             description: "".to_string(),
                             options: Vec::new(),
                             option_items: Vec::new(),
+                            saved_toggles: std::collections::HashMap::new(),
                         };
                         let _ = save_installed_record(inferred.clone());
                         records.push(inferred);
@@ -169,6 +170,18 @@ pub fn save_installed_record(record: InstalledTrainerRecord) -> Result<(), Strin
         .map_err(|e| format!("序列化 trainer.json 失败: {}", e))?;
     fs::write(&file, json).map_err(|e| format!("写入 trainer.json 失败: {}", e))?;
     Ok(())
+}
+
+/// 更新并保存指定修改器的热键开关预设
+pub fn update_trainer_toggles(id: &str, toggles: std::collections::HashMap<String, bool>) -> Result<(), String> {
+    let records = load_installed_records();
+    let mut record = records
+        .into_iter()
+        .find(|r| r.id == id)
+        .ok_or_else(|| format!("未找到修改器: {}", id))?;
+
+    record.saved_toggles = toggles;
+    save_installed_record(record)
 }
 
 /// 删除指定修改器目录及其全部内容

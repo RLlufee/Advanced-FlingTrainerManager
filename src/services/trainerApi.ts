@@ -60,6 +60,7 @@ export interface InstalledTrainerRecord {
   description?: string;
   options?: string[];
   option_items?: TrainerOptionItem[];
+  saved_toggles?: Record<string, boolean>;
 }
 
 export const trainerApi = {
@@ -109,6 +110,14 @@ export const trainerApi = {
 
   launchGameAndTrainer: async (id: string, appId?: number | null): Promise<string> => {
     return await invoke<string>("launch_game_and_trainer", { id, appId: appId ?? null });
+  },
+
+  saveTrainerToggles: async (id: string, toggles: Record<string, boolean>): Promise<void> => {
+    return await invoke("save_trainer_toggles", { id, toggles });
+  },
+
+  syncTrainerHotkeys: async (id: string, hotkeys: string[]): Promise<number> => {
+    return await invoke<number>("sync_trainer_hotkeys", { id, hotkeys });
   },
 
   onDownloadProgress: async (

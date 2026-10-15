@@ -82,6 +82,16 @@ async fn launch_game_and_trainer(id: String, app_id: Option<u32>) -> Result<Stri
     launcher::launch_trainer(&id)
 }
 
+#[tauri::command]
+fn save_trainer_toggles(id: String, toggles: std::collections::HashMap<String, bool>) -> Result<(), String> {
+    storage::update_trainer_toggles(&id, toggles)
+}
+
+#[tauri::command]
+async fn sync_trainer_hotkeys(_id: String, hotkeys: Vec<String>) -> Result<u32, String> {
+    services::key_simulator::simulate_hotkeys_sequence(&hotkeys).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -98,7 +108,9 @@ pub fn run() {
             open_install_dir,
             open_trainers_root,
             delete_installed_trainer,
-            launch_game_and_trainer
+            launch_game_and_trainer,
+            save_trainer_toggles,
+            sync_trainer_hotkeys
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
