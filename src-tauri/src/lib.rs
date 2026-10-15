@@ -167,6 +167,11 @@ fn set_launch_at_startup(enable: bool) -> Result<(), String> {
     services::config::set_launch_at_startup(enable)
 }
 
+#[tauri::command]
+async fn test_network_connectivity(target: Option<String>) -> Result<services::config::NetworkTestResult, String> {
+    services::config::test_network_connectivity(target).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -200,7 +205,8 @@ pub fn run() {
             get_storage_stats,
             clean_orphan_cache,
             migrate_trainers_dir,
-            set_launch_at_startup
+            set_launch_at_startup,
+            test_network_connectivity
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

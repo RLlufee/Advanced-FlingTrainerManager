@@ -114,11 +114,7 @@ async fn download_cover_image(cover_path: &Path, candidate_urls: &[&str]) -> boo
         }
     }
 
-    let client = match reqwest::Client::builder()
-        .timeout(Duration::from_millis(3000))
-        .user_agent("Mozilla/5.0")
-        .build()
-    {
+    let client = match crate::services::config::build_custom_http_client() {
         Ok(c) => c,
         Err(_) => return false,
     };
@@ -127,7 +123,8 @@ async fn download_cover_image(cover_path: &Path, candidate_urls: &[&str]) -> boo
         if url.trim().is_empty() {
             continue;
         }
-        if let Ok(resp) = client.get(url).send().await {
+        let accelerated_url = crate::services::config::apply_steam_cdn_mirror(url);
+        if let Ok(resp) = client.get(&accelerated_url).send().await {
             if resp.status().is_success() {
                 if let Ok(bytes) = resp.bytes().await {
                     if bytes.len() > 1024 {

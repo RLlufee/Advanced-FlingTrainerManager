@@ -6,7 +6,6 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::{LazyLock, Mutex};
-use std::time::Duration;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameMetaCacheItem {
@@ -299,11 +298,7 @@ pub async fn fetch_steam_meta(game_name: &str) -> Option<(u32, String, String, S
         urlencoding(&cleaned)
     );
 
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_millis(1500))
-        .user_agent("Mozilla/5.0")
-        .build()
-        .ok()?;
+    let client = crate::services::config::build_custom_http_client().ok()?;
 
     let resp = client.get(&url).send().await.ok()?;
     if !resp.status().is_success() {
@@ -316,14 +311,16 @@ pub async fn fetch_steam_meta(game_name: &str) -> Option<(u32, String, String, S
 
     let app_id = first.id;
     let steam_chinese_name = first.name;
-    let capsule_image = format!(
+    let raw_capsule = format!(
         "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{}/capsule_616x353.jpg",
         app_id
     );
-    let hero_image = format!(
+    let raw_hero = format!(
         "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/{}/library_hero.jpg",
         app_id
     );
+    let capsule_image = crate::services::config::apply_steam_cdn_mirror(&raw_capsule);
+    let hero_image = crate::services::config::apply_steam_cdn_mirror(&raw_hero);
 
     Some((app_id, steam_chinese_name, hero_image, capsule_image))
 }

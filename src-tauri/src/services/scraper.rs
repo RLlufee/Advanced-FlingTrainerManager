@@ -6,7 +6,7 @@ use scraper::{Html, Selector};
 use std::sync::LazyLock;
 use std::time::Duration;
 
-const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
+pub const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 const BASE_URL: &str = "https://flingtrainer.com";
 
 static SCRIPT_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -29,11 +29,7 @@ static JQUERY_CLEAN_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 pub fn create_client() -> Result<reqwest::Client, String> {
-    reqwest::Client::builder()
-        .user_agent(USER_AGENT)
-        .timeout(Duration::from_secs(15))
-        .build()
-        .map_err(|e| format!("创建 HTTP 客户端失败: {}", e))
+    crate::services::config::build_custom_http_client()
 }
 
 static HOME_LIST_CACHE: LazyLock<std::sync::Mutex<Option<(std::time::Instant, PaginatedTrainers)>>> =

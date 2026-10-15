@@ -18,10 +18,21 @@ export interface ManagementSettings {
 }
 
 export interface NetworkSettings {
+  proxy_mode: "system" | "custom" | "direct";
   proxy_url: string;
-  update_source: string;
+  update_source: "official" | "ghproxy" | "mirror2";
   enable_steam_cdn: boolean;
+  steam_cdn_host: string;
   timeout_ms: number;
+  max_retry_count: number;
+}
+
+export interface NetworkTestResult {
+  success: boolean;
+  target_url: string;
+  status_code?: number;
+  latency_ms: number;
+  message: string;
 }
 
 export interface AppConfig {
@@ -93,5 +104,10 @@ export const configApi = {
   // 调起文件夹选择器
   async pickDirectory(): Promise<string | null> {
     return await invoke<string | null>("pick_external_folder");
+  },
+
+  // 测试网络/代理连通性
+  async testNetworkConnectivity(target?: string): Promise<NetworkTestResult> {
+    return await invoke<NetworkTestResult>("test_network_connectivity", { target });
   },
 };
