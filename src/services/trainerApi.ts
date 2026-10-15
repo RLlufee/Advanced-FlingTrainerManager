@@ -136,6 +136,14 @@ export const trainerApi = {
     return await invoke<ImportSummary>("scan_and_import_trainers", { folderPath });
   },
 
+  enrichInstalledTrainer: async (id: string): Promise<InstalledTrainerRecord> => {
+    return await invoke<InstalledTrainerRecord>("enrich_installed_trainer", { id });
+  },
+
+  enrichAllInstalledTrainers: async (): Promise<number> => {
+    return await invoke<number>("enrich_all_installed_trainers");
+  },
+
   onDownloadProgress: async (
     callback: (payload: DownloadProgressPayload) => void
   ): Promise<UnlistenFn> => {

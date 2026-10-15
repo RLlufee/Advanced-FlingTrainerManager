@@ -62,6 +62,8 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
 
   // 外部已有修改器批量扫描导入状态
   const [isImporting, setIsImporting] = useState<boolean>(false);
+  // 联网补全修改器官方功能看板与封面状态
+  const [isEnriching, setIsEnriching] = useState<boolean>(false);
 
   // 复制反馈与状态提示
   const [copiedKeyIdx, setCopiedKeyIdx] = useState<number | null>(null);
@@ -335,6 +337,42 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
     }
   };
 
+  // 联网补全指定修改器的官方功能看板与高清海报
+  const handleEnrichTrainer = async (id: string) => {
+    if (isEnriching) return;
+    setIsEnriching(true);
+    showToast("info", "正在联网匹配风灵月影官方功能看板与高清海报喵...");
+    try {
+      const updated = await trainerApi.enrichInstalledTrainer(id);
+      showToast("success", `已成功同步《${updated.chinese_name || updated.name}》的全部功能与封面喵~`);
+      await loadTrainers(id);
+    } catch (e) {
+      showToast("error", `同步官方数据失败: ${e}`);
+    } finally {
+      setIsEnriching(false);
+    }
+  };
+
+  // 一键并发补全所有缺失修改器的官方功能与封面
+  const handleEnrichAll = async () => {
+    if (isEnriching) return;
+    setIsEnriching(true);
+    showToast("info", "正在全量匹配补齐所有缺失修改器的官方功能与封面，请稍候喵...");
+    try {
+      const count = await trainerApi.enrichAllInstalledTrainers();
+      if (count > 0) {
+        showToast("success", `🎉 补全大成功！已为 ${count} 款修改器同步官方功能看板与高清海报喵~`);
+      } else {
+        showToast("info", "所有修改器的数据均已是完整状态喵~");
+      }
+      await loadTrainers(selectedId || undefined);
+    } catch (e) {
+      showToast("error", `全量同步数据失败: ${e}`);
+    } finally {
+      setIsEnriching(false);
+    }
+  };
+
   // 启动修改器
   const handleLaunchTrainer = async () => {
     if (!selectedTrainer) return;
@@ -537,6 +575,14 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
                 className="p-1 rounded text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-40 cursor-pointer"
               >
                 <Radio className={`w-3.5 h-3.5 ${isCheckingUpdate ? "animate-pulse text-amber-500" : ""}`} />
+              </button>
+              <button
+                onClick={handleEnrichAll}
+                disabled={isEnriching || trainers.length === 0}
+                title="一键联网补全所有缺少功能看板或封面的修改器数据"
+                className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors disabled:opacity-40 cursor-pointer"
+              >
+                <Sparkles className={`w-3.5 h-3.5 ${isEnriching ? "animate-spin text-cyan-600" : ""}`} />
               </button>
               <button
                 onClick={() => loadTrainers(selectedId || undefined)}
@@ -765,6 +811,19 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
 
                 {/* 动作按钮矩阵 */}
                 <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-stretch lg:self-center">
+                  {/* 一键获取官方功能与封面数据按钮 */}
+                  {activeOptionItems.length === 0 && (
+                    <button
+                      onClick={() => handleEnrichTrainer(selectedTrainer.id)}
+                      disabled={isEnriching}
+                      title="联网匹配风灵月影官方所有功能开关、热键说明与官方海报"
+                      className="px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md shadow-cyan-600/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      <Sparkles className={`w-4 h-4 text-cyan-200 ${isEnriching ? "animate-spin" : ""}`} />
+                      <span>{isEnriching ? "正在匹配数据..." : "获取修改器数据"}</span>
+                    </button>
+                  )}
+
                   {/* 一键无感增量升级新版本按钮 */}
                   {selectedUpdate?.has_update && (
                     <button
@@ -944,14 +1003,28 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
 
               {/* 热键双列卡片展示网格 */}
               {filteredHotkeys.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-slate-200/90 p-12 text-center text-slate-400">
-                  <Sliders className="w-10 h-10 mx-auto mb-3 text-slate-300 stroke-[1.5]" />
-                  <p className="text-xs font-semibold text-slate-700">
-                    {hotkeyQuery ? "未找到符合过滤条件的热键" : "该修改器暂无结构化热键信息"}
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    {hotkeyQuery ? "可以尝试搜索拼音或英文原词（如 HP, Money, God）" : "可以直接启动修改器在界面内查看"}
-                  </p>
+                <div className="bg-white rounded-2xl border border-slate-200/90 p-10 text-center text-slate-400 space-y-4">
+                  <Sliders className="w-10 h-10 mx-auto text-slate-300 stroke-[1.5]" />
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">
+                      {hotkeyQuery ? "未找到符合过滤条件的热键" : "该修改器尚未同步官方功能看板与热键说明"}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto leading-relaxed">
+                      {hotkeyQuery
+                        ? "可以尝试搜索拼音或英文原词（如 HP, Money, God）"
+                        : "检测到此修改器缺少结构化热键数据，点击下方按钮即可秒级联网匹配风灵月影官方功能项、按键清单及高清封面海报！"}
+                    </p>
+                  </div>
+                  {!hotkeyQuery && (
+                    <button
+                      onClick={() => handleEnrichTrainer(selectedTrainer.id)}
+                      disabled={isEnriching}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow-md shadow-cyan-600/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <Sparkles className={`w-4 h-4 text-cyan-200 ${isEnriching ? "animate-spin" : ""}`} />
+                      <span>{isEnriching ? "正在匹配风灵月影官方数据..." : "一键获取官方功能看板与封面"}</span>
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

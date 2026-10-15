@@ -112,6 +112,16 @@ async fn scan_and_import_trainers(folder_path: String) -> Result<services::impor
     services::importer::scan_and_import_trainers(&folder_path).await
 }
 
+#[tauri::command]
+async fn enrich_installed_trainer(id: String) -> Result<InstalledTrainerRecord, String> {
+    services::importer::enrich_installed_trainer(&id).await
+}
+
+#[tauri::command]
+async fn enrich_all_installed_trainers() -> Result<usize, String> {
+    services::importer::enrich_all_installed_trainers().await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -134,7 +144,9 @@ pub fn run() {
             check_trainers_update,
             update_trainer_to_latest,
             pick_external_folder,
-            scan_and_import_trainers
+            scan_and_import_trainers,
+            enrich_installed_trainer,
+            enrich_all_installed_trainers
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

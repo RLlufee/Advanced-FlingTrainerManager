@@ -109,6 +109,98 @@ pub fn clean_game_name(raw_name: &str) -> String {
     cleaned
 }
 
+/// 包含游戏中文名、英文名、官网链接及 slug 的综合信息
+#[derive(Debug, Clone, Default)]
+pub struct LocalGameInfo {
+    pub chinese_name: Option<String>,
+    pub english_name: Option<String>,
+    pub trainer_url: Option<String>,
+    pub slug: Option<String>,
+}
+
+/// 从本地 SQLite 翻译数据库查询综合游戏信息 (含 trainer_url 与 slug)
+pub fn query_local_game_and_trainer_info(game_name: &str) -> Option<LocalGameInfo> {
+    let db_path = find_translations_db_path()?;
+    let conn = Connection::open_with_flags(
+        db_path,
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
+    )
+    .ok()?;
+
+    let normalized = game_name.to_lowercase();
+
+    // 1. 先通过归一化英文精确匹配
+    let mut stmt = conn
+        .prepare("SELECT chinese_simplified, english, trainer_url FROM games WHERE normalized_english = ?1 LIMIT 1")
+        .ok()?;
+
+    if let Ok((cn, en, url)) = stmt.query_row([&normalized], |row| {
+        Ok((
+            row.get::<_, Option<String>>(0)?,
+            row.get::<_, Option<String>>(1)?,
+            row.get::<_, Option<String>>(2)?,
+        ))
+    }) {
+        let slug = url.as_deref().and_then(extract_slug_from_url);
+        return Some(LocalGameInfo {
+            chinese_name: cn.filter(|s| !s.trim().is_empty()),
+            english_name: en.filter(|s| !s.trim().is_empty()),
+            trainer_url: url.filter(|s| !s.trim().is_empty()),
+            slug,
+        });
+    }
+
+    // 2. 模糊匹配
+    let cleaned_name = game_name.replace(':', "").trim().to_string();
+    let like_query = format!("%{}%", cleaned_name);
+    let mut stmt2 = conn
+        .prepare("SELECT chinese_simplified, english, trainer_url FROM games WHERE english LIKE ?1 OR normalized_english LIKE ?2 OR chinese_simplified LIKE ?3 LIMIT 1")
+        .ok()?;
+
+    if let Ok((cn, en, url)) = stmt2.query_row([&like_query, &format!("%{}%", normalized), &like_query], |row| {
+        Ok((
+            row.get::<_, Option<String>>(0)?,
+            row.get::<_, Option<String>>(1)?,
+            row.get::<_, Option<String>>(2)?,
+        ))
+    }) {
+        let slug = url.as_deref().and_then(extract_slug_from_url);
+        return Some(LocalGameInfo {
+            chinese_name: cn.filter(|s| !s.trim().is_empty()),
+            english_name: en.filter(|s| !s.trim().is_empty()),
+            trainer_url: url.filter(|s| !s.trim().is_empty()),
+            slug,
+        });
+    }
+
+    None
+}
+
+/// 从 URL 中提取合法 slug (例如 "https://flingtrainer.com/trainer/victoria-3-trainer/" -> "victoria-3-trainer")
+pub fn extract_slug_from_url(url: &str) -> Option<String> {
+    let trimmed = url.trim_end_matches('/');
+    let last_seg = trimmed.split('/').last()?.trim();
+    if last_seg.is_empty() || last_seg.contains('.') || last_seg == "archive.flingtrainer.com" {
+        None
+    } else {
+        Some(last_seg.to_string())
+    }
+}
+
+/// 从英文名称推测标准风灵月影 slug
+pub fn guess_slug_from_name(name: &str) -> String {
+    let clean = name
+        .to_lowercase()
+        .replace([':', '\'', '’', '.', ',', '!', '?', '(', ')', '[', ']', '—', '–', '-'], " ");
+    let parts: Vec<&str> = clean.split_whitespace().collect();
+    let base = parts.join("-");
+    if base.ends_with("-trainer") {
+        base
+    } else {
+        format!("{}-trainer", base)
+    }
+}
+
 /// 从本地 SQLite 翻译数据库查询简体中文名
 pub fn query_local_chinese_name(game_name: &str) -> Option<String> {
     let db_path = find_translations_db_path()?;
@@ -193,7 +285,7 @@ pub async fn fetch_steam_meta(game_name: &str) -> Option<(u32, String, String, S
     );
 
     let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(4))
+        .timeout(Duration::from_millis(1500))
         .user_agent("Mozilla/5.0")
         .build()
         .ok()?;
