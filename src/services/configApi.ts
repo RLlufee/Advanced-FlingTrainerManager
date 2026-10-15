@@ -30,6 +30,20 @@ export interface AppConfig {
   network: NetworkSettings;
 }
 
+export interface StorageStats {
+  trainers_dir: string;
+  trainers_count: number;
+  total_size_bytes: number;
+  cover_cache_size_bytes: number;
+  cover_cache_count: number;
+  offline_dict_count: number;
+}
+
+export interface CleanSummary {
+  cleaned_files_count: number;
+  freed_bytes: number;
+}
+
 export const configApi = {
   // 获取全局配置
   async getConfig(): Promise<AppConfig> {
@@ -54,5 +68,30 @@ export const configApi = {
   // 清空所有修改器开关预设
   async clearAllPresets(): Promise<number> {
     return await invoke<number>("clear_all_presets");
+  },
+
+  // 获取便携存储统计信息
+  async getStorageStats(): Promise<StorageStats> {
+    return await invoke<StorageStats>("get_storage_stats");
+  },
+
+  // 清理孤立缓存与临时文件
+  async cleanOrphanCache(): Promise<CleanSummary> {
+    return await invoke<CleanSummary>("clean_orphan_cache");
+  },
+
+  // 一键无损迁移现有全部修改器至新目录
+  async migrateTrainersDir(newDir: string): Promise<number> {
+    return await invoke<number>("migrate_trainers_dir", { newDir });
+  },
+
+  // 设置 Windows 开机自启
+  async setLaunchAtStartup(enable: boolean): Promise<void> {
+    return await invoke<void>("set_launch_at_startup", { enable });
+  },
+
+  // 调起文件夹选择器
+  async pickDirectory(): Promise<string | null> {
+    return await invoke<string | null>("pick_external_folder");
   },
 };

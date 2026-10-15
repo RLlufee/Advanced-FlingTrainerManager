@@ -1,4 +1,4 @@
-use crate::services::storage::{get_app_data_dir, load_installed_records, save_installed_record};
+use crate::services::storage::{self, get_app_data_dir, load_installed_records, save_installed_record};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
@@ -176,3 +176,217 @@ pub fn clear_all_presets() -> Result<u32, String> {
 
     Ok(cleared_count)
 }
+
+/// 存储与缓存统计数据
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StorageStats {
+    pub trainers_dir: String,
+    pub trainers_count: usize,
+    pub total_size_bytes: u64,
+    pub cover_cache_size_bytes: u64,
+    pub cover_cache_count: usize,
+    pub offline_dict_count: usize,
+}
+
+/// 缓存清理结果
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CleanSummary {
+    pub cleaned_files_count: usize,
+    pub freed_bytes: u64,
+}
+
+/// 获取存储与缓存统计信息
+pub fn get_storage_stats() -> Result<StorageStats, String> {
+    let trainers_dir = storage::get_trainers_dir();
+    let records = load_installed_records();
+
+    let mut total_size_bytes = 0u64;
+    let mut cover_cache_size_bytes = 0u64;
+    let mut cover_cache_count = 0usize;
+
+    // 递归统计 trainers 目录
+    if trainers_dir.exists() {
+        if let Ok(entries) = fs::read_dir(&trainers_dir) {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if p.is_dir() {
+                    if let Ok(sub_entries) = fs::read_dir(&p) {
+                        for sub in sub_entries.flatten() {
+                            let sp = sub.path();
+                            if let Ok(meta) = sp.metadata() {
+                                let len = meta.len();
+                                total_size_bytes += len;
+
+                                let file_name = sp.file_name().unwrap_or_default().to_string_lossy().to_lowercase();
+                                if file_name == "cover.jpg" || file_name == "cover.png" {
+                                    cover_cache_size_bytes += len;
+                                    cover_cache_count += 1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let offline_dict_count = crate::services::game_meta::get_offline_dictionary_count();
+
+    Ok(StorageStats {
+        trainers_dir: trainers_dir.to_string_lossy().to_string(),
+        trainers_count: records.len(),
+        total_size_bytes,
+        cover_cache_size_bytes,
+        cover_cache_count,
+        offline_dict_count,
+    })
+}
+
+/// 清理孤立缓存与临时解压文件
+pub fn clean_orphan_cache() -> Result<CleanSummary, String> {
+    let mut cleaned_files_count = 0usize;
+    let mut freed_bytes = 0u64;
+
+    // 1. 清理临时解压目录 fling_import_tmp
+    let temp_import_dir = std::env::temp_dir().join("fling_import_tmp");
+    if temp_import_dir.exists() {
+        if let Ok(entries) = fs::read_dir(&temp_import_dir) {
+            for entry in entries.flatten() {
+                let p = entry.path();
+                if let Ok(meta) = p.metadata() {
+                    freed_bytes += meta.len();
+                    let _ = fs::remove_file(&p);
+                    cleaned_files_count += 1;
+                }
+            }
+        }
+        let _ = fs::remove_dir(&temp_import_dir);
+    }
+
+    Ok(CleanSummary {
+        cleaned_files_count,
+        freed_bytes,
+    })
+}
+
+/// 一键无损迁移所有已安装修改器至新目录
+pub fn migrate_trainers_dir(new_dir_str: &str) -> Result<u32, String> {
+    let target_dir = PathBuf::from(new_dir_str.trim());
+    if target_dir.to_string_lossy().trim().is_empty() {
+        return Err("目标目录路径不能为空".to_string());
+    }
+
+    let current_dir = storage::get_trainers_dir();
+    if current_dir == target_dir {
+        return Err("目标路径与当前路径相同，无需迁移".to_string());
+    }
+
+    fs::create_dir_all(&target_dir)
+        .map_err(|e| format!("创建目标目录失败: {}", e))?;
+
+    let mut migrated_count = 0u32;
+
+    if current_dir.exists() {
+        if let Ok(entries) = fs::read_dir(&current_dir) {
+            for entry in entries.flatten() {
+                let old_game_dir = entry.path();
+                if old_game_dir.is_dir() {
+                    let folder_name = old_game_dir.file_name().unwrap_or_default();
+                    let new_game_dir = target_dir.join(folder_name);
+
+                    // 移动文件夹
+                    let moved = if fs::rename(&old_game_dir, &new_game_dir).is_ok() {
+                        true
+                    } else {
+                        // 跨驱动器 fallback：拷贝后删除
+                        if copy_dir_all(&old_game_dir, &new_game_dir).is_ok() {
+                            let _ = fs::remove_dir_all(&old_game_dir);
+                            true
+                        } else {
+                            false
+                        }
+                    };
+
+                    if moved {
+                        // 修正该子目录内的 trainer.json
+                        let info_file = new_game_dir.join("trainer.json");
+                        if info_file.exists() {
+                            if let Ok(content) = fs::read_to_string(&info_file) {
+                                if let Ok(mut record) = serde_json::from_str::<crate::models::InstalledTrainerRecord>(&content) {
+                                    record.install_dir = new_game_dir.to_string_lossy().to_string();
+                                    let new_exe = new_game_dir.join(&record.exe_name);
+                                    if new_exe.exists() {
+                                        record.exe_path = new_exe.to_string_lossy().to_string();
+                                    }
+                                    let new_cover = new_game_dir.join("cover.jpg");
+                                    if new_cover.exists() {
+                                        record.capsule_image = Some(new_cover.to_string_lossy().to_string());
+                                    }
+                                    let _ = storage::save_installed_record(record);
+                                }
+                            }
+                        }
+                        migrated_count += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    // 更新全局配置中的 custom_trainers_dir
+    let mut config = load_config();
+    config.management.custom_trainers_dir = Some(target_dir.to_string_lossy().to_string());
+    save_config(&config)?;
+
+    Ok(migrated_count)
+}
+
+fn copy_dir_all(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {
+    fs::create_dir_all(dst)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        if ty.is_dir() {
+            copy_dir_all(&entry.path(), &dst.join(entry.file_name()))?;
+        } else {
+            fs::copy(entry.path(), dst.join(entry.file_name()))?;
+        }
+    }
+    Ok(())
+}
+
+/// 配置 Windows 开机自启
+pub fn set_launch_at_startup(enable: bool) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::process::Command;
+        let exe = std::env::current_exe().map_err(|e| format!("获取当前可执行文件路径失败: {}", e))?;
+        let exe_str = exe.to_string_lossy();
+
+        if enable {
+            let cmd = format!(
+                r#"Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "AdvancedFlingTrainerManager" -Value '"{}"' -Force"#,
+                exe_str
+            );
+            let output = Command::new("powershell")
+                .args(["-NoProfile", "-NonInteractive", "-Command", &cmd])
+                .output()
+                .map_err(|e| format!("配置开机自启失败: {}", e))?;
+            if !output.status.success() {
+                return Err("设置开机自启注册表失败".to_string());
+            }
+        } else {
+            let cmd = r#"Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "AdvancedFlingTrainerManager" -ErrorAction SilentlyContinue"#;
+            let _ = Command::new("powershell")
+                .args(["-NoProfile", "-NonInteractive", "-Command", cmd])
+                .output();
+        }
+    }
+
+    let mut config = load_config();
+    config.management.launch_at_startup = enable;
+    save_config(&config)?;
+
+    Ok(())
+}
+

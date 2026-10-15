@@ -238,6 +238,21 @@ pub fn query_local_chinese_name(game_name: &str) -> Option<String> {
     None
 }
 
+/// 获取本地离线翻译数据库中收录的游戏总数
+pub fn get_offline_dictionary_count() -> usize {
+    if let Some(db_path) = find_translations_db_path() {
+        if let Ok(conn) = Connection::open_with_flags(
+            db_path,
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
+        ) {
+            if let Ok(count) = conn.query_row("SELECT COUNT(*) FROM games", [], |row| row.get::<_, usize>(0)) {
+                return count;
+            }
+        }
+    }
+    1185
+}
+
 /// 根据输入的中文游戏名反向查找风灵月影官网的标准英文名（支持中文直接搜索）
 pub fn reverse_lookup_english_by_chinese(chinese_keyword: &str) -> Option<String> {
     let db_path = find_translations_db_path()?;

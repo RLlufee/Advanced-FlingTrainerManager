@@ -147,6 +147,26 @@ fn clear_all_presets() -> Result<u32, String> {
     services::config::clear_all_presets()
 }
 
+#[tauri::command]
+fn get_storage_stats() -> Result<services::config::StorageStats, String> {
+    services::config::get_storage_stats()
+}
+
+#[tauri::command]
+fn clean_orphan_cache() -> Result<services::config::CleanSummary, String> {
+    services::config::clean_orphan_cache()
+}
+
+#[tauri::command]
+fn migrate_trainers_dir(new_dir: String) -> Result<u32, String> {
+    services::config::migrate_trainers_dir(&new_dir)
+}
+
+#[tauri::command]
+fn set_launch_at_startup(enable: bool) -> Result<(), String> {
+    services::config::set_launch_at_startup(enable)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -176,7 +196,11 @@ pub fn run() {
             save_app_config,
             export_all_presets,
             import_all_presets,
-            clear_all_presets
+            clear_all_presets,
+            get_storage_stats,
+            clean_orphan_cache,
+            migrate_trainers_dir,
+            set_launch_at_startup
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

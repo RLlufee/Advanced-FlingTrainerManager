@@ -16,12 +16,25 @@ import {
   Clock,
   Play,
   Flame,
+  FolderOpen,
+  HardDrive,
+  Archive,
+  Trash2,
+  Layers,
+  ExternalLink,
+  MoveRight,
+  Database,
+  Monitor,
+  RefreshCw,
 } from "lucide-react";
 import {
   configApi,
   AppConfig,
   HotkeySettings,
+  ManagementSettings,
+  StorageStats,
 } from "../services/configApi";
+import { trainerApi } from "../services/trainerApi";
 
 export type SettingsTab = "hotkey" | "management" | "network";
 
@@ -42,11 +55,27 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
   const [importInput, setImportInput] = useState<string>("");
   const [showClearConfirm, setShowClearConfirm] = useState<boolean>(false);
 
+  // 管理模块状态
+  const [storageStats, setStorageStats] = useState<StorageStats | null>(null);
+  const [isScanningStorage, setIsScanningStorage] = useState<boolean>(false);
+  const [isMigrating, setIsMigrating] = useState<boolean>(false);
+  const [migrateTargetDir, setMigrateTargetDir] = useState<string | null>(null);
+  const [showMigrateModal, setShowMigrateModal] = useState<boolean>(false);
+  const [isCleaningCache, setIsCleaningCache] = useState<boolean>(false);
+
   const showToast = (type: "success" | "error" | "info", message: string) => {
     setToast({ type, message });
     setTimeout(() => {
       setToast(null);
     }, 3200);
+  };
+
+  const formatBytes = (bytes: number): string => {
+    if (!bytes || bytes <= 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
   };
 
   // 读取全局配置
@@ -62,11 +91,27 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
     }
   };
 
+  // 读取存储统计
+  const loadStorageStats = async () => {
+    setIsScanningStorage(true);
+    try {
+      const stats = await configApi.getStorageStats();
+      setStorageStats(stats);
+    } catch (e) {
+      console.warn("读取存储统计失败:", e);
+    } finally {
+      setIsScanningStorage(false);
+    }
+  };
+
   useEffect(() => {
     if (isActive) {
       loadConfig();
+      if (activeTab === "management") {
+        loadStorageStats();
+      }
     }
-  }, [isActive]);
+  }, [isActive, activeTab]);
 
   // 保存热键子项配置并即时写盘
   const updateHotkeySettings = async (partial: Partial<HotkeySettings>) => {
@@ -136,6 +181,105 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
     }
   };
 
+  // 更新管理模块配置
+  const updateManagementSettings = async (partial: Partial<ManagementSettings>) => {
+    if (!config) return;
+    const newMgmt = { ...config.management, ...partial };
+    const newConfig: AppConfig = {
+      ...config,
+      management: newMgmt,
+    };
+    setConfig(newConfig);
+
+    try {
+      await configApi.saveConfig(newConfig);
+    } catch (e) {
+      showToast("error", `保存管理设置失败: ${e}`);
+    }
+  };
+
+  // 选择新存储目录
+  const handlePickNewDirectory = async () => {
+    try {
+      const chosen = await configApi.pickDirectory();
+      if (!chosen) return;
+      if (storageStats && chosen.toLowerCase() === storageStats.trainers_dir.toLowerCase()) {
+        showToast("info", "所选目录与当前存储目录完全一致喵~");
+        return;
+      }
+      setMigrateTargetDir(chosen);
+      setShowMigrateModal(true);
+    } catch (e) {
+      showToast("error", `选择目录失败: ${e}`);
+    }
+  };
+
+  // 执行一键无损迁移
+  const handleStartMigration = async () => {
+    if (!migrateTargetDir) return;
+    setIsMigrating(true);
+    showToast("info", "正在将所有修改器文件无损搬家至新目录，请稍候喵...");
+    try {
+      const count = await configApi.migrateTrainersDir(migrateTargetDir);
+      showToast("success", `🎉 搬家大成功！已将 ${count} 款修改器完整迁移至新目录喵~`);
+      setShowMigrateModal(false);
+      setMigrateTargetDir(null);
+      await loadConfig();
+      await loadStorageStats();
+    } catch (e) {
+      showToast("error", `迁移目录失败: ${e}`);
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
+  // 仅切换路径不移动文件
+  const handleSwitchPathOnly = async () => {
+    if (!migrateTargetDir) return;
+    await updateManagementSettings({ custom_trainers_dir: migrateTargetDir });
+    showToast("success", "已将修改器存储路径切换到新目录喵~");
+    setShowMigrateModal(false);
+    setMigrateTargetDir(null);
+    await loadStorageStats();
+  };
+
+  // 在系统文件资源管理器中打开当前 trainers 目录
+  const handleOpenCurrentTrainersDir = async () => {
+    try {
+      await trainerApi.openTrainersRoot();
+    } catch (e) {
+      showToast("error", `打开文件夹失败: ${e}`);
+    }
+  };
+
+  // 清理临时解压缓存
+  const handleCleanCache = async () => {
+    setIsCleaningCache(true);
+    try {
+      const summary = await configApi.cleanOrphanCache();
+      showToast(
+        "success",
+        `🎉 清理完成！共清除 ${summary.cleaned_files_count} 个临时文件，释放 ${formatBytes(summary.freed_bytes)} 空间喵~`
+      );
+      await loadStorageStats();
+    } catch (e) {
+      showToast("error", `清理缓存失败: ${e}`);
+    } finally {
+      setIsCleaningCache(false);
+    }
+  };
+
+  // 开机自启动切换
+  const handleToggleStartup = async (enable: boolean) => {
+    try {
+      await configApi.setLaunchAtStartup(enable);
+      await updateManagementSettings({ launch_at_startup: enable });
+      showToast("success", enable ? "已开启 Windows 登录自动启动喵~" : "已关闭开机自启");
+    } catch (e) {
+      showToast("error", `配置开机自启失败: ${e}`);
+    }
+  };
+
   if (!config && isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#edf0f5] text-slate-400 text-xs">
@@ -154,6 +298,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
     auto_sync_on_double_launch: true,
     double_launch_delay_sec: 3,
     show_sync_toast: true,
+  };
+
+  const management = config?.management || {
+    custom_trainers_dir: null,
+    auto_extract_zip: true,
+    scan_depth: 2,
+    close_to_tray: true,
+    launch_at_startup: false,
   };
 
   return (
@@ -259,7 +411,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
                   </div>
                   <div>
                     <h2 className="text-sm font-bold text-slate-900">
-                      以管理员身份提权启动修改器
+                      以管理员身份提权启动修改器（建议开启⚠️）
                     </h2>
                     <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                       单机大作（如《艾尔登法环》、《赛博朋克2077》）常运行在高完整性权限下。开启后启动修改器将触发 Windows UAC 提权授权，确保全局热键钩子正常监听、内存成功注入且绝不闪退。
@@ -513,17 +665,309 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
           </div>
         )}
 
-        {/* ======================= TAB 2: 管理 (第二步预留) ======================= */}
+        {/* ======================= TAB 2: 管理 ======================= */}
         {activeTab === "management" && (
           <div className="max-w-4xl mx-auto space-y-4">
-            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-8 text-center text-slate-500 space-y-3">
-              <FolderCog className="w-10 h-10 mx-auto text-cyan-600 stroke-[1.5] animate-pulse" />
-              <h2 className="text-base font-bold text-slate-800">
-                管理模块（第二步即将接入）
-              </h2>
-              <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
-                便携存储目录自由更改、一键平滑无损迁移现有全部修改器、自动解压 ZIP、以及本地海报缓存一键清理功能正按三步走计划准备就绪喵~
-              </p>
+            {/* 卡片 1：📦 便携存储根目录与一键无损迁移 */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600 shrink-0 mt-0.5">
+                    <HardDrive className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <span>修改器便携存储根目录</span>
+                      <span className="px-2 py-0.5 text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 rounded-full">
+                        便携模式生效中
+                      </span>
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                      每个游戏拥有独立的专属子目录，内含 exe 修改器、结构化看板数据（trainer.json）与离线原画（cover.jpg）。支持自由变更盘符路径，并提供一键自动搬家无损迁移。
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={loadStorageStats}
+                  disabled={isScanningStorage}
+                  title="重新扫描并刷新存储与缓存容量"
+                  className="p-1.5 text-slate-400 hover:text-cyan-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isScanningStorage ? "animate-spin text-cyan-600" : ""}`} />
+                </button>
+              </div>
+
+              {/* 当前存储路径条 */}
+              <div className="pt-2 border-t border-slate-100 space-y-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={storageStats?.trainers_dir || "正在读取路径..."}
+                    className="flex-1 font-mono text-xs px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 select-all focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handlePickNewDirectory}
+                    className="px-3.5 py-2.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+                  >
+                    <FolderOpen className="w-3.5 h-3.5" />
+                    <span>更改目录...</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenCurrentTrainersDir}
+                    className="p-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 border border-slate-200/80 rounded-xl transition-all cursor-pointer"
+                    title="在系统文件资源管理器中打开此目录"
+                  >
+                    <ExternalLink className="w-4 h-4 text-cyan-600" />
+                  </button>
+                </div>
+
+                {/* 存储三项微型看板 */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                  <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/70 space-y-0.5">
+                    <span className="text-[10px] text-slate-400 font-medium">已纳管修改器</span>
+                    <p className="text-sm font-bold font-mono text-slate-800">
+                      {storageStats?.trainers_count ?? 0} <span className="text-xs font-normal text-slate-500">款游戏</span>
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/70 space-y-0.5">
+                    <span className="text-[10px] text-slate-400 font-medium">当前目录总占用</span>
+                    <p className="text-sm font-bold font-mono text-cyan-700">
+                      {formatBytes(storageStats?.total_size_bytes ?? 0)}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/70 space-y-0.5">
+                    <span className="text-[10px] text-slate-400 font-medium">本地封面海报缓存</span>
+                    <p className="text-sm font-bold font-mono text-emerald-700">
+                      {storageStats?.cover_cache_count ?? 0} <span className="text-xs font-normal text-slate-500">张 ({formatBytes(storageStats?.cover_cache_size_bytes ?? 0)})</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 卡片 2：📥 外部导入与解压自动化规则 */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 mt-0.5">
+                  <Archive className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900">
+                    外部导入与解压自动化规则
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    在从外部文件夹批量扫描导入修改器，或从官网下载压缩包时所触发的解构、提取与净化规则。
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 space-y-3">
+                {/* 开关：遇到 zip 自动解压 */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-semibold text-slate-800">
+                      遇到 ZIP 压缩包时自动解压并提取 .exe 主程序
+                    </span>
+                    <p className="text-[11px] text-slate-400">
+                      自动剔除无关的说明文档或多余包装层，仅保留最核心的修改器可执行文件
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateManagementSettings({
+                        auto_extract_zip: !management.auto_extract_zip,
+                      })
+                    }
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      management.auto_extract_zip ? "bg-indigo-600" : "bg-slate-300"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                        management.auto_extract_zip ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* 扫描穿透深度滑块 */}
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-slate-400" />
+                      扫描导入目录最大递归穿透深度
+                    </span>
+                    <span className="font-mono font-bold text-indigo-600 bg-white px-2 py-0.5 rounded-md border border-indigo-200">
+                      {management.scan_depth} 层子目录
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="4"
+                    step="1"
+                    value={management.scan_depth}
+                    onChange={(e) =>
+                      updateManagementSettings({
+                        scan_depth: Number(e.target.value),
+                      })
+                    }
+                    className="w-full h-1.5 bg-indigo-200/80 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                  />
+                  <div className="flex justify-between text-[10px] text-slate-400 font-mono">
+                    <span>1 层 (仅选定根目录)</span>
+                    <span>2 层 (推荐标准)</span>
+                    <span>4 层 (深度穿透)</span>
+                  </div>
+                </div>
+
+                {/* 黑名单内置说明 */}
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 text-[11px] text-slate-500 flex items-start gap-2">
+                  <Info className="w-4 h-4 text-cyan-600 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>智能净化机制</strong>：系统已全自动排除 <code>unins000.exe</code>、<code>setup.exe</code>、<code>dxwebsetup.exe</code>、<code>vc_redist.exe</code> 以及 Unity 崩溃日志收集器等干扰项，确保已安装列表纯净整齐。
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 卡片 3：🧹 缓存清理与本地离线字典 */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0 mt-0.5">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900">
+                    缓存清理与本地离线词库
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    维护本地临时导入产生的碎片文件，并监控内置 SQLite 离线中英游戏翻译对照库的运行状态。
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 space-y-3">
+                {/* 临时解压缓存清理 */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50/80 border border-slate-200/70">
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-semibold text-slate-800">
+                      临时解压与扫描导入临时缓存
+                    </span>
+                    <p className="text-[11px] text-slate-400">
+                      定期清理系统临时目录中的解压碎片，不影响已成功建档的修改器文件
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCleanCache}
+                    disabled={isCleaningCache}
+                    className="px-3.5 py-1.5 bg-white hover:bg-slate-100 active:scale-95 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <Trash2 className={`w-3.5 h-3.5 text-amber-600 ${isCleaningCache ? "animate-spin" : ""}`} />
+                    <span>{isCleaningCache ? "正在清理..." : "一键清理临时缓存"}</span>
+                  </button>
+                </div>
+
+                {/* 本地 SQLite 离线词库状态 */}
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50/80 border border-slate-200/70">
+                  <div className="flex items-center gap-2.5">
+                    <Database className="w-4 h-4 text-cyan-600" />
+                    <div>
+                      <span className="text-xs font-semibold text-slate-800">
+                        本地 SQLite 游戏名称离线映射库
+                      </span>
+                      <p className="text-[11px] text-slate-400">
+                        断网时亦能秒级将中文游戏名反向映射为风灵月影官网标准 Slug
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-50 text-cyan-700 border border-cyan-200">
+                      收录 {storageStats?.offline_dict_count ?? 1185}+ 款游戏
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 卡片 4：🪟 窗口行为与开机启动 */}
+            <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 shrink-0 mt-0.5">
+                  <Monitor className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-slate-900">
+                    窗口行为与开机自启
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    定义关闭客户端时的系统托盘驻留偏好，以及 Windows 登录自动加载。
+                  </p>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 space-y-3">
+                {/* 开机自启 */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-semibold text-slate-800">
+                      Windows 登录时自动启动修改器管家
+                    </span>
+                    <p className="text-[11px] text-slate-400">
+                      开机静默常驻，玩游戏时随时快捷调出修改器
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleStartup(!management.launch_at_startup)}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      management.launch_at_startup ? "bg-purple-600" : "bg-slate-300"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                        management.launch_at_startup ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* 关闭窗口最小化到托盘 */}
+                <div className="flex items-center justify-between pt-1">
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-semibold text-slate-800">
+                      点击关闭按钮时最小化到系统托盘
+                    </span>
+                    <p className="text-[11px] text-slate-400">
+                      保持客户端后台驻留，避免误关后重新冷启动
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateManagementSettings({
+                        close_to_tray: !management.close_to_tray,
+                      })
+                    }
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      management.close_to_tray ? "bg-cyan-600" : "bg-slate-300"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                        management.close_to_tray ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -651,6 +1095,129 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
                 className="px-4 py-2 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs transition-all cursor-pointer"
               >
                 确认彻底清空
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 修改器存储目录无损迁移弹窗 */}
+      {showMigrateModal && migrateTargetDir && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-2xl p-6 space-y-5">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600">
+                  <HardDrive className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    修改器存储路径迁移向导
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    检测到您指定了新的根目录，请选择接下来的处理方案喵~
+                  </p>
+                </div>
+              </div>
+              {!isMigrating && (
+                <button
+                  onClick={() => {
+                    setShowMigrateModal(false);
+                    setMigrateTargetDir(null);
+                  }}
+                  className="text-xs text-slate-400 hover:text-slate-700 cursor-pointer"
+                >
+                  取消
+                </button>
+              )}
+            </div>
+
+            {/* 路径迁移流向卡片 */}
+            <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl space-y-3">
+              <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium px-1">
+                <span>路径变更流向</span>
+                <span className="text-cyan-700 font-semibold">
+                  共 {storageStats?.trainers_count ?? 0} 款已安装修改器 · 约 {formatBytes(storageStats?.total_size_bytes || 0)}
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                <div className="p-2.5 rounded-lg bg-white border border-slate-200">
+                  <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">
+                    当前原路径
+                  </div>
+                  <div className="font-mono text-xs text-slate-700 truncate" title={storageStats?.trainers_dir || ""}>
+                    {storageStats?.trainers_dir || "默认应用数据目录"}
+                  </div>
+                </div>
+
+                <div className="flex justify-center -my-1 text-cyan-600">
+                  <div className="w-6 h-6 rounded-full bg-cyan-50 border border-cyan-200 flex items-center justify-center shadow-xs">
+                    <MoveRight className="w-3.5 h-3.5 rotate-90 sm:rotate-0" />
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-cyan-50/60 border border-cyan-200">
+                  <div className="text-[10px] text-cyan-600 font-semibold uppercase tracking-wider mb-0.5">
+                    迁往新目标路径
+                  </div>
+                  <div className="font-mono text-xs text-cyan-950 font-medium truncate" title={migrateTargetDir}>
+                    {migrateTargetDir}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 迁移提示说明 */}
+            <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/60 text-xs text-amber-800 space-y-1 leading-relaxed">
+              <div className="font-semibold flex items-center gap-1.5 text-amber-900">
+                <Info className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>无损搬家安全保障说明：</span>
+              </div>
+              <p className="text-[11px] text-amber-700 pl-5">
+                • <strong>一键无损搬家</strong>：自动把现有修改器文件夹完整剪切至新盘符，并更新所有内置路径索引与封面，已有数据绝不丢失！<br />
+                • <strong>仅切换路径</strong>：仅保存新目录作为未来下载/导入位置，原修改器仍保留在老目录。
+              </p>
+            </div>
+
+            {/* 底部按钮栏 */}
+            <div className="flex items-center justify-end gap-2.5 pt-1">
+              {!isMigrating && (
+                <button
+                  onClick={() => {
+                    setShowMigrateModal(false);
+                    setMigrateTargetDir(null);
+                  }}
+                  className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer transition-all"
+                >
+                  取消
+                </button>
+              )}
+
+              <button
+                onClick={handleSwitchPathOnly}
+                disabled={isMigrating}
+                className="px-4 py-2 border border-slate-300 bg-white hover:bg-slate-50 active:scale-95 text-slate-700 rounded-xl text-xs font-semibold shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+              >
+                仅切换路径
+              </button>
+
+              <button
+                onClick={handleStartMigration}
+                disabled={isMigrating}
+                className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {isMigrating ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>正在搬家迁移中...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>开始一键无损搬家</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

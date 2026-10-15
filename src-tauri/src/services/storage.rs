@@ -15,8 +15,24 @@ pub fn get_app_data_dir() -> PathBuf {
     }
 }
 
-/// 获取与主程序同级的 trainers 便携式目录
+/// 获取与主程序同级的 trainers 便携式目录，或用户在设置中自定义的存储路径
 pub fn get_trainers_dir() -> PathBuf {
+    let config_file = get_app_data_dir().join("app_config.json");
+    if config_file.exists() {
+        if let Ok(content) = fs::read_to_string(&config_file) {
+            if let Ok(v) = serde_json::from_str::<serde_json::Value>(&content) {
+                if let Some(custom) = v.get("management").and_then(|m| m.get("custom_trainers_dir")).and_then(|c| c.as_str()) {
+                    let trimmed = custom.trim();
+                    if !trimmed.is_empty() {
+                        let path = PathBuf::from(trimmed);
+                        let _ = fs::create_dir_all(&path);
+                        return path;
+                    }
+                }
+            }
+        }
+    }
+
     let base_dir = if let Ok(cwd) = std::env::current_dir() {
         if cwd.join("src-tauri").exists() || cwd.join("package.json").exists() {
             cwd
