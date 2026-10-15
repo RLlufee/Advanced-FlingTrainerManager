@@ -635,6 +635,7 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
                   {/* 微缩海报 */}
                   <div className="w-9 h-11 rounded-md overflow-hidden shrink-0 border border-slate-200/80 bg-slate-100 shadow-2xs">
                     <GamePoster
+                      key={`${t.id}-${t.capsule_image || ""}-${t.thumbnail || ""}-${optionCount}`}
                       primarySrc={t.capsule_image}
                       secondarySrc={t.thumbnail}
                       alt={displayName}
@@ -746,6 +747,7 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
                     {/* 游戏封面海报 */}
                     <div className="w-20 h-28 rounded-xl overflow-hidden shrink-0 border border-slate-200 shadow-md bg-slate-100">
                       <GamePoster
+                        key={`${selectedTrainer.id}-${selectedTrainer.capsule_image || ""}-${selectedTrainer.thumbnail || ""}-${activeOptionItems.length}`}
                         primarySrc={selectedTrainer.capsule_image}
                         secondarySrc={selectedTrainer.thumbnail}
                         alt={selectedTrainer.chinese_name || selectedTrainer.name}

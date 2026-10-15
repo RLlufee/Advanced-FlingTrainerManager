@@ -63,13 +63,15 @@ export const GamePoster: React.FC<GamePosterProps> = ({
   const [retryKey, setRetryKey] = useState<number>(0);
   const [isRetrying, setIsRetrying] = useState<boolean>(false);
 
+  const candidateKey = candidates.join("|");
+
   // 当外部候选源发生改变时重置状态
   useEffect(() => {
     setCurrentIdx(0);
     setAllFailed(candidates.length === 0);
     setLoaded(false);
     setIsRetrying(false);
-  }, [candidates]);
+  }, [candidateKey, candidates.length]);
 
   const handleError = () => {
     if (currentIdx + 1 < candidates.length) {
@@ -179,6 +181,7 @@ export const GamePoster: React.FC<GamePosterProps> = ({
       <img
         src={resolveSrc(finalSrc)}
         alt="" // 关键：空 alt 防止原生浏览器在容器内渲染原生破损图标与折行文本
+        referrerPolicy="no-referrer"
         onLoad={() => {
           setLoaded(true);
           setIsRetrying(false);
