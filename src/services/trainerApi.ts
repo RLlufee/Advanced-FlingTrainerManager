@@ -128,6 +128,14 @@ export const trainerApi = {
     return await invoke<InstalledTrainerRecord>("update_trainer_to_latest", { id });
   },
 
+  pickExternalFolder: async (): Promise<string | null> => {
+    return await invoke<string | null>("pick_external_folder");
+  },
+
+  scanAndImportTrainers: async (folderPath: string): Promise<ImportSummary> => {
+    return await invoke<ImportSummary>("scan_and_import_trainers", { folderPath });
+  },
+
   onDownloadProgress: async (
     callback: (payload: DownloadProgressPayload) => void
   ): Promise<UnlistenFn> => {
@@ -136,6 +144,13 @@ export const trainerApi = {
     });
   },
 };
+
+export interface ImportSummary {
+  total_scanned: number;
+  imported_count: number;
+  imported_names: string[];
+  skipped_count: number;
+}
 
 export interface TrainerUpdateInfo {
   id: string;

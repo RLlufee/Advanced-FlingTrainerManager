@@ -21,6 +21,7 @@ import {
   X,
   Radio,
   ArrowUpCircle,
+  FolderInput,
 } from "lucide-react";
 import {
   trainerApi,
@@ -58,6 +59,9 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
   const [updateMap, setUpdateMap] = useState<Record<string, TrainerUpdateInfo>>({});
   const [isCheckingUpdate, setIsCheckingUpdate] = useState<boolean>(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  // 外部已有修改器批量扫描导入状态
+  const [isImporting, setIsImporting] = useState<boolean>(false);
 
   // 复制反馈与状态提示
   const [copiedKeyIdx, setCopiedKeyIdx] = useState<number | null>(null);
@@ -300,6 +304,37 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
     }
   };
 
+  // 扫描并批量导入外部已有修改器
+  const handleImportExternalTrainers = async () => {
+    if (isImporting) return;
+    try {
+      const selectedPath = await trainerApi.pickExternalFolder();
+      if (!selectedPath) return; // 玩家取消或未选目录
+
+      setIsImporting(true);
+      showToast("info", `正在扫描并联网匹配 Steam 封面与元数据: ${selectedPath}，请稍候喵...`);
+
+      const summary = await trainerApi.scanAndImportTrainers(selectedPath);
+      await loadTrainers();
+
+      if (summary.imported_count > 0) {
+        showToast(
+          "success",
+          `🎉 扫描导入大成功！共检查 ${summary.total_scanned} 个文件，成功收纳建档 ${summary.imported_count} 款修改器喵~`
+        );
+      } else {
+        showToast(
+          "info",
+          `扫描完毕，目标文件夹中未发现新的有效修改器（已跳过 ${summary.skipped_count} 项）喵~`
+        );
+      }
+    } catch (e) {
+      showToast("error", `扫描导入外部修改器失败: ${e}`);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   // 启动修改器
   const handleLaunchTrainer = async () => {
     if (!selectedTrainer) return;
@@ -488,6 +523,14 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
             </span>
             <div className="flex items-center gap-1">
               <button
+                onClick={handleImportExternalTrainers}
+                disabled={isImporting}
+                title="批量扫描并导入外部已有修改器（自动识别、提取、匹配 Steam 封面并建档）"
+                className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors disabled:opacity-40 cursor-pointer"
+              >
+                <FolderInput className={`w-3.5 h-3.5 ${isImporting ? "animate-bounce text-cyan-600" : ""}`} />
+              </button>
+              <button
                 onClick={handleCheckUpdates}
                 disabled={isCheckingUpdate || trainers.length === 0}
                 title="联网对比官网，检测是否有最新版本修改器"
@@ -587,18 +630,26 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
           )}
         </div>
 
-        {/* 边栏底部：去下载更多 */}
-        <div className="p-3 border-t border-slate-100 bg-slate-50/70 space-y-2">
+        {/* 边栏底部：导入与去下载 */}
+        <div className="p-3 border-t border-slate-100 bg-slate-50/70 space-y-1.5">
+          <button
+            onClick={handleImportExternalTrainers}
+            disabled={isImporting}
+            className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+          >
+            <FolderInput className={`w-3.5 h-3.5 text-cyan-600 ${isImporting ? "animate-bounce" : ""}`} />
+            <span>{isImporting ? "正在扫描纳管中..." : "批量导入已有修改器..."}</span>
+          </button>
           {onNavigateToDownload && (
             <button
               onClick={onNavigateToDownload}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200/60 shadow-2xs transition-all active:scale-[0.98]"
+              className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200/60 shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
             >
               <PlusCircle className="w-3.5 h-3.5 text-cyan-600" />
-              <span>浏览并下载更多修改器...</span>
+              <span>从官网下载更多修改器...</span>
             </button>
           )}
-          <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 pt-1">
+          <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 pt-0.5">
             <span>便携独立存储架构</span>
             <span className="text-cyan-600/80 font-mono">trainers/</span>
           </div>
@@ -615,17 +666,27 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
             </div>
             <h2 className="text-lg font-bold text-slate-800">未选择任何修改器</h2>
             <p className="text-xs text-slate-500 max-w-sm mt-1 mb-6 leading-relaxed">
-              笨蛋主人，这里还没有选中的修改器喵！请在左侧点击已安装的游戏，或者去下载库下载心仪的修改器吧~
+              笨蛋主人，这里还没有选中的修改器喵！可以点击下方扫描电脑里已下载的修改器，或者去下载库挑选新游戏吧~
             </p>
-            {onNavigateToDownload && (
+            <div className="flex items-center gap-3">
               <button
-                onClick={onNavigateToDownload}
-                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-md hover:shadow-lg transition-all flex items-center gap-2 active:scale-95"
+                onClick={handleImportExternalTrainers}
+                disabled={isImporting}
+                className="px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 rounded-xl text-xs font-semibold shadow-xs hover:shadow-md transition-all flex items-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
               >
-                <PlusCircle className="w-4 h-4 text-cyan-400" />
-                <span>前往下载库下载修改器</span>
+                <FolderInput className={`w-4 h-4 text-cyan-600 ${isImporting ? "animate-bounce" : ""}`} />
+                <span>{isImporting ? "正在扫描纳管..." : "批量导入已有修改器"}</span>
               </button>
-            )}
+              {onNavigateToDownload && (
+                <button
+                  onClick={onNavigateToDownload}
+                  className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-md hover:shadow-lg transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+                >
+                  <PlusCircle className="w-4 h-4 text-cyan-400" />
+                  <span>前往下载库下载修改器</span>
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="flex-1 flex flex-col">

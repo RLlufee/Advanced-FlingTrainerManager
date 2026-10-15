@@ -102,6 +102,16 @@ async fn update_trainer_to_latest(app: AppHandle, id: String) -> Result<Installe
     downloader::update_trainer_to_latest(app, &id).await
 }
 
+#[tauri::command]
+fn pick_external_folder() -> Result<Option<String>, String> {
+    services::importer::pick_folder_dialog()
+}
+
+#[tauri::command]
+async fn scan_and_import_trainers(folder_path: String) -> Result<services::importer::ImportSummary, String> {
+    services::importer::scan_and_import_trainers(&folder_path).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -122,7 +132,9 @@ pub fn run() {
             save_trainer_toggles,
             sync_trainer_hotkeys,
             check_trainers_update,
-            update_trainer_to_latest
+            update_trainer_to_latest,
+            pick_external_folder,
+            scan_and_import_trainers
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

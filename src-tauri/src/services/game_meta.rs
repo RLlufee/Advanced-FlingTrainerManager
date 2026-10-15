@@ -294,3 +294,39 @@ pub async fn enrich_trainer(trainer: &mut Trainer) {
         save_cache_to_disk();
     }
 }
+
+/// 根据游戏名称解析完整的 Steam 与本地中文元数据
+pub async fn resolve_meta_for_name(game_name: &str) -> GameMetaCacheItem {
+    let cleaned = clean_game_name(game_name);
+    if let Some(cached) = get_cached_game_meta(&cleaned, game_name) {
+        return cached;
+    }
+
+    let mut local_chinese = query_local_chinese_name(&cleaned);
+    if local_chinese.is_none() {
+        local_chinese = query_local_chinese_name(game_name);
+    }
+
+    if let Some((app_id, steam_name, hero, capsule)) = fetch_steam_meta(&cleaned).await {
+        let cn = local_chinese.or(Some(steam_name));
+        let item = GameMetaCacheItem {
+            chinese_name: cn,
+            steam_app_id: Some(app_id),
+            hero_image: Some(hero),
+            capsule_image: Some(capsule),
+        };
+
+        if let Ok(mut cache) = META_CACHE.lock() {
+            cache.insert(cleaned, item.clone());
+        }
+        save_cache_to_disk();
+        return item;
+    }
+
+    GameMetaCacheItem {
+        chinese_name: local_chinese,
+        steam_app_id: None,
+        hero_image: None,
+        capsule_image: None,
+    }
+}
