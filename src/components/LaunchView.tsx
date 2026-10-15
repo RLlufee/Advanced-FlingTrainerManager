@@ -18,12 +18,15 @@ import {
   FileText,
   FolderTree,
   PlusCircle,
-  X
+  X,
+  Radio,
+  ArrowUpCircle,
 } from "lucide-react";
 import {
   trainerApi,
   InstalledTrainerRecord,
   TrainerOptionItem,
+  TrainerUpdateInfo,
 } from "../services/trainerApi";
 import { GamePoster } from "./GamePoster";
 import {
@@ -50,6 +53,11 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isLaunching, setIsLaunching] = useState<boolean>(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // 版本检测与一键增量更新状态
+  const [updateMap, setUpdateMap] = useState<Record<string, TrainerUpdateInfo>>({});
+  const [isCheckingUpdate, setIsCheckingUpdate] = useState<boolean>(false);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   // 复制反馈与状态提示
   const [copiedKeyIdx, setCopiedKeyIdx] = useState<number | null>(null);
@@ -101,6 +109,11 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
   const selectedTrainer = useMemo(() => {
     return trainers.find((t) => t.id === selectedId) || null;
   }, [trainers, selectedId]);
+
+  // 当前选中修改器的版本更新检测信息
+  const selectedUpdate = useMemo(() => {
+    return selectedTrainer ? updateMap[selectedTrainer.id] || null : null;
+  }, [selectedTrainer, updateMap]);
 
   // 左侧已安装游戏过滤
   const filteredTrainers = useMemo(() => {
@@ -237,6 +250,53 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
       showToast("error", `模拟热键同步失败: ${e}`);
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  // 手动检测已安装修改器版本更新
+  const handleCheckUpdates = async () => {
+    if (isCheckingUpdate || trainers.length === 0) return;
+    setIsCheckingUpdate(true);
+    showToast("info", "正在连接风灵月影官网比对最新版本元数据喵...");
+    try {
+      const results = await trainerApi.checkTrainersUpdate();
+      const map: Record<string, TrainerUpdateInfo> = {};
+      let updateCount = 0;
+      for (const r of results) {
+        map[r.id] = r;
+        if (r.has_update) updateCount++;
+      }
+      setUpdateMap(map);
+      if (updateCount > 0) {
+        showToast("success", `🎉 检测完毕！发现 ${updateCount} 款修改器有新版本可用喵~`);
+      } else {
+        showToast("success", "检测完毕！您安装的所有修改器均已是官网最新版本喵~");
+      }
+    } catch (e) {
+      showToast("error", `检测修改器更新失败: ${e}`);
+    } finally {
+      setIsCheckingUpdate(false);
+    }
+  };
+
+  // 一键无感增量升级指定修改器
+  const handleUpdateTrainer = async (id: string) => {
+    if (updatingId) return;
+    setUpdatingId(id);
+    showToast("info", "开始下载新版修改器，所有配置与开关预设将自动完整继承喵...");
+    try {
+      await trainerApi.updateTrainerToLatest(id);
+      await loadTrainers(id);
+      setUpdateMap((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      showToast("success", "🎉 修改器已成功升级到最新版！所有开关预设已原封不动保留喵~");
+    } catch (e) {
+      showToast("error", `更新修改器失败: ${e}`);
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -428,16 +488,24 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
             </span>
             <div className="flex items-center gap-1">
               <button
+                onClick={handleCheckUpdates}
+                disabled={isCheckingUpdate || trainers.length === 0}
+                title="联网对比官网，检测是否有最新版本修改器"
+                className="p-1 rounded text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-40 cursor-pointer"
+              >
+                <Radio className={`w-3.5 h-3.5 ${isCheckingUpdate ? "animate-pulse text-amber-500" : ""}`} />
+              </button>
+              <button
                 onClick={() => loadTrainers(selectedId || undefined)}
                 title="刷新已安装列表"
-                className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors"
+                className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-cyan-600" : ""}`} />
               </button>
               <button
                 onClick={handleOpenTrainersRoot}
                 title="打开 trainers 便携存储根目录"
-                className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors"
+                className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 <FolderTree className="w-3.5 h-3.5" />
               </button>
@@ -463,6 +531,7 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
               const displayName = t.chinese_name || t.name;
               const subName = t.chinese_name ? t.name : null;
               const optionCount = t.option_items?.length || t.options?.length || 0;
+              const hasUpdate = updateMap[t.id]?.has_update;
 
               return (
                 <button
@@ -487,8 +556,15 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
 
                   {/* 游戏名与版本徽章 */}
                   <div className="truncate flex-1 min-w-0">
-                    <div className="truncate text-slate-800 font-semibold text-xs leading-snug">
-                      {displayName}
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="truncate text-slate-800 font-semibold text-xs leading-snug">
+                        {displayName}
+                      </span>
+                      {hasUpdate && (
+                        <span className="shrink-0 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-amber-500 text-white shadow-2xs animate-pulse">
+                          待更新
+                        </span>
+                      )}
                     </div>
                     {subName && (
                       <div className="truncate text-[10px] text-slate-400 font-normal">
@@ -591,6 +667,13 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
                         修改器 {selectedTrainer.version}
                       </span>
 
+                      {selectedUpdate?.has_update && (
+                        <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/90 font-semibold flex items-center gap-1 animate-pulse">
+                          <Sparkles className="w-3 h-3 text-amber-500" />
+                          <span>发现新版: {selectedUpdate.latest_version}</span>
+                        </span>
+                      )}
+
                       {selectedTrainer.game_version && (
                         <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200/80">
                           支持游戏: {selectedTrainer.game_version}
@@ -621,6 +704,23 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
 
                 {/* 动作按钮矩阵 */}
                 <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-stretch lg:self-center">
+                  {/* 一键无感增量升级新版本按钮 */}
+                  {selectedUpdate?.has_update && (
+                    <button
+                      onClick={() => handleUpdateTrainer(selectedTrainer.id)}
+                      disabled={updatingId === selectedTrainer.id}
+                      title={`检测到官网最新版本 ${selectedUpdate.latest_version}，点击一键下载覆盖 exe，保留所有配置与开关预设`}
+                      className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-500/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 animate-pulse"
+                    >
+                      <ArrowUpCircle className={`w-4 h-4 ${updatingId === selectedTrainer.id ? "animate-spin" : ""}`} />
+                      <span>
+                        {updatingId === selectedTrainer.id
+                          ? "正在升级中..."
+                          : `一键升级 (${selectedUpdate.latest_version})`}
+                      </span>
+                    </button>
+                  )}
+
                   {/* 一键启动修改器大按钮 */}
                   <button
                     onClick={handleLaunchTrainer}

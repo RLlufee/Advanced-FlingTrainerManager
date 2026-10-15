@@ -120,6 +120,14 @@ export const trainerApi = {
     return await invoke<number>("sync_trainer_hotkeys", { id, hotkeys });
   },
 
+  checkTrainersUpdate: async (): Promise<TrainerUpdateInfo[]> => {
+    return await invoke<TrainerUpdateInfo[]>("check_trainers_update");
+  },
+
+  updateTrainerToLatest: async (id: string): Promise<InstalledTrainerRecord> => {
+    return await invoke<InstalledTrainerRecord>("update_trainer_to_latest", { id });
+  },
+
   onDownloadProgress: async (
     callback: (payload: DownloadProgressPayload) => void
   ): Promise<UnlistenFn> => {
@@ -128,3 +136,13 @@ export const trainerApi = {
     });
   },
 };
+
+export interface TrainerUpdateInfo {
+  id: string;
+  has_update: boolean;
+  current_version: string;
+  latest_version: string;
+  current_game_version: string;
+  latest_game_version: string;
+  latest_trainer?: Trainer | null;
+}

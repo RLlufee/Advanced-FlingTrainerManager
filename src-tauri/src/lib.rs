@@ -92,6 +92,16 @@ async fn sync_trainer_hotkeys(_id: String, hotkeys: Vec<String>) -> Result<u32, 
     services::key_simulator::simulate_hotkeys_sequence(&hotkeys).await
 }
 
+#[tauri::command]
+async fn check_trainers_update() -> Result<Vec<models::TrainerUpdateInfo>, String> {
+    downloader::check_trainers_update().await
+}
+
+#[tauri::command]
+async fn update_trainer_to_latest(app: AppHandle, id: String) -> Result<InstalledTrainerRecord, String> {
+    downloader::update_trainer_to_latest(app, &id).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -110,7 +120,9 @@ pub fn run() {
             delete_installed_trainer,
             launch_game_and_trainer,
             save_trainer_toggles,
-            sync_trainer_hotkeys
+            sync_trainer_hotkeys,
+            check_trainers_update,
+            update_trainer_to_latest
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
