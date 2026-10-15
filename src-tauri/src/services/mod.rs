@@ -5,3 +5,4 @@ pub mod storage;
 pub mod game_meta;
 pub mod key_simulator;
 pub mod importer;
+pub mod config;

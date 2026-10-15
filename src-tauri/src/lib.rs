@@ -122,6 +122,31 @@ async fn enrich_all_installed_trainers() -> Result<usize, String> {
     services::importer::enrich_all_installed_trainers().await
 }
 
+#[tauri::command]
+fn get_app_config() -> services::config::AppConfig {
+    services::config::load_config()
+}
+
+#[tauri::command]
+fn save_app_config(config: services::config::AppConfig) -> Result<(), String> {
+    services::config::save_config(&config)
+}
+
+#[tauri::command]
+fn export_all_presets() -> Result<String, String> {
+    services::config::export_all_presets()
+}
+
+#[tauri::command]
+fn import_all_presets(json_str: String) -> Result<u32, String> {
+    services::config::import_all_presets(&json_str)
+}
+
+#[tauri::command]
+fn clear_all_presets() -> Result<u32, String> {
+    services::config::clear_all_presets()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -146,7 +171,12 @@ pub fn run() {
             pick_external_folder,
             scan_and_import_trainers,
             enrich_installed_trainer,
-            enrich_all_installed_trainers
+            enrich_all_installed_trainers,
+            get_app_config,
+            save_app_config,
+            export_all_presets,
+            import_all_presets,
+            clear_all_presets
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

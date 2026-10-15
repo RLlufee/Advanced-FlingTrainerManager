@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { TitleBar, NavTab } from "./components/TitleBar";
 import { DownloadView } from "./components/DownloadView";
 import { LaunchView } from "./components/LaunchView";
-import { Settings } from "lucide-react";
+import { SettingsView } from "./components/SettingsView";
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>("download"); // 默认展示装配好的下载页面
@@ -35,12 +35,13 @@ export const App: React.FC = () => {
             onNavigateToDownload={() => setActiveTab("download")}
           />
         </div>
-        {activeTab === "settings" && (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 text-xs gap-3 bg-[#edf0f5]">
-            <Settings className="w-10 h-10 text-slate-300" />
-            <span>设置与更多模块（正在构建中...）</span>
-          </div>
-        )}
+        <div
+          className={`flex-1 flex overflow-hidden ${
+            activeTab === "settings" ? "flex" : "hidden"
+          }`}
+        >
+          <SettingsView isActive={activeTab === "settings"} />
+        </div>
       </div>
     </div>
   );

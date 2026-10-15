@@ -63,8 +63,17 @@ pub fn launch_trainer(id: &str) -> Result<String, String> {
 
     let work_dir = PathBuf::from(&record.install_dir);
 
-    // 提权启动进程
-    launch_process_elevated(&exe_path, &work_dir)?;
+    let config = crate::services::config::load_config();
+    if config.hotkey.run_as_admin {
+        // 提权管理员启动进程
+        launch_process_elevated(&exe_path, &work_dir)?;
+    } else {
+        // 普通权限启动进程
+        Command::new(&exe_path)
+            .current_dir(&work_dir)
+            .spawn()
+            .map_err(|e| format!("普通模式启动修改器失败: {}", e))?;
+    }
 
     // 更新最后启动时间并保存至当前目录下的 trainer.json
     let mut updated = record.clone();

@@ -132,7 +132,7 @@ fn resolve_virtual_key(key: &str) -> Option<u16> {
 
 /// 执行单次热键序列模拟 (带修饰键与时序保护)
 #[cfg(target_os = "windows")]
-pub async fn send_single_hotkey(hotkey: &ParsedHotkey) -> Result<(), String> {
+pub async fn send_single_hotkey_with_hold(hotkey: &ParsedHotkey, hold_ms: u64) -> Result<(), String> {
     use windows_sys::Win32::UI::Input::KeyboardAndMouse::*;
 
     unsafe {
@@ -176,10 +176,10 @@ pub async fn send_single_hotkey(hotkey: &ParsedHotkey) -> Result<(), String> {
         // 2. 发送主键 (KeyDown -> 延时 -> KeyUp)
         let is_extended = matches!(hotkey.vk, 0x21 | 0x22 | 0x23 | 0x24 | 0x2D | 0x2E | 0x6F);
         send_key(hotkey.vk, false, is_extended);
-        sleep(Duration::from_millis(45)).await;
+        sleep(Duration::from_millis(hold_ms)).await;
         send_key(hotkey.vk, true, is_extended);
 
-        sleep(Duration::from_millis(30)).await;
+        sleep(Duration::from_millis(25)).await;
 
         // 3. 弹栈释放修饰键
         if hotkey.shift {
@@ -196,23 +196,37 @@ pub async fn send_single_hotkey(hotkey: &ParsedHotkey) -> Result<(), String> {
     Ok(())
 }
 
-#[cfg(not(target_os = "windows"))]
+#[cfg(target_os = "windows")]
 pub async fn send_single_hotkey(hotkey: &ParsedHotkey) -> Result<(), String> {
-    println!("[Non-Windows Mock] Simulating hotkey: {:?}", hotkey);
-    sleep(Duration::from_millis(80)).await;
+    let config = crate::services::config::load_config();
+    send_single_hotkey_with_hold(hotkey, config.hotkey.key_hold_ms).await
+}
+
+#[cfg(not(target_os = "windows"))]
+pub async fn send_single_hotkey_with_hold(hotkey: &ParsedHotkey, hold_ms: u64) -> Result<(), String> {
+    println!("[Non-Windows Mock] Simulating hotkey: {:?} with hold {}ms", hotkey, hold_ms);
+    sleep(Duration::from_millis(hold_ms)).await;
     Ok(())
 }
 
-/// 批量按序模拟热键列表
+#[cfg(not(target_os = "windows"))]
+pub async fn send_single_hotkey(hotkey: &ParsedHotkey) -> Result<(), String> {
+    send_single_hotkey_with_hold(hotkey, 40).await
+}
+
+/// 批量按序模拟热键列表（动态根据 AppConfig 读取间隔与按住时长）
 pub async fn simulate_hotkeys_sequence(hotkey_strings: &[String]) -> Result<u32, String> {
+    let config = crate::services::config::load_config();
+    let interval_ms = config.hotkey.key_interval_ms.max(10);
+    let hold_ms = config.hotkey.key_hold_ms.max(10);
     let mut success_count = 0u32;
 
     for raw in hotkey_strings {
         if let Some(parsed) = parse_hotkey(raw) {
-            send_single_hotkey(&parsed).await?;
+            send_single_hotkey_with_hold(&parsed, hold_ms).await?;
             success_count += 1;
-            // 每个热键之间间隔 120ms，给修改器充足的消息处理与反应周期
-            sleep(Duration::from_millis(120)).await;
+            // 每个热键之间间隔按照配置延时，给游戏和修改器充足的消息处理与反应周期
+            sleep(Duration::from_millis(interval_ms)).await;
         }
     }
 
