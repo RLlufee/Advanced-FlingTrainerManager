@@ -1,7 +1,10 @@
 import React from "react";
 import { RefreshCw, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { motion } from "motion/react";
 import type { Trainer, InstalledTrainerRecord, DownloadProgressPayload } from "../../services/trainerApi";
 import { GamePoster } from "../GamePoster";
+import { JellyIcon } from "../ui/motion/JellyIcon";
+import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
 
 export interface DownloadSidebarProps {
   trainers: Trainer[];
@@ -38,7 +41,9 @@ export const DownloadSidebar: React.FC<DownloadSidebarProps> = ({
       <div className="flex-1 overflow-y-auto p-2 space-y-2">
         {loading && trainers.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-slate-400 dark:text-slate-500 text-xs gap-2">
-            <RefreshCw className="w-5 h-5 animate-spin text-primary" />
+            <JellyIcon intensity="gentle">
+              <RefreshCw className="w-5 h-5 animate-spin text-primary" />
+            </JellyIcon>
             <span>正在从风灵月影官网同步数据...</span>
           </div>
         ) : errorMsg ? (
@@ -63,14 +68,27 @@ export const DownloadSidebar: React.FC<DownloadSidebarProps> = ({
               <div
                 key={t.id}
                 onClick={() => onSelectTrainer(t)}
-                className={`p-2.5 rounded-xl border transition-all cursor-pointer flex gap-3 ${
+                className={`relative p-2.5 rounded-xl border transition-colors cursor-pointer flex gap-3 group ${
                   isSelected
-                    ? "bg-primary-soft border-primary-border shadow-xs"
+                    ? "border-primary-border shadow-xs text-slate-900 dark:text-slate-100"
                     : "bg-white dark:bg-slate-900/60 border-slate-200/70 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50/70 dark:hover:bg-slate-800/50"
                 }`}
               >
+                {/* 活跃项流体药丸滑动背景 */}
+                {isSelected && (
+                  <motion.div
+                    layoutId="download-sidebar-pill"
+                    className="absolute inset-0 bg-primary-soft rounded-xl shadow-xs border border-primary-border z-0"
+                    transition={{
+                      type: "spring",
+                      stiffness: 400,
+                      damping: 32,
+                    }}
+                  />
+                )}
+
                 {/* 缩略图 */}
-                <div className="w-16 h-14 rounded-lg bg-slate-900 overflow-hidden shrink-0 border border-slate-200/50 dark:border-slate-700/60 shadow-xs">
+                <div className="relative z-10 w-16 h-14 rounded-lg bg-slate-900 overflow-hidden shrink-0 border border-slate-200/50 dark:border-slate-700/60 shadow-xs">
                   <GamePoster
                     primarySrc={t.capsule_image}
                     secondarySrc={
@@ -80,13 +98,13 @@ export const DownloadSidebar: React.FC<DownloadSidebarProps> = ({
                     }
                     tertiarySrc={t.thumbnail}
                     alt={t.chinese_name || t.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     iconClassName="w-5 h-5"
                   />
                 </div>
 
                 {/* 信息 */}
-                <div className="flex-1 min-w-0 flex flex-col justify-between">
+                <div className="relative z-10 flex-1 min-w-0 flex flex-col justify-between">
                   <div>
                     <div className="flex items-start justify-between gap-1">
                       <h4
@@ -142,23 +160,31 @@ export const DownloadSidebar: React.FC<DownloadSidebarProps> = ({
 
       {/* 分页控制器 */}
       <div className="p-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/40">
-        <button
-          disabled={page <= 1 || loading}
-          onClick={() => onPageChange(page - 1)}
-          className="flex items-center gap-1 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-        >
-          <ChevronLeft className="w-3.5 h-3.5" />
-          <span>上一页</span>
-        </button>
+        <TypewriterTooltip text="翻回上一页修改器列表" position="top">
+          <button
+            disabled={page <= 1 || loading}
+            onClick={() => onPageChange(page - 1)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+          >
+            <JellyIcon intensity="gentle">
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </JellyIcon>
+            <span>上一页</span>
+          </button>
+        </TypewriterTooltip>
         <span className="font-medium text-slate-500 dark:text-slate-400">第 {page} 页</span>
-        <button
-          disabled={loading || trainers.length === 0}
-          onClick={() => onPageChange(page + 1)}
-          className="flex items-center gap-1 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-        >
-          <span>下一页</span>
-          <ChevronRight className="w-3.5 h-3.5" />
-        </button>
+        <TypewriterTooltip text="探索下一页修改器" position="top">
+          <button
+            disabled={loading || trainers.length === 0}
+            onClick={() => onPageChange(page + 1)}
+            className="flex items-center gap-1 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+          >
+            <span>下一页</span>
+            <JellyIcon intensity="gentle">
+              <ChevronRight className="w-3.5 h-3.5" />
+            </JellyIcon>
+          </button>
+        </TypewriterTooltip>
       </div>
     </div>
   );

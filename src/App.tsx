@@ -8,7 +8,7 @@ import { AnimationProvider } from "./components/ui/motion";
 import { ThemeProvider } from "./components/ui/theme";
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<NavTab>("download"); // 默认展示装配好的下载页面
+  const [activeTab, setActiveTab] = useState<NavTab>("launch"); // 默认首发展示启动管理页（已安装修改器与一键启动）
 
   return (
     <ThemeProvider>
