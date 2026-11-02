@@ -12,6 +12,9 @@ import {
   Monitor,
 } from "lucide-react";
 import { ManagementSettings, StorageStats } from "../../services/configApi";
+import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
+import { JellyIcon } from "../ui/motion/JellyIcon";
+import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
 
 interface ManagementTabProps {
   management: ManagementSettings;
@@ -41,14 +44,16 @@ export const ManagementTab: React.FC<ManagementTabProps> = ({
   formatBytes,
 }) => {
   return (
-    <div className="max-w-4xl mx-auto space-y-4 animate-in fade-in duration-150">
+    <PaperContainer className="max-w-4xl mx-auto space-y-4">
       {/* 卡片 1：📦 便携存储根目录与一键无损迁移 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600 shrink-0 mt-0.5">
-              <HardDrive className="w-5 h-5" />
-            </div>
+            <JellyIcon intensity="bouncy">
+              <div className="w-9 h-9 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600 shrink-0 mt-0.5">
+                <HardDrive className="w-5 h-5" />
+              </div>
+            </JellyIcon>
             <div>
               <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <span>修改器便携存储根目录</span>
@@ -62,15 +67,18 @@ export const ManagementTab: React.FC<ManagementTabProps> = ({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onLoadStorageStats}
-            disabled={isScanningStorage}
-            title="重新扫描并刷新存储与缓存容量"
-            className="p-1.5 text-slate-400 hover:text-cyan-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${isScanningStorage ? "animate-spin text-cyan-600" : ""}`} />
-          </button>
+          <TypewriterTooltip text="重新扫描并计算本地存储与海报缓存容量" position="left">
+            <button
+              type="button"
+              onClick={onLoadStorageStats}
+              disabled={isScanningStorage}
+              className="p-1.5 text-slate-400 hover:text-cyan-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <JellyIcon intensity="gentle">
+                <RefreshCw className={`w-4 h-4 ${isScanningStorage ? "animate-spin text-cyan-600" : ""}`} />
+              </JellyIcon>
+            </button>
+          </TypewriterTooltip>
         </div>
 
         {/* 当前存储路径条 */}
@@ -82,22 +90,29 @@ export const ManagementTab: React.FC<ManagementTabProps> = ({
               value={storageStats?.trainers_dir || "正在读取路径..."}
               className="flex-1 font-mono text-xs px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 select-all focus:outline-none"
             />
-            <button
-              type="button"
-              onClick={onPickNewDirectory}
-              className="px-3.5 py-2.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
-            >
-              <FolderOpen className="w-3.5 h-3.5" />
-              <span>更改目录...</span>
-            </button>
-            <button
-              type="button"
-              onClick={onOpenCurrentTrainersDir}
-              className="p-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 border border-slate-200/80 rounded-xl transition-all cursor-pointer"
-              title="在系统文件资源管理器中打开此目录"
-            >
-              <ExternalLink className="w-4 h-4 text-cyan-600" />
-            </button>
+            <TypewriterTooltip text="选取新盘符目录并开启无损搬家向导" position="top">
+              <button
+                type="button"
+                onClick={onPickNewDirectory}
+                className="px-3.5 py-2.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+              >
+                <JellyIcon intensity="gentle">
+                  <FolderOpen className="w-3.5 h-3.5" />
+                </JellyIcon>
+                <span>更改目录...</span>
+              </button>
+            </TypewriterTooltip>
+            <TypewriterTooltip text="在系统资源管理器中打开此文件夹" position="top">
+              <button
+                type="button"
+                onClick={onOpenCurrentTrainersDir}
+                className="p-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-600 border border-slate-200/80 rounded-xl transition-all cursor-pointer"
+              >
+                <JellyIcon intensity="gentle">
+                  <ExternalLink className="w-4 h-4 text-cyan-600" />
+                </JellyIcon>
+              </button>
+            </TypewriterTooltip>
           </div>
 
           {/* 存储三项微型看板 */}
@@ -122,14 +137,16 @@ export const ManagementTab: React.FC<ManagementTabProps> = ({
             </div>
           </div>
         </div>
-      </div>
+      </PaperCard>
 
       {/* 卡片 2：📥 外部导入与解压自动化规则 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
         <div className="flex items-start gap-3.5">
-          <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 mt-0.5">
-            <Archive className="w-5 h-5" />
-          </div>
+          <JellyIcon intensity="gentle">
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 mt-0.5">
+              <Archive className="w-5 h-5" />
+            </div>
+          </JellyIcon>
           <div>
             <h2 className="text-sm font-bold text-slate-900">
               外部导入与解压自动化规则
@@ -209,14 +226,16 @@ export const ManagementTab: React.FC<ManagementTabProps> = ({
             </span>
           </div>
         </div>
-      </div>
+      </PaperCard>
 
       {/* 卡片 3：🧹 缓存清理与本地离线字典 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
         <div className="flex items-start gap-3.5">
-          <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0 mt-0.5">
-            <Trash2 className="w-5 h-5" />
-          </div>
+          <JellyIcon intensity="gentle">
+            <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0 mt-0.5">
+              <Trash2 className="w-5 h-5" />
+            </div>
+          </JellyIcon>
           <div>
             <h2 className="text-sm font-bold text-slate-900">
               缓存清理与本地离线词库
@@ -238,21 +257,27 @@ export const ManagementTab: React.FC<ManagementTabProps> = ({
                 定期清理系统临时目录中的解压碎片，不影响已成功建档的修改器文件
               </p>
             </div>
-            <button
-              type="button"
-              onClick={onCleanCache}
-              disabled={isCleaningCache}
-              className="px-3.5 py-1.5 bg-white hover:bg-slate-100 active:scale-95 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-            >
-              <Trash2 className={`w-3.5 h-3.5 text-amber-600 ${isCleaningCache ? "animate-spin" : ""}`} />
-              <span>{isCleaningCache ? "正在清理..." : "一键清理临时缓存"}</span>
-            </button>
+            <TypewriterTooltip text="释放临时解压留存的安装包残留碎片" position="left">
+              <button
+                type="button"
+                onClick={onCleanCache}
+                disabled={isCleaningCache}
+                className="px-3.5 py-1.5 bg-white hover:bg-slate-100 active:scale-95 text-slate-700 border border-slate-200 rounded-lg text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <JellyIcon intensity="bouncy">
+                  <Trash2 className={`w-3.5 h-3.5 text-amber-600 ${isCleaningCache ? "animate-spin" : ""}`} />
+                </JellyIcon>
+                <span>{isCleaningCache ? "正在清理..." : "一键清理临时缓存"}</span>
+              </button>
+            </TypewriterTooltip>
           </div>
 
           {/* 本地 SQLite 离线词库状态 */}
           <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50/80 border border-slate-200/70">
             <div className="flex items-center gap-2.5">
-              <Database className="w-4 h-4 text-cyan-600" />
+              <JellyIcon intensity="gentle">
+                <Database className="w-4 h-4 text-cyan-600" />
+              </JellyIcon>
               <div>
                 <span className="text-xs font-semibold text-slate-800">
                   本地 SQLite 游戏名称离线映射库
@@ -269,14 +294,16 @@ export const ManagementTab: React.FC<ManagementTabProps> = ({
             </div>
           </div>
         </div>
-      </div>
+      </PaperCard>
 
       {/* 卡片 4：🪟 窗口行为与开机启动 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
         <div className="flex items-start gap-3.5">
-          <div className="w-9 h-9 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 shrink-0 mt-0.5">
-            <Monitor className="w-5 h-5" />
-          </div>
+          <JellyIcon intensity="gentle">
+            <div className="w-9 h-9 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 shrink-0 mt-0.5">
+              <Monitor className="w-5 h-5" />
+            </div>
+          </JellyIcon>
           <div>
             <h2 className="text-sm font-bold text-slate-900">
               窗口行为与开机自启
@@ -342,7 +369,7 @@ export const ManagementTab: React.FC<ManagementTabProps> = ({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+      </PaperCard>
+    </PaperContainer>
   );
 };

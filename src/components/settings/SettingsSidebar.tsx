@@ -1,5 +1,8 @@
 import React from "react";
 import { Keyboard, FolderCog, Zap } from "lucide-react";
+import { motion } from "motion/react";
+import { JellyIcon } from "../ui/motion/JellyIcon";
+import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
 
 export type SettingsTab = "hotkey" | "management" | "network";
 
@@ -8,94 +11,128 @@ interface SettingsSidebarProps {
   onTabChange: (tab: SettingsTab) => void;
 }
 
+interface SettingsTabConfig {
+  id: SettingsTab;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  iconColor: string;
+  activeIconColor: string;
+  dotColor: string;
+  tooltipText: string;
+}
+
+const SETTINGS_TABS: SettingsTabConfig[] = [
+  {
+    id: "hotkey",
+    label: "热键与自动化",
+    icon: Keyboard,
+    iconColor: "text-slate-400 group-hover:text-cyan-600",
+    activeIconColor: "text-cyan-400",
+    dotColor: "bg-cyan-400",
+    tooltipText: "配置管理员 UAC 提权策略、按键延迟调度与全局预设备份",
+  },
+  {
+    id: "management",
+    label: "便携存储管理",
+    icon: FolderCog,
+    iconColor: "text-slate-400 group-hover:text-cyan-600",
+    activeIconColor: "text-cyan-400",
+    dotColor: "bg-cyan-400",
+    tooltipText: "管理 trainers 根目录、无损跨盘搬家、开机自启与孤儿缓存清理",
+  },
+  {
+    id: "network",
+    label: "网络分流与加速",
+    icon: Zap,
+    iconColor: "text-slate-400 group-hover:text-amber-500",
+    activeIconColor: "text-amber-400",
+    dotColor: "bg-amber-400",
+    tooltipText: "配置 HTTP/SOCKS5 代理、GitHub 镜像节点与 Steam 封面 CDN",
+  },
+];
+
 export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   activeTab,
   onTabChange,
 }) => {
   return (
-    <aside className="w-48 bg-white border-r border-slate-200/90 flex flex-col shrink-0 select-none shadow-2xs">
-      <div className="p-3 space-y-1">
-        {/* 1. 热键 */}
-        <button
-          onClick={() => onTabChange("hotkey")}
-          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer group ${
-            activeTab === "hotkey"
-              ? "bg-slate-900 text-white shadow-sm"
-              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-          }`}
-        >
-          <div className="flex items-center gap-2.5">
-            <Keyboard
-              className={`w-4 h-4 ${
-                activeTab === "hotkey"
-                  ? "text-cyan-400"
-                  : "text-slate-400 group-hover:text-cyan-600"
-              }`}
-            />
-            <span>热键</span>
-          </div>
-          {activeTab === "hotkey" && (
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-          )}
-        </button>
+    <aside className="w-52 bg-white border-r border-slate-200/90 flex flex-col shrink-0 select-none shadow-[2px_0_8px_rgba(0,0,0,0.02)] p-3">
+      <div className="space-y-1 relative">
+        {SETTINGS_TABS.map((tab) => {
+          const IconComponent = tab.icon;
+          const isActive = activeTab === tab.id;
 
-        {/* 2. 管理 */}
-        <button
-          onClick={() => onTabChange("management")}
-          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer group ${
-            activeTab === "management"
-              ? "bg-slate-900 text-white shadow-sm"
-              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-          }`}
-        >
-          <div className="flex items-center gap-2.5">
-            <FolderCog
-              className={`w-4 h-4 ${
-                activeTab === "management"
-                  ? "text-cyan-400"
-                  : "text-slate-400 group-hover:text-cyan-600"
-              }`}
-            />
-            <span>管理</span>
-          </div>
-          {activeTab === "management" && (
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-          )}
-        </button>
+          return (
+            <TypewriterTooltip
+              key={tab.id}
+              text={tab.tooltipText}
+              position="right"
+              delayMs={350}
+              className="block w-full"
+            >
+              <button
+                onClick={() => onTabChange(tab.id)}
+                className={`relative w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors duration-200 text-left cursor-pointer group ${
+                  isActive
+                    ? "text-white"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                {/* 活跃背景滑动药丸动画 (Mineradio 风格流畅胶囊动画) */}
+                {isActive && (
+                  <motion.div
+                    layoutId="settings-sidebar-pill"
+                    className="absolute inset-0 bg-slate-900 rounded-xl shadow-sm z-0"
+                    transition={{
+                      type: "spring",
+                      stiffness: 380,
+                      damping: 32,
+                    }}
+                  />
+                )}
 
-        {/* 3. 网络与加速 */}
-        <button
-          onClick={() => onTabChange("network")}
-          className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer group ${
-            activeTab === "network"
-              ? "bg-slate-900 text-white shadow-sm"
-              : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-          }`}
-        >
-          <div className="flex items-center gap-2.5">
-            <Zap
-              className={`w-4 h-4 ${
-                activeTab === "network"
-                  ? "text-amber-400"
-                  : "text-slate-400 group-hover:text-amber-500"
-              }`}
-            />
-            <span>网络与加速</span>
-          </div>
-          {activeTab === "network" && (
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-          )}
-        </button>
+                <div className="relative z-10 flex items-center gap-2.5">
+                  <JellyIcon intensity="gentle">
+                    <IconComponent
+                      className={`w-4 h-4 transition-colors ${
+                        isActive ? tab.activeIconColor : tab.iconColor
+                      }`}
+                    />
+                  </JellyIcon>
+                  <span>{tab.label}</span>
+                </div>
+
+                {isActive && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className={`relative z-10 w-1.5 h-1.5 rounded-full ${tab.dotColor}`}
+                  />
+                )}
+              </button>
+            </TypewriterTooltip>
+          );
+        })}
       </div>
 
       <div className="mt-auto p-3 border-t border-slate-100 text-[11px] text-slate-400 space-y-1">
-        <div className="flex items-center justify-between">
-          <span>配置持久化</span>
-          <span className="text-cyan-600 font-mono text-[10px]">app_config.json</span>
-        </div>
-        <p className="text-[10px] text-slate-400/80 leading-relaxed">
-          修改即时自动落盘保存
-        </p>
+        <TypewriterTooltip
+          text="设置项实时写入独立配置存储，重启客户端无缝还原喵~"
+          position="top"
+          delayMs={250}
+        >
+          <div className="space-y-1 cursor-help hover:text-slate-600 transition-colors">
+            <div className="flex items-center justify-between">
+              <span>配置持久化</span>
+              <span className="text-cyan-600 font-mono text-[10px] font-bold">
+                app_config.json
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-400/80 leading-relaxed">
+              修改即时自动落盘保存
+            </p>
+          </div>
+        </TypewriterTooltip>
       </div>
     </aside>
   );

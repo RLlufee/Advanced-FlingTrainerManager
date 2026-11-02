@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { StorageStats } from "../../services/configApi";
+import { JellyIcon } from "../ui/motion/JellyIcon";
 
 interface ExportPresetModalProps {
   exportJson: string | null;
@@ -33,7 +34,9 @@ export const ExportPresetModal: React.FC<ExportPresetModalProps> = ({
       <div className="bg-white w-full max-w-xl rounded-2xl border border-slate-200 shadow-2xl p-5 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <Download className="w-4 h-4 text-cyan-600" />
+            <JellyIcon intensity="gentle">
+              <Download className="w-4 h-4 text-cyan-600" />
+            </JellyIcon>
             所有修改器开关预设备份数据
           </h3>
           <button
@@ -54,7 +57,9 @@ export const ExportPresetModal: React.FC<ExportPresetModalProps> = ({
             onClick={onCopy}
             className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
           >
-            {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            <JellyIcon intensity="bouncy">
+              {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+            </JellyIcon>
             <span>{isCopied ? "已复制到剪贴板！" : "复制备份 JSON"}</span>
           </button>
         </div>
@@ -85,7 +90,9 @@ export const ImportPresetModal: React.FC<ImportPresetModalProps> = ({
       <div className="bg-white w-full max-w-xl rounded-2xl border border-slate-200 shadow-2xl p-5 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <Upload className="w-4 h-4 text-cyan-600" />
+            <JellyIcon intensity="gentle">
+              <Upload className="w-4 h-4 text-cyan-600" />
+            </JellyIcon>
             导入还原开关预设
           </h3>
           <button
@@ -116,7 +123,9 @@ export const ImportPresetModal: React.FC<ImportPresetModalProps> = ({
             onClick={onImport}
             className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
           >
-            <Check className="w-3.5 h-3.5" />
+            <JellyIcon intensity="bouncy">
+              <Check className="w-3.5 h-3.5" />
+            </JellyIcon>
             <span>立即导入并还原</span>
           </button>
         </div>
@@ -141,9 +150,11 @@ export const ClearPresetsConfirmModal: React.FC<ClearPresetsConfirmModalProps> =
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-xs p-4 animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-sm rounded-2xl border border-slate-200 shadow-2xl p-5 space-y-4">
-        <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 mx-auto">
-          <AlertTriangle className="w-6 h-6" />
-        </div>
+        <JellyIcon intensity="bouncy">
+          <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 mx-auto">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+        </JellyIcon>
         <div className="text-center space-y-1">
           <h3 className="text-sm font-bold text-slate-900">确定要清空全部预设吗？</h3>
           <p className="text-xs text-slate-500 leading-relaxed">
@@ -197,9 +208,11 @@ export const MigrationModal: React.FC<MigrationModalProps> = ({
       <div className="bg-white w-full max-w-lg rounded-2xl border border-slate-200 shadow-2xl p-6 space-y-5">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600">
-              <HardDrive className="w-5 h-5" />
-            </div>
+            <JellyIcon intensity="bouncy">
+              <div className="w-10 h-10 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600">
+                <HardDrive className="w-5 h-5" />
+              </div>
+            </JellyIcon>
             <div>
               <h3 className="text-sm font-bold text-slate-900">修改器存储路径迁移向导</h3>
               <p className="text-xs text-slate-400">
@@ -303,7 +316,9 @@ export const MigrationModal: React.FC<MigrationModalProps> = ({
               </>
             ) : (
               <>
-                <Sparkles className="w-3.5 h-3.5" />
+                <JellyIcon intensity="bouncy">
+                  <Sparkles className="w-3.5 h-3.5" />
+                </JellyIcon>
                 <span>开始一键无损搬家</span>
               </>
             )}

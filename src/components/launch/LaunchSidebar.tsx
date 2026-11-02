@@ -10,8 +10,11 @@ import {
   FolderInput,
   Sparkles,
 } from "lucide-react";
+import { motion } from "motion/react";
 import type { InstalledTrainerRecord, TrainerUpdateInfo } from "../../services/trainerApi";
 import { GamePoster } from "../GamePoster";
+import { JellyIcon } from "../ui/motion/JellyIcon";
+import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
 
 export interface LaunchSidebarProps {
   trainers: InstalledTrainerRecord[];
@@ -80,53 +83,74 @@ export const LaunchSidebar: React.FC<LaunchSidebarProps> = ({
             已安装 ({trainers.length})
           </span>
           <div className="flex items-center gap-1">
-            <button
-              onClick={onImportExternal}
-              disabled={isImporting}
-              title="批量扫描并导入外部已有修改器（自动识别、提取、匹配 Steam 封面并建档）"
-              className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors disabled:opacity-40 cursor-pointer"
-            >
-              <FolderInput className={`w-3.5 h-3.5 ${isImporting ? "animate-bounce text-cyan-600" : ""}`} />
-            </button>
-            <button
-              onClick={onCheckUpdates}
-              disabled={isCheckingUpdate || trainers.length === 0}
-              title="联网对比官网，检测是否有最新版本修改器"
-              className="p-1 rounded text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-40 cursor-pointer"
-            >
-              <Radio className={`w-3.5 h-3.5 ${isCheckingUpdate ? "animate-pulse text-amber-500" : ""}`} />
-            </button>
-            <button
-              onClick={onEnrichAll}
-              disabled={isEnriching || trainers.length === 0}
-              title="一键联网补全所有缺少功能看板或封面的修改器数据"
-              className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors disabled:opacity-40 cursor-pointer"
-            >
-              <Sparkles className={`w-3.5 h-3.5 ${isEnriching ? "animate-spin text-cyan-600" : ""}`} />
-            </button>
-            <button
-              onClick={onRefresh}
-              title="刷新已安装列表"
-              className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-cyan-600" : ""}`} />
-            </button>
-            <button
-              onClick={onOpenTrainersRoot}
-              title="打开 trainers 便携存储根目录"
-              className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              <FolderTree className="w-3.5 h-3.5" />
-            </button>
+            <TypewriterTooltip text="批量扫描并导入外部已有修改器" position="top">
+              <button
+                onClick={onImportExternal}
+                disabled={isImporting}
+                className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors disabled:opacity-40 cursor-pointer"
+              >
+                <JellyIcon intensity="gentle">
+                  <FolderInput className={`w-3.5 h-3.5 ${isImporting ? "animate-bounce text-cyan-600" : ""}`} />
+                </JellyIcon>
+              </button>
+            </TypewriterTooltip>
+
+            <TypewriterTooltip text="联网对比官网，检测是否有最新版本" position="top">
+              <button
+                onClick={onCheckUpdates}
+                disabled={isCheckingUpdate || trainers.length === 0}
+                className="p-1 rounded text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-40 cursor-pointer"
+              >
+                <JellyIcon intensity="gentle">
+                  <Radio className={`w-3.5 h-3.5 ${isCheckingUpdate ? "animate-pulse text-amber-500" : ""}`} />
+                </JellyIcon>
+              </button>
+            </TypewriterTooltip>
+
+            <TypewriterTooltip text="一键联网补全缺少功能看板或封面" position="top">
+              <button
+                onClick={onEnrichAll}
+                disabled={isEnriching || trainers.length === 0}
+                className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors disabled:opacity-40 cursor-pointer"
+              >
+                <JellyIcon intensity="gentle">
+                  <Sparkles className={`w-3.5 h-3.5 ${isEnriching ? "animate-spin text-cyan-600" : ""}`} />
+                </JellyIcon>
+              </button>
+            </TypewriterTooltip>
+
+            <TypewriterTooltip text="刷新本地修改器列表" position="top">
+              <button
+                onClick={onRefresh}
+                className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <JellyIcon intensity="gentle">
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-cyan-600" : ""}`} />
+                </JellyIcon>
+              </button>
+            </TypewriterTooltip>
+
+            <TypewriterTooltip text="打开 trainers 便携存储根目录" position="top">
+              <button
+                onClick={onOpenTrainersRoot}
+                className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <JellyIcon intensity="gentle">
+                  <FolderTree className="w-3.5 h-3.5" />
+                </JellyIcon>
+              </button>
+            </TypewriterTooltip>
           </div>
         </div>
       </div>
 
       {/* 已安装修改器列表 */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+      <div className="flex-1 overflow-y-auto p-2 space-y-1 relative">
         {filteredTrainers.length === 0 ? (
           <div className="p-6 text-center text-slate-400">
-            <Gamepad2 className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
+            <JellyIcon intensity="gentle">
+              <Gamepad2 className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
+            </JellyIcon>
             <p className="text-xs font-medium">
               {searchQuery ? "未匹配到相关修改器" : "暂未安装任何修改器"}
             </p>
@@ -146,14 +170,27 @@ export const LaunchSidebar: React.FC<LaunchSidebarProps> = ({
               <button
                 key={t.id}
                 onClick={() => onSelectTrainer(t.id)}
-                className={`w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-xs font-medium transition-all text-left group ${
+                className={`relative w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-xs font-medium transition-colors text-left group cursor-pointer ${
                   isSelected
-                    ? "bg-slate-100 text-slate-900 font-semibold shadow-xs ring-1 ring-slate-200"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    ? "text-slate-900 font-semibold"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
               >
+                {/* 活跃项流体药丸滑动背景 */}
+                {isSelected && (
+                  <motion.div
+                    layoutId="launch-sidebar-pill"
+                    className="absolute inset-0 bg-slate-100 rounded-xl shadow-xs ring-1 ring-slate-200/90 z-0"
+                    transition={{
+                      type: "spring",
+                      stiffness: 400,
+                      damping: 32,
+                    }}
+                  />
+                )}
+
                 {/* 微缩海报 */}
-                <div className="w-9 h-11 rounded-md overflow-hidden shrink-0 border border-slate-200/80 bg-slate-100 shadow-2xs">
+                <div className="relative z-10 w-9 h-11 rounded-md overflow-hidden shrink-0 border border-slate-200/80 bg-slate-100 shadow-2xs">
                   <GamePoster
                     key={`${t.id}-${t.capsule_image || ""}-${t.thumbnail || ""}-${optionCount}`}
                     primarySrc={t.capsule_image}
@@ -165,7 +202,7 @@ export const LaunchSidebar: React.FC<LaunchSidebarProps> = ({
                 </div>
 
                 {/* 游戏名与版本徽章 */}
-                <div className="truncate flex-1 min-w-0">
+                <div className="relative z-10 truncate flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
                     <span className="truncate text-slate-800 font-semibold text-xs leading-snug">
                       {displayName}
@@ -204,7 +241,9 @@ export const LaunchSidebar: React.FC<LaunchSidebarProps> = ({
           disabled={isImporting}
           className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
         >
-          <FolderInput className={`w-3.5 h-3.5 text-cyan-600 ${isImporting ? "animate-bounce" : ""}`} />
+          <JellyIcon intensity="bouncy">
+            <FolderInput className={`w-3.5 h-3.5 text-cyan-600 ${isImporting ? "animate-bounce" : ""}`} />
+          </JellyIcon>
           <span>{isImporting ? "正在扫描纳管中..." : "批量导入已有修改器..."}</span>
         </button>
         {onNavigateToDownload && (
@@ -212,7 +251,9 @@ export const LaunchSidebar: React.FC<LaunchSidebarProps> = ({
             onClick={onNavigateToDownload}
             className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200/60 shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
           >
-            <PlusCircle className="w-3.5 h-3.5 text-cyan-600" />
+            <JellyIcon intensity="gentle">
+              <PlusCircle className="w-3.5 h-3.5 text-cyan-600" />
+            </JellyIcon>
             <span>从官网下载更多修改器...</span>
           </button>
         )}

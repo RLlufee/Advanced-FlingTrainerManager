@@ -12,6 +12,9 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { NetworkSettings, NetworkTestResult } from "../../services/configApi";
+import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
+import { JellyIcon } from "../ui/motion/JellyIcon";
+import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
 
 interface NetworkTabProps {
   network: NetworkSettings;
@@ -35,13 +38,15 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
   onResetNetwork,
 }) => {
   return (
-    <div className="max-w-4xl mx-auto space-y-4 animate-in fade-in duration-150">
+    <PaperContainer className="max-w-4xl mx-auto space-y-4">
       {/* 卡片 1: 本地网络代理配置 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600 shrink-0">
-            <Globe className="w-4 h-4 stroke-[2]" />
-          </div>
+          <JellyIcon intensity="bouncy">
+            <div className="w-9 h-9 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600 shrink-0">
+              <Globe className="w-4 h-4 stroke-[2]" />
+            </div>
+          </JellyIcon>
           <div>
             <h2 className="text-sm font-bold text-slate-800">
               网络代理与分流模式
@@ -63,7 +68,9 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <Radio className="w-3.5 h-3.5 text-cyan-600" />
+            <JellyIcon intensity="gentle">
+              <Radio className="w-3.5 h-3.5 text-cyan-600" />
+            </JellyIcon>
             <span>跟随系统代理</span>
           </button>
           <button
@@ -75,7 +82,9 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <Wifi className="w-3.5 h-3.5 text-cyan-600" />
+            <JellyIcon intensity="gentle">
+              <Wifi className="w-3.5 h-3.5 text-cyan-600" />
+            </JellyIcon>
             <span>自定义本地代理</span>
           </button>
           <button
@@ -87,7 +96,9 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <Zap className="w-3.5 h-3.5 text-amber-500" />
+            <JellyIcon intensity="gentle">
+              <Zap className="w-3.5 h-3.5 text-amber-500" />
+            </JellyIcon>
             <span>直接连接 (禁用代理)</span>
           </button>
         </div>
@@ -158,7 +169,9 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
         <div className="p-3 bg-cyan-50/50 border border-cyan-100 rounded-xl space-y-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-800">
-              <Activity className="w-3.5 h-3.5 text-cyan-600" />
+              <JellyIcon intensity="gentle">
+                <Activity className="w-3.5 h-3.5 text-cyan-600" />
+              </JellyIcon>
               <span>网络与代理连通性实时诊断</span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -172,24 +185,28 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                 <option value="https://store.steampowered.com">Steam 商店 API (steampowered.com)</option>
               </select>
 
-              <button
-                type="button"
-                onClick={onTestNetwork}
-                disabled={isTestingNetwork}
-                className="px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white rounded-lg text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-              >
-                {isTestingNetwork ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>测试中...</span>
-                  </>
-                ) : (
-                  <>
-                    <Zap className="w-3.5 h-3.5" />
-                    <span>测试连通性</span>
-                  </>
-                )}
-              </button>
+              <TypewriterTooltip text="向目标服务器发起高精度延迟探测请求" position="left">
+                <button
+                  type="button"
+                  onClick={onTestNetwork}
+                  disabled={isTestingNetwork}
+                  className="px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white rounded-lg text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {isTestingNetwork ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>测试中...</span>
+                    </>
+                  ) : (
+                    <>
+                      <JellyIcon intensity="bouncy">
+                        <Zap className="w-3.5 h-3.5" />
+                      </JellyIcon>
+                      <span>测试连通性</span>
+                    </>
+                  )}
+                </button>
+              </TypewriterTooltip>
             </div>
           </div>
 
@@ -217,14 +234,16 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
             </div>
           )}
         </div>
-      </div>
+      </PaperCard>
 
       {/* 卡片 2: 更新源与 GitHub 镜像加速 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
-            <Zap className="w-4 h-4 stroke-[2]" />
-          </div>
+          <JellyIcon intensity="bouncy">
+            <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+              <Zap className="w-4 h-4 stroke-[2]" />
+            </div>
+          </JellyIcon>
           <div>
             <h2 className="text-sm font-bold text-slate-800">
               更新源与海外镜像加速
@@ -296,14 +315,16 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
             </p>
           </div>
         </div>
-      </div>
+      </PaperCard>
 
       {/* 卡片 3: Steam 官方海报 CDN 加速 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 shrink-0">
-            <Layers className="w-4 h-4 stroke-[2]" />
-          </div>
+          <JellyIcon intensity="gentle">
+            <div className="w-9 h-9 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 shrink-0">
+              <Layers className="w-4 h-4 stroke-[2]" />
+            </div>
+          </JellyIcon>
           <div>
             <h2 className="text-sm font-bold text-slate-800">
               Steam 封面图片 CDN 镜像加速
@@ -364,14 +385,16 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
             </div>
           )}
         </div>
-      </div>
+      </PaperCard>
 
       {/* 卡片 4: 网络超时与容错微调 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600 shrink-0">
-            <Activity className="w-4 h-4 stroke-[2]" />
-          </div>
+          <JellyIcon intensity="gentle">
+            <div className="w-9 h-9 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center text-violet-600 shrink-0">
+              <Activity className="w-4 h-4 stroke-[2]" />
+            </div>
+          </JellyIcon>
           <div>
             <h2 className="text-sm font-bold text-slate-800">
               网络超时与重试容错
@@ -441,16 +464,20 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
           <span className="text-[11px] text-slate-400">
             若改错配置导致断网，可随时一键恢复出厂网络设置
           </span>
-          <button
-            type="button"
-            onClick={onResetNetwork}
-            className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 active:scale-95 text-slate-600 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-            <span>恢复网络设置为默认</span>
-          </button>
+          <TypewriterTooltip text="将所有代理模式与海外镜像重置为系统出厂推荐" position="top">
+            <button
+              type="button"
+              onClick={onResetNetwork}
+              className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 active:scale-95 text-slate-600 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+            >
+              <JellyIcon intensity="gentle">
+                <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+              </JellyIcon>
+              <span>恢复网络设置为默认</span>
+            </button>
+          </TypewriterTooltip>
         </div>
-      </div>
-    </div>
+      </PaperCard>
+    </PaperContainer>
   );
 };

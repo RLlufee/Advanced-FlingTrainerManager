@@ -11,6 +11,9 @@ import {
   Upload,
 } from "lucide-react";
 import { HotkeySettings } from "../../services/configApi";
+import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
+import { JellyIcon } from "../ui/motion/JellyIcon";
+import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
 
 interface HotkeyTabProps {
   hotkey: HotkeySettings;
@@ -28,14 +31,16 @@ export const HotkeyTab: React.FC<HotkeyTabProps> = ({
   onOpenClearConfirm,
 }) => {
   return (
-    <div className="max-w-4xl mx-auto space-y-4 animate-in fade-in duration-150">
+    <PaperContainer className="max-w-4xl mx-auto space-y-4">
       {/* 卡片 1：🛡️ 管理员提权策略 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 transition-all">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 transition-all">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3.5">
-            <div className="w-9 h-9 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600 shrink-0 mt-0.5">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
+            <JellyIcon intensity="bouncy">
+              <div className="w-9 h-9 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600 shrink-0 mt-0.5">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+            </JellyIcon>
             <div>
               <h2 className="text-sm font-bold text-slate-900">
                 以管理员身份提权启动修改器（建议开启⚠️）
@@ -47,28 +52,32 @@ export const HotkeyTab: React.FC<HotkeyTabProps> = ({
           </div>
 
           {/* 开关组件 */}
-          <button
-            type="button"
-            onClick={() => onUpdateHotkey({ run_as_admin: !hotkey.run_as_admin })}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-              hotkey.run_as_admin ? "bg-cyan-600" : "bg-slate-300"
-            }`}
-          >
-            <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                hotkey.run_as_admin ? "translate-x-5" : "translate-x-0"
+          <TypewriterTooltip text="开启或关闭启动修改器时的管理员提权授权请求" position="left">
+            <button
+              type="button"
+              onClick={() => onUpdateHotkey({ run_as_admin: !hotkey.run_as_admin })}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                hotkey.run_as_admin ? "bg-cyan-600" : "bg-slate-300"
               }`}
-            />
-          </button>
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                  hotkey.run_as_admin ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </TypewriterTooltip>
         </div>
-      </div>
+      </PaperCard>
 
       {/* 卡片 2：⚡ 模拟按键防吞键微调引擎 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-5">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-5">
         <div className="flex items-start gap-3.5">
-          <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0 mt-0.5">
-            <Sliders className="w-5 h-5" />
-          </div>
+          <JellyIcon intensity="gentle">
+            <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0 mt-0.5">
+              <Sliders className="w-5 h-5" />
+            </div>
+          </JellyIcon>
           <div>
             <h2 className="text-sm font-bold text-slate-900">
               模拟按键时序与防吞键引擎
@@ -144,14 +153,16 @@ export const HotkeyTab: React.FC<HotkeyTabProps> = ({
             <strong>小贴士</strong>：若在游戏里发现有一半功能没有被激活，通常是按键太快被游戏内部输入队列吃掉了。建议将间隔调至 <strong>100~150ms</strong> 即可完美解决。
           </span>
         </div>
-      </div>
+      </PaperCard>
 
       {/* 卡片 3：🎮 一键双启联动策略 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
         <div className="flex items-start gap-3.5">
-          <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 mt-0.5">
-            <Play className="w-5 h-5 fill-indigo-600" />
-          </div>
+          <JellyIcon intensity="gentle">
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 mt-0.5">
+              <Play className="w-5 h-5 fill-indigo-600" />
+            </div>
+          </JellyIcon>
           <div>
             <h2 className="text-sm font-bold text-slate-900">
               一键双启感知与自动同步预设
@@ -243,14 +254,16 @@ export const HotkeyTab: React.FC<HotkeyTabProps> = ({
             </button>
           </div>
         </div>
-      </div>
+      </PaperCard>
 
       {/* 卡片 4：🔄 全局预设备份、恢复与重置 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
         <div className="flex items-start gap-3.5">
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 mt-0.5">
-            <RotateCcw className="w-5 h-5" />
-          </div>
+          <JellyIcon intensity="bouncy">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 mt-0.5">
+              <RotateCcw className="w-5 h-5" />
+            </div>
+          </JellyIcon>
           <div>
             <h2 className="text-sm font-bold text-slate-900">
               全局预设备份、迁移与重置
@@ -263,36 +276,48 @@ export const HotkeyTab: React.FC<HotkeyTabProps> = ({
 
         <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-3">
           {/* 导出备份 */}
-          <button
-            type="button"
-            onClick={onExportPresets}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5 text-cyan-400" />
-            <span>导出所有预设 (JSON)</span>
-          </button>
+          <TypewriterTooltip text="将当前所有游戏的开关预设打包导出为 JSON 剪贴板文本" position="top">
+            <button
+              type="button"
+              onClick={onExportPresets}
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <JellyIcon intensity="gentle">
+                <Download className="w-3.5 h-3.5 text-cyan-400" />
+              </JellyIcon>
+              <span>导出所有预设 (JSON)</span>
+            </button>
+          </TypewriterTooltip>
 
           {/* 导入预设 */}
-          <button
-            type="button"
-            onClick={onOpenImportModal}
-            className="px-4 py-2 bg-white hover:bg-slate-50 active:scale-95 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
-          >
-            <Upload className="w-3.5 h-3.5 text-slate-500" />
-            <span>导入恢复预设</span>
-          </button>
+          <TypewriterTooltip text="粘贴之前导出的 JSON 预设备份并覆盖还原" position="top">
+            <button
+              type="button"
+              onClick={onOpenImportModal}
+              className="px-4 py-2 bg-white hover:bg-slate-50 active:scale-95 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <JellyIcon intensity="gentle">
+                <Upload className="w-3.5 h-3.5 text-slate-500" />
+              </JellyIcon>
+              <span>导入恢复预设</span>
+            </button>
+          </TypewriterTooltip>
 
           {/* 清空所有预设 */}
-          <button
-            type="button"
-            onClick={onOpenClearConfirm}
-            className="px-4 py-2 bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-700 border border-rose-200/70 rounded-xl text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer ml-auto"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-rose-500" />
-            <span>清空全部预设</span>
-          </button>
+          <TypewriterTooltip text="彻底清空全部修改器的已开启开关记忆" position="top">
+            <button
+              type="button"
+              onClick={onOpenClearConfirm}
+              className="px-4 py-2 bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-700 border border-rose-200/70 rounded-xl text-xs font-semibold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer ml-auto"
+            >
+              <JellyIcon intensity="gentle">
+                <RotateCcw className="w-3.5 h-3.5 text-rose-500" />
+              </JellyIcon>
+              <span>清空全部预设</span>
+            </button>
+          </TypewriterTooltip>
         </div>
-      </div>
-    </div>
+      </PaperCard>
+    </PaperContainer>
   );
 };
