@@ -132,7 +132,7 @@ export const HardwareTab: React.FC = () => {
         <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <JellyIcon intensity="bouncy">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-md shadow-cyan-500/20 shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-700 flex items-center justify-center text-white shadow-md shadow-cyan-500/20 shrink-0">
                 <Monitor className="w-6 h-6" />
               </div>
             </JellyIcon>

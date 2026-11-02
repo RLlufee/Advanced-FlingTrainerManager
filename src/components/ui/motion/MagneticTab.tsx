@@ -9,6 +9,8 @@ export interface MagneticTabProps {
   layoutId?: string;
   className?: string;
   activePillClassName?: string;
+  /** 激活态文字颜色类名（默认深灰，可传入强调色类名以跟随主题） */
+  activeTextClassName?: string;
 }
 
 export const MagneticTab: React.FC<MagneticTabProps> = ({
@@ -18,6 +20,7 @@ export const MagneticTab: React.FC<MagneticTabProps> = ({
   layoutId = "active-tab-pill",
   className = "",
   activePillClassName = "bg-white text-slate-900 shadow-md",
+  activeTextClassName = "text-slate-900",
 }) => {
   const { isMagneticEnabled, isAnimEnabled, effectiveSpeed } = useAnimationConfig();
   const ref = useRef<HTMLButtonElement>(null);
@@ -56,7 +59,7 @@ export const MagneticTab: React.FC<MagneticTabProps> = ({
       }}
       whileTap={isAnimEnabled ? { scale: 0.94 } : undefined}
       className={`relative px-4 py-1.5 rounded-full text-xs font-medium cursor-pointer select-none transition-colors duration-150 flex items-center gap-1.5 z-10 ${
-        isActive ? "text-slate-900 font-semibold" : "text-slate-300 hover:text-white"
+        isActive ? `${activeTextClassName} font-semibold` : "text-slate-300 hover:text-white"
       } ${className}`}
     >
       {isActive && (

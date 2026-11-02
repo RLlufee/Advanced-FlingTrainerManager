@@ -86,7 +86,7 @@ export const AnimationTab: React.FC = () => {
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3.5">
             <JellyIcon intensity="bouncy">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-md shadow-cyan-500/20 shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-700 flex items-center justify-center text-white shadow-md shadow-cyan-500/20 shrink-0">
                 <Sparkles className="w-5 h-5" />
               </div>
             </JellyIcon>
@@ -110,14 +110,12 @@ export const AnimationTab: React.FC = () => {
             <button
               type="button"
               onClick={() => updateSettings({ enabled: !settings.enabled })}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                settings.enabled ? "bg-cyan-600" : "bg-slate-300"
-              }`}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${settings.enabled ? "bg-cyan-600" : "bg-slate-300"
+                }`}
             >
               <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                  settings.enabled ? "translate-x-5" : "translate-x-0"
-                }`}
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${settings.enabled ? "translate-x-5" : "translate-x-0"
+                  }`}
               />
             </button>
           </TypewriterTooltip>
@@ -132,11 +130,10 @@ export const AnimationTab: React.FC = () => {
             {/* 1. 优雅微拟物 */}
             <div
               onClick={() => applyPreset("balanced")}
-              className={`p-3 rounded-xl border transition-all cursor-pointer space-y-1 group ${
-                settings.enabled && settings.speed_multiplier === 1.0 && settings.jelly_intensity === "medium"
+              className={`p-3 rounded-xl border transition-all cursor-pointer space-y-1 group ${settings.enabled && settings.speed_multiplier === 1.0 && settings.jelly_intensity === "medium"
                   ? "bg-cyan-50/50 border-cyan-400 ring-1 ring-cyan-400/20 shadow-xs"
                   : "bg-slate-50/60 border-slate-200/80 hover:bg-white hover:border-slate-300"
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -155,11 +152,10 @@ export const AnimationTab: React.FC = () => {
             {/* 2. Q 弹布丁 */}
             <div
               onClick={() => applyPreset("pudding")}
-              className={`p-3 rounded-xl border transition-all cursor-pointer space-y-1 group ${
-                settings.enabled && settings.jelly_intensity === "bouncy"
+              className={`p-3 rounded-xl border transition-all cursor-pointer space-y-1 group ${settings.enabled && settings.jelly_intensity === "bouncy"
                   ? "bg-amber-50/50 border-amber-400 ring-1 ring-amber-400/20 shadow-xs"
                   : "bg-slate-50/60 border-slate-200/80 hover:bg-white hover:border-slate-300"
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -178,11 +174,10 @@ export const AnimationTab: React.FC = () => {
             {/* 3. 极速电竞 */}
             <div
               onClick={() => applyPreset("esports")}
-              className={`p-3 rounded-xl border transition-all cursor-pointer space-y-1 group ${
-                settings.enabled && settings.speed_multiplier >= 30
+              className={`p-3 rounded-xl border transition-all cursor-pointer space-y-1 group ${settings.enabled && settings.speed_multiplier >= 30
                   ? "bg-indigo-50/50 border-indigo-400 ring-1 ring-indigo-400/20 shadow-xs"
                   : "bg-slate-50/60 border-slate-200/80 hover:bg-white hover:border-slate-300"
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -201,11 +196,10 @@ export const AnimationTab: React.FC = () => {
             {/* 4. 纯净静止 */}
             <div
               onClick={() => applyPreset("static")}
-              className={`p-3 rounded-xl border transition-all cursor-pointer space-y-1 group ${
-                !settings.enabled
+              className={`p-3 rounded-xl border transition-all cursor-pointer space-y-1 group ${!settings.enabled
                   ? "bg-slate-100 border-slate-400 ring-1 ring-slate-400/20 shadow-xs"
                   : "bg-slate-50/60 border-slate-200/80 hover:bg-white hover:border-slate-300"
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -334,14 +328,12 @@ export const AnimationTab: React.FC = () => {
             <button
               type="button"
               onClick={() => updateSettings({ paper_flutter: !settings.paper_flutter })}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                settings.paper_flutter ? "bg-cyan-600" : "bg-slate-300"
-              }`}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${settings.paper_flutter ? "bg-cyan-600" : "bg-slate-300"
+                }`}
             >
               <span
-                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                  settings.paper_flutter ? "translate-x-4" : "translate-x-0"
-                }`}
+                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${settings.paper_flutter ? "translate-x-4" : "translate-x-0"
+                  }`}
               />
             </button>
           </div>
@@ -359,14 +351,12 @@ export const AnimationTab: React.FC = () => {
             <button
               type="button"
               onClick={() => updateSettings({ magnetic_tabs: !settings.magnetic_tabs })}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                settings.magnetic_tabs ? "bg-cyan-600" : "bg-slate-300"
-              }`}
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${settings.magnetic_tabs ? "bg-cyan-600" : "bg-slate-300"
+                }`}
             >
               <span
-                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                  settings.magnetic_tabs ? "translate-x-4" : "translate-x-0"
-                }`}
+                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${settings.magnetic_tabs ? "translate-x-4" : "translate-x-0"
+                  }`}
               />
             </button>
           </div>
@@ -395,11 +385,10 @@ export const AnimationTab: React.FC = () => {
                     key={level}
                     type="button"
                     onClick={() => updateSettings({ jelly_intensity: level })}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      isSelected
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${isSelected
                         ? "bg-slate-900 text-white shadow-xs"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                    }`}
+                      }`}
                   >
                     {labelMap[level]}
                   </button>
@@ -411,22 +400,22 @@ export const AnimationTab: React.FC = () => {
       </PaperCard>
 
       {/* 卡片 4：🎮 实时交互调试游乐场 (Interactive Playground) */}
-      <PaperCard className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-slate-700/80 text-white shadow-lg p-5 space-y-4">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <JellyIcon intensity="bouncy">
-              <div className="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30">
+              <div className="w-8 h-8 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center border border-cyan-200/60 shadow-2xs">
                 <Gamepad2 className="w-4 h-4" />
               </div>
             </JellyIcon>
             <div>
-              <h3 className="text-sm font-bold flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <span>实时交互调试游乐场</span>
-                <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/80 border border-cyan-800 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-mono text-cyan-700 bg-cyan-50 border border-cyan-200/80 px-2 py-0.5 rounded-full font-medium">
                   无需切页 · 晃动鼠标即时预览
                 </span>
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500">
                 调节上方滑块或预设后，可在此测试卡片直接感受真实的弹性与入场动效喵~
               </p>
             </div>
@@ -436,7 +425,7 @@ export const AnimationTab: React.FC = () => {
             onClick={() => {
               setPlaygroundKey((k) => k + 1);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white text-xs font-semibold shadow-md shadow-cyan-600/30 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>重新飘落卡片</span>
@@ -453,22 +442,22 @@ export const AnimationTab: React.FC = () => {
           <PaperCard
             delayIndex={0}
             tiltAngle={2.5}
-            className="p-4 rounded-xl bg-slate-800/80 border border-slate-700/70 hover:border-cyan-500/60 transition-colors flex flex-col justify-between space-y-3 cursor-pointer group"
+            className="p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 hover:bg-white hover:border-cyan-400/60 hover:shadow-sm transition-all flex flex-col justify-between space-y-3 cursor-pointer group"
           >
             <div className="flex items-start justify-between">
               <JellyIcon intensity="bouncy">
-                <div className="w-9 h-9 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-105 transition-transform">
-                  <Heart className="w-4 h-4 fill-cyan-400" />
+                <div className="w-9 h-9 rounded-xl bg-cyan-50 border border-cyan-200/70 flex items-center justify-center text-cyan-600 group-hover:scale-105 transition-transform shadow-2xs">
+                  <Heart className="w-4 h-4 fill-cyan-500 text-cyan-600" />
                 </div>
               </JellyIcon>
-              <span className="text-[10px] font-mono text-slate-400 bg-slate-900/60 px-2 py-0.5 rounded border border-slate-700">
+              <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/70">
                 测试卡片 #1
               </span>
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-200">鼠标移入测试果冻形变</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                当前果冻档位: <strong>{jellyIntensity}</strong>
+              <p className="text-xs font-bold text-slate-800 group-hover:text-cyan-600 transition-colors">鼠标移入测试果冻形变</p>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                当前果冻档位: <strong className="font-mono text-slate-700">{jellyIntensity}</strong>
               </p>
             </div>
           </PaperCard>
@@ -477,21 +466,21 @@ export const AnimationTab: React.FC = () => {
           <PaperCard
             delayIndex={1}
             tiltAngle={2.5}
-            className="p-4 rounded-xl bg-slate-800/80 border border-slate-700/70 hover:border-amber-500/60 transition-colors flex flex-col justify-between space-y-3 cursor-pointer group"
+            className="p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 hover:bg-white hover:border-amber-400/60 hover:shadow-sm transition-all flex flex-col justify-between space-y-3 cursor-pointer group"
           >
             <div className="flex items-start justify-between">
               <JellyIcon intensity="bouncy">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform">
-                  <Zap className="w-4 h-4 fill-amber-400" />
+                <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200/70 flex items-center justify-center text-amber-600 group-hover:scale-105 transition-transform shadow-2xs">
+                  <Zap className="w-4 h-4 fill-amber-500 text-amber-600" />
                 </div>
               </JellyIcon>
-              <span className="text-[10px] font-mono text-slate-400 bg-slate-900/60 px-2 py-0.5 rounded border border-slate-700">
+              <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/70">
                 测试卡片 #2
               </span>
             </div>
             <div>
-              <TypewriterTooltip text="恭喜主人！打字机提示与纸片动效已全域完美联动喵~" position="top">
-                <button className="px-3 py-1 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 rounded-lg text-[11px] font-semibold text-amber-300 cursor-help">
+              <TypewriterTooltip text="恭喜！打字机提示与纸片动效已全域完美联动喵~" position="top">
+                <button className="w-full py-1.5 px-2 bg-amber-50/80 hover:bg-amber-100 border border-amber-200 rounded-lg text-[11px] font-semibold text-amber-800 cursor-help transition-colors text-center">
                   悬浮测试打字机提示 ❯
                 </button>
               </TypewriterTooltip>
@@ -502,22 +491,35 @@ export const AnimationTab: React.FC = () => {
           <PaperCard
             delayIndex={2}
             tiltAngle={2.5}
-            className="p-4 rounded-xl bg-slate-800/80 border border-slate-700/70 hover:border-emerald-500/60 transition-colors flex flex-col justify-between space-y-3 cursor-pointer group"
+            className="p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 hover:bg-white hover:border-emerald-400/60 hover:shadow-sm transition-all flex flex-col justify-between space-y-3 cursor-pointer group"
           >
             <div className="flex items-start justify-between">
               <JellyIcon intensity="bouncy">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200/70 flex items-center justify-center text-emerald-600 group-hover:scale-105 transition-transform shadow-2xs">
                   <Layers className="w-4 h-4" />
                 </div>
               </JellyIcon>
-              <span className="text-[10px] font-mono text-slate-400 bg-slate-900/60 px-2 py-0.5 rounded border border-slate-700">
+              <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/70">
                 测试卡片 #3
               </span>
             </div>
-            <div className="text-[11px] text-slate-300 font-mono space-y-0.5">
-              <div>全局状态: <strong className={isAnimEnabled ? "text-emerald-400" : "text-slate-400"}>{isAnimEnabled ? "运行中" : "已停用"}</strong></div>
-              <div>有效倍率: <strong className="text-cyan-400">{effectiveSpeed.toFixed(2)}x</strong></div>
-              <div>飘落状态: <strong className="text-emerald-400">{settings.paper_flutter ? "已开启" : "已跳过"}</strong></div>
+            <div className="text-[11px] text-slate-600 font-mono space-y-1">
+              <div className="flex items-center justify-between">
+                <span>全局状态:</span>
+                <strong className={isAnimEnabled ? "text-emerald-600 font-semibold" : "text-slate-400"}>
+                  {isAnimEnabled ? "运行中" : "已停用"}
+                </strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>有效倍率:</span>
+                <strong className="text-cyan-700 font-semibold">{effectiveSpeed.toFixed(2)}x</strong>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>飘落状态:</span>
+                <strong className="text-emerald-600 font-semibold">
+                  {settings.paper_flutter ? "已开启" : "已跳过"}
+                </strong>
+              </div>
             </div>
           </PaperCard>
         </PaperContainer>

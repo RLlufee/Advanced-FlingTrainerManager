@@ -27,44 +27,44 @@ const TABS: TabItemConfig[] = [
     label: "内存深度优化",
     icon: Cpu,
     iconColor: "text-slate-400 group-hover:text-cyan-600",
-    activeIconColor: "text-cyan-400",
-    dotColor: "bg-cyan-400",
+    activeIconColor: "text-cyan-600",
+    dotColor: "bg-cyan-500",
     tooltipText: "基于 Windows NT 原生内核 API，深度释放工作集与待机缓存",
   },
   {
     id: "hardware",
     label: "硬件全景规格",
     icon: Monitor,
-    iconColor: "text-slate-400 group-hover:text-teal-600",
-    activeIconColor: "text-teal-400",
-    dotColor: "bg-teal-400",
+    iconColor: "text-slate-400 group-hover:text-cyan-600",
+    activeIconColor: "text-cyan-600",
+    dotColor: "bg-cyan-500",
     tooltipText: "极速采集 CPU、GPU、内存插槽与主板芯片级真实参数",
   },
   {
     id: "cleanup",
     label: "系统与游戏清理",
     icon: Sparkles,
-    iconColor: "text-slate-400 group-hover:text-emerald-600",
-    activeIconColor: "text-emerald-400",
-    dotColor: "bg-emerald-400",
+    iconColor: "text-slate-400 group-hover:text-cyan-600",
+    activeIconColor: "text-cyan-600",
+    dotColor: "bg-cyan-500",
     tooltipText: "深度扫描 DirectX 着色器缓存与游戏临时碎片，释放宝贵硬盘空间",
   },
   {
     id: "tools",
     label: "实用百宝箱",
     icon: Wrench,
-    iconColor: "text-slate-400 group-hover:text-indigo-600",
-    activeIconColor: "text-indigo-400",
-    dotColor: "bg-indigo-400",
+    iconColor: "text-slate-400 group-hover:text-cyan-600",
+    activeIconColor: "text-cyan-600",
+    dotColor: "bg-cyan-500",
     tooltipText: "快速唤起 Windows 原生诊断、手柄校准与系统底层控制面板",
   },
   {
     id: "about",
     label: "系统与关于",
     icon: Info,
-    iconColor: "text-slate-400 group-hover:text-amber-600",
-    activeIconColor: "text-amber-400",
-    dotColor: "bg-amber-400",
+    iconColor: "text-slate-400 group-hover:text-cyan-600",
+    activeIconColor: "text-cyan-600",
+    dotColor: "bg-cyan-500",
     tooltipText: "查看 Tauri v2 原生环境技术栈与开源致敬信息",
   },
 ];
@@ -99,7 +99,7 @@ export const MoreSidebar: React.FC<MoreSidebarProps> = ({
                 onClick={() => onTabChange(tab.id)}
                 className={`relative w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors duration-200 text-left cursor-pointer group ${
                   isActive
-                    ? "text-white"
+                    ? "text-primary-text"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
@@ -107,7 +107,7 @@ export const MoreSidebar: React.FC<MoreSidebarProps> = ({
                 {isActive && (
                   <motion.div
                     layoutId="more-sidebar-pill"
-                    className="absolute inset-0 bg-slate-900 rounded-xl shadow-sm z-0"
+                    className="absolute inset-0 bg-primary-soft rounded-xl shadow-xs border border-primary-border z-0"
                     transition={{
                       type: "spring",
                       stiffness: 380,

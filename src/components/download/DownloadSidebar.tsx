@@ -38,7 +38,7 @@ export const DownloadSidebar: React.FC<DownloadSidebarProps> = ({
       <div className="flex-1 overflow-y-auto p-2 space-y-2">
         {loading && trainers.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-slate-400 text-xs gap-2">
-            <RefreshCw className="w-5 h-5 animate-spin text-cyan-500" />
+            <RefreshCw className="w-5 h-5 animate-spin text-primary" />
             <span>正在从风灵月影官网同步数据...</span>
           </div>
         ) : errorMsg ? (
@@ -65,7 +65,7 @@ export const DownloadSidebar: React.FC<DownloadSidebarProps> = ({
                 onClick={() => onSelectTrainer(t)}
                 className={`p-2.5 rounded-xl border transition-all cursor-pointer flex gap-3 ${
                   isSelected
-                    ? "bg-cyan-50/60 border-cyan-300 shadow-sm"
+                    ? "bg-primary-soft border-primary-border shadow-xs"
                     : "bg-white border-slate-200/70 hover:border-slate-300 hover:bg-slate-50/70"
                 }`}
               >
@@ -128,7 +128,7 @@ export const DownloadSidebar: React.FC<DownloadSidebarProps> = ({
                   {dl && dl.status === "downloading" && (
                     <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1.5">
                       <div
-                        className="bg-cyan-500 h-full rounded-full transition-all duration-200"
+                        className="bg-primary h-full rounded-full transition-all duration-200"
                         style={{ width: `${dl.progress}%` }}
                       />
                     </div>

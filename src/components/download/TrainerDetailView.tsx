@@ -62,29 +62,25 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
     <div className="max-w-3xl space-y-6">
       {/* 头部大卡片 (支持 Steam 宽屏原画 Hero 沉浸式背景) */}
       <div
-        className={`relative rounded-2xl p-6 border transition-all duration-300 overflow-hidden ${
-          hasHero
-            ? "border-slate-800 shadow-xl bg-slate-950 text-white"
-            : "bg-white border-slate-200/90 shadow-sm text-slate-900"
-        }`}
+        className="relative rounded-2xl p-6 border border-slate-200/90 shadow-xs bg-white text-slate-900 transition-all duration-300 overflow-hidden"
         style={
           hasHero
             ? {
                 backgroundImage: `url(${selectedTrainer.hero_image})`,
                 backgroundSize: "cover",
-                backgroundPosition: "center",
+                backgroundPosition: "right center",
               }
             : undefined
         }
       >
-        {/* 毛玻璃与渐变遮罩 (仅在有 Hero 原画时启用) */}
+        {/* 通透浅色毛玻璃与渐变遮罩 (在有 Hero 原画时通透呈现，右侧透光，左侧保持文字极致清晰与浅色风格统一) */}
         {hasHero && (
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/85 to-slate-900/40 backdrop-blur-[1px]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 to-white/25 backdrop-blur-[1.5px]" />
         )}
 
         <div className="relative z-10 flex gap-6 items-start">
           {/* 官方胶囊原画 / 封面 (多级平滑回退，防图裂) */}
-          <div className="w-32 h-24 rounded-xl bg-slate-900/60 overflow-hidden shrink-0 border border-white/20 shadow-lg">
+          <div className="w-32 h-24 rounded-xl bg-slate-100 overflow-hidden shrink-0 border border-slate-200/80 shadow-md">
             <GamePoster
               primarySrc={selectedTrainer.capsule_image}
               secondarySrc={
@@ -101,15 +97,11 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2
-                className={`text-xl font-bold tracking-tight ${
-                  hasHero ? "text-white drop-shadow-sm" : "text-slate-900"
-                }`}
-              >
+              <h2 className="text-xl font-bold tracking-tight text-slate-900">
                 {selectedTrainer.chinese_name || selectedTrainer.name}
               </h2>
               {isInstalled && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   已就绪
                 </span>
@@ -118,7 +110,7 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                 <button
                   onClick={() => trainerApi.openSteamStore(selectedTrainer.steam_app_id!)}
                   title="在 Steam 商店中查看此游戏"
-                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-sky-500/20 hover:bg-sky-500/35 text-sky-300 border border-sky-400/30 cursor-pointer transition-all active:scale-95"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 cursor-pointer transition-all active:scale-95 shadow-2xs"
                 >
                   <Gamepad2 className="w-3 h-3" />
                   <span>Steam: {selectedTrainer.steam_app_id}</span>
@@ -128,46 +120,26 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
             </div>
 
             {selectedTrainer.chinese_name && (
-              <p
-                className={`text-xs mt-1 truncate ${
-                  hasHero ? "text-slate-300" : "text-slate-400"
-                }`}
-              >
+              <p className="text-xs mt-1 truncate text-slate-500">
                 {selectedTrainer.name}
               </p>
             )}
 
-            <div className="flex flex-wrap items-center gap-4 text-xs mt-2.5">
+            <div className="flex flex-wrap items-center gap-3 text-xs mt-2.5">
               {selectedTrainer.version && (
-                <span
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium ${
-                    hasHero
-                      ? "bg-white/10 text-slate-200 border border-white/10"
-                      : "bg-slate-100 text-slate-700"
-                  }`}
-                >
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium bg-primary-soft text-primary-text border border-primary-border">
                   <Layers className="w-3.5 h-3.5 opacity-70" />
                   {selectedTrainer.version}
                 </span>
               )}
               {selectedTrainer.game_version && (
-                <span
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium ${
-                    hasHero
-                      ? "bg-white/10 text-slate-200 border border-white/10"
-                      : "bg-slate-100 text-slate-700"
-                  }`}
-                >
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium bg-slate-100 text-slate-700 border border-slate-200/70">
                   <ShieldCheck className="w-3.5 h-3.5 opacity-70" />
                   游戏版本: {selectedTrainer.game_version}
                 </span>
               )}
               {selectedTrainer.last_update && (
-                <span
-                  className={`inline-flex items-center gap-1 ${
-                    hasHero ? "text-slate-400" : "text-slate-400"
-                  }`}
-                >
+                <span className="inline-flex items-center gap-1 text-slate-500">
                   <Calendar className="w-3.5 h-3.5" />
                   更新于 {selectedTrainer.last_update}
                 </span>
@@ -176,11 +148,7 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                 onClick={() => onSelectTrainer(selectedTrainer, true)}
                 disabled={detailLoading}
                 title="从风灵月影官网强制重新拉取最新功能与下载数据（跳过本地缓存）"
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer ${
-                  hasHero
-                    ? "text-slate-300 hover:text-white hover:bg-white/10"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
-                }`}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-transparent hover:border-slate-200"
               >
                 <RefreshCw className={`w-3 h-3 ${detailLoading ? "animate-spin" : ""}`} />
                 <span>{detailLoading ? "刷新中..." : "重新抓取"}</span>
@@ -192,37 +160,33 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
               {isInstalled ? (
                 <button
                   onClick={() => onLaunch(selectedTrainer.id)}
-                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95"
+                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-95"
                 >
                   <Play className="w-4 h-4 fill-current" />
                   <span>立即启动修改器</span>
                 </button>
               ) : currentDownload?.status === "downloading" ? (
                 <div className="flex-1 max-w-xs">
-                  <div
-                    className={`flex justify-between text-xs mb-1 ${
-                      hasHero ? "text-slate-300" : "text-slate-600"
-                    }`}
-                  >
+                  <div className="flex justify-between text-xs mb-1 text-slate-600 font-medium">
                     <span>正在极速下载... {currentDownload.progress.toFixed(0)}%</span>
                     <span>{formatSpeed(currentDownload.speed_bytes_per_sec)}</span>
                   </div>
-                  <div className="w-full bg-slate-800/50 h-2.5 rounded-full overflow-hidden border border-white/10">
+                  <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden border border-slate-300/60">
                     <div
-                      className="bg-cyan-500 h-full rounded-full transition-all duration-200"
+                      className="bg-primary h-full rounded-full transition-all duration-200"
                       style={{ width: `${currentDownload.progress}%` }}
                     />
                   </div>
                 </div>
               ) : currentDownload?.status === "extracting" ? (
-                <div className="flex items-center gap-2 text-xs text-cyan-400 font-medium">
+                <div className="flex items-center gap-2 text-xs text-primary font-medium">
                   <RefreshCw className="w-4 h-4 animate-spin" />
                   <span>正在自动解压并部署修改器组件...</span>
                 </div>
               ) : (
                 <button
                   onClick={() => onDownload(selectedTrainer)}
-                  className="px-6 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer active:scale-95"
+                  className="px-6 py-2.5 bg-primary bg-primary-hover text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-95"
                 >
                   <Download className="w-4 h-4" />
                   <span>一键下载并安装</span>
@@ -240,11 +204,7 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                     }
                   }}
                   title="唤醒 Steam 客户端启动原版游戏本体"
-                  className={`px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-md transition-all cursor-pointer active:scale-95 ${
-                    hasHero
-                      ? "bg-slate-800/80 hover:bg-slate-700/80 text-sky-200 border border-sky-500/30"
-                      : "bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200"
-                  }`}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 shadow-2xs transition-all cursor-pointer active:scale-95"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
                   <span>启动 Steam 游戏</span>
@@ -254,11 +214,7 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
               {isInstalled && (
                 <button
                   onClick={() => onDownload(selectedTrainer)}
-                  className={`px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
-                    hasHero
-                      ? "bg-white/10 hover:bg-white/20 text-slate-200"
-                      : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                  }`}
+                  className="px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/60"
                 >
                   重新下载
                 </button>
@@ -274,7 +230,7 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-bold text-slate-900">修改器功能与热键清单</h3>
             {selectedTrainer.options && selectedTrainer.options.length > 0 && (
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800">
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary-soft text-primary-text">
                 {selectedTrainer.options.length} 项修改
               </span>
             )}
@@ -362,16 +318,16 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                           setTimeout(() => setCopyFeedback(null), 1500);
                         }}
                         title="点击复制此项热键与中文说明"
-                        className="group flex flex-col p-3 rounded-xl bg-slate-50/80 border border-slate-200/70 hover:bg-slate-100/90 hover:border-cyan-300 transition-all gap-1.5 cursor-pointer"
+                        className="group flex flex-col p-3 rounded-xl bg-slate-50/80 border border-slate-200/70 hover:bg-slate-100/90 hover:border-primary transition-all gap-1.5 cursor-pointer"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-2 flex-wrap flex-1">
-                            <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-xs shrink-0 mt-1" />
+                            <div className="w-2 h-2 rounded-full bg-primary shadow-xs shrink-0 mt-1" />
                             <span className="text-xs text-slate-800 font-semibold font-mono tracking-tight break-words">
                               {item.title}
                             </span>
                             {cnTag && (
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-cyan-50 text-cyan-700 border border-cyan-200/80 shrink-0">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary-soft text-primary-text border border-primary-border shrink-0">
                                 {cnTag}
                               </span>
                             )}
@@ -380,7 +336,7 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                         </div>
                         {item.note && (
                           <div className="pl-4 text-[11px] text-slate-500 bg-white/70 border border-slate-200/50 rounded-lg p-1.5 leading-relaxed font-sans">
-                            <span className="font-medium text-cyan-700 mr-1">ℹ️ 生效说明:</span>
+                            <span className="font-medium text-primary mr-1">ℹ️ 生效说明:</span>
                             {item.note}
                           </div>
                         )}
@@ -402,15 +358,15 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                           setTimeout(() => setCopyFeedback(null), 1500);
                         }}
                         title="点击复制此项热键"
-                        className="group flex items-center justify-between p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/60 hover:bg-slate-100/90 hover:border-cyan-300 transition-all cursor-pointer"
+                        className="group flex items-center justify-between p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/60 hover:bg-slate-100/90 hover:border-primary transition-all cursor-pointer"
                       >
                         <div className="flex items-center gap-2 flex-wrap flex-1">
-                          <div className="w-2 h-2 rounded-full bg-cyan-500 shadow-xs shrink-0" />
+                          <div className="w-2 h-2 rounded-full bg-primary shadow-xs shrink-0" />
                           <span className="text-xs text-slate-700 font-medium font-mono">
                             {opt}
                           </span>
                           {cnTag && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-cyan-50 text-cyan-700 border border-cyan-200/80 shrink-0">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary-soft text-primary-text border border-primary-border shrink-0">
                               {cnTag}
                             </span>
                           )}

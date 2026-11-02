@@ -180,7 +180,7 @@ export const LaunchSidebar: React.FC<LaunchSidebarProps> = ({
                 {isSelected && (
                   <motion.div
                     layoutId="launch-sidebar-pill"
-                    className="absolute inset-0 bg-slate-100 rounded-xl shadow-xs ring-1 ring-slate-200/90 z-0"
+                    className="absolute inset-0 bg-primary-soft rounded-xl shadow-xs border border-primary-border z-0"
                     transition={{
                       type: "spring",
                       stiffness: 400,

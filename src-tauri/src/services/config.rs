@@ -148,6 +148,33 @@ fn default_anim_typewriter_speed() -> u64 {
     18
 }
 
+fn default_theme_accent() -> String {
+    "cyan".to_string()
+}
+fn default_color_mode() -> String {
+    "light".to_string()
+}
+
+/// 主题与个性化外观配置
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ThemeSettings {
+    #[serde(default = "default_theme_accent")]
+    pub accent_color: String,
+    pub custom_accent_hex: Option<String>,
+    #[serde(default = "default_color_mode")]
+    pub color_mode: String,
+}
+
+impl Default for ThemeSettings {
+    fn default() -> Self {
+        Self {
+            accent_color: default_theme_accent(),
+            custom_accent_hex: None,
+            color_mode: default_color_mode(),
+        }
+    }
+}
+
 impl Default for AnimationSettings {
     fn default() -> Self {
         Self {
@@ -169,6 +196,8 @@ pub struct AppConfig {
     pub network: NetworkSettings,
     #[serde(default)]
     pub animation: AnimationSettings,
+    #[serde(default)]
+    pub theme: ThemeSettings,
 }
 
 fn get_config_file_path() -> PathBuf {

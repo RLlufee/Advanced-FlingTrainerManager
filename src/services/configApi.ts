@@ -46,11 +46,29 @@ export interface AnimationSettings {
   typewriter_speed: number; // 打字机提示打字间隔毫秒数 (0 = 瞬间完成，默认 18ms)
 }
 
+export type AccentColorKey =
+  | "cyan"
+  | "emerald"
+  | "rose"
+  | "violet"
+  | "amber"
+  | "gold"
+  | "indigo"
+  | "monochrome"
+  | "custom";
+
+export interface ThemeSettings {
+  accent_color: AccentColorKey | string; // 预设标识或 "custom"
+  custom_accent_hex?: string | null; // 自定义十六进制颜色如 "#3b82f6"
+  color_mode?: "light" | "dark" | "system"; // 颜色模式，默认 "light"
+}
+
 export interface AppConfig {
   hotkey: HotkeySettings;
   management: ManagementSettings;
   network: NetworkSettings;
   animation?: AnimationSettings;
+  theme?: ThemeSettings;
 }
 
 export interface StorageStats {

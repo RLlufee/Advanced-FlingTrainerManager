@@ -1,9 +1,81 @@
 @import "tailwindcss";
 
+/*
+ * 全局强调色接管：把 Tailwind 内置的 cyan / sky 色阶全部重定向到主题强调色变量。
+ * 这样项目里历史遗留的 bg-cyan-600、text-sky-700、border-cyan-200/70 等写法
+ * 无需逐个改动，就会自动跟随 ThemeContext 写入的 --color-primary* 实时换色。
+ * 色阶推导规则：
+ *   - 50~400：主色与白色在 oklab 空间按比例混合（越小越浅）
+ *   - 500/600/700：直接使用预设的 primary / hover / active，保证与官方色板完全一致
+ *   - 800~950：在 active 基础上继续与黑色混合压暗
+ */
+@theme {
+  --color-cyan-50: color-mix(in oklab, var(--color-primary) 8%, white);
+  --color-cyan-100: color-mix(in oklab, var(--color-primary) 16%, white);
+  --color-cyan-200: color-mix(in oklab, var(--color-primary) 30%, white);
+  --color-cyan-300: color-mix(in oklab, var(--color-primary) 50%, white);
+  --color-cyan-400: color-mix(in oklab, var(--color-primary) 75%, white);
+  --color-cyan-500: var(--color-primary);
+  --color-cyan-600: var(--color-primary-hover);
+  --color-cyan-700: var(--color-primary-active);
+  --color-cyan-800: color-mix(in oklab, var(--color-primary-active) 80%, black);
+  --color-cyan-900: color-mix(in oklab, var(--color-primary-active) 64%, black);
+  --color-cyan-950: color-mix(in oklab, var(--color-primary-active) 45%, black);
+
+  --color-sky-50: var(--color-cyan-50);
+  --color-sky-100: var(--color-cyan-100);
+  --color-sky-200: var(--color-cyan-200);
+  --color-sky-300: var(--color-cyan-300);
+  --color-sky-400: var(--color-cyan-400);
+  --color-sky-500: var(--color-cyan-500);
+  --color-sky-600: var(--color-cyan-600);
+  --color-sky-700: var(--color-cyan-700);
+  --color-sky-800: var(--color-cyan-800);
+  --color-sky-900: var(--color-cyan-900);
+  --color-sky-950: var(--color-cyan-950);
+}
+
 :root {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   user-select: none;
   -webkit-user-select: none;
+
+  /* 主题强调色 (Accent Color) 全局变量，由 ThemeContext 动态重写 */
+  --color-primary: #06b6d4;
+  --color-primary-hover: #0891b2;
+  --color-primary-active: #0e7490;
+  --color-primary-text: #0e7490;
+  --color-primary-rgb: 6, 182, 212;
+  --color-primary-soft: rgba(6, 182, 212, 0.12);
+  --color-primary-border: rgba(6, 182, 212, 0.35);
+  --color-primary-glow: rgba(6, 182, 212, 0.35);
+  --color-primary-gradient: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
+}
+
+/* 强调色实用工具类 */
+.bg-primary {
+  background-color: var(--color-primary);
+}
+.bg-primary-hover:hover {
+  background-color: var(--color-primary-hover);
+}
+.bg-primary-soft {
+  background-color: var(--color-primary-soft);
+}
+.text-primary {
+  color: var(--color-primary);
+}
+.text-primary-text {
+  color: var(--color-primary-text);
+}
+.border-primary {
+  border-color: var(--color-primary);
+}
+.border-primary-border {
+  border-color: var(--color-primary-border);
+}
+.shadow-primary-glow {
+  box-shadow: 0 0 14px var(--color-primary-glow);
 }
 
 body {

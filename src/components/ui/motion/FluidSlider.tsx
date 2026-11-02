@@ -1,6 +1,7 @@
 import React, { useState, useId, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { motion, useSpring } from "motion/react";
 import { useAnimationConfig } from "./AnimationContext";
+import { useTheme } from "../theme";
 
 export interface FluidSliderProps {
   value: number;
@@ -9,7 +10,7 @@ export interface FluidSliderProps {
   step?: number;
   onChange: (value: number) => void;
   formatValue?: (value: number) => string;
-  color?: "cyan" | "amber" | "indigo" | "blue" | "rose" | "purple";
+  color?: "accent" | "cyan" | "amber" | "indigo" | "blue" | "rose" | "purple";
   className?: string;
   disabled?: boolean;
   marks?: Array<{ value: number; label: string }>;
@@ -34,7 +35,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
 // 主题色预设（ring 为圆钮外发光的 rgba，避免全部写死成青色）
 const THEMES = {
   cyan: {
-    fill: "bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600",
+    fill: "bg-gradient-to-r from-cyan-400 via-cyan-500 to-cyan-700",
     thumbBorder: "border-cyan-500",
     ring: "6, 182, 212",
     badgeBorder: "border-cyan-500/40",
@@ -95,7 +96,7 @@ export const FluidSlider: React.FC<FluidSliderProps> = ({
   step = 1,
   onChange,
   formatValue,
-  color = "cyan",
+  color = "accent",
   className = "",
   disabled = false,
   marks,
@@ -103,6 +104,7 @@ export const FluidSlider: React.FC<FluidSliderProps> = ({
   ariaLabel,
 }) => {
   const { isAnimEnabled, effectiveSpeed } = useAnimationConfig();
+  const { currentAccent } = useTheme();
   const [isHovered, setIsHovered] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isFocusVisible, setIsFocusVisible] = useState(false);
@@ -115,7 +117,17 @@ export const FluidSlider: React.FC<FluidSliderProps> = ({
   const badgeRef = useRef<HTMLDivElement>(null);
   const arrowRef = useRef<HTMLDivElement>(null);
 
-  const theme = THEMES[color];
+  const theme =
+    color !== "accent" && THEMES[color as keyof typeof THEMES]
+      ? THEMES[color as keyof typeof THEMES]
+      : {
+          fill: "bg-primary",
+          fillGradient: currentAccent.gradient,
+          thumbBorder: "border-primary",
+          ring: currentAccent.rgb,
+          badgeBorder: "border-primary-border",
+          badgeText: "text-primary",
+        };
 
   // 目标百分比 (0 ~ 100)
   const rawPercentage = max === min ? 0 : ((value - min) / (max - min)) * 100;
@@ -237,7 +249,14 @@ export const FluidSlider: React.FC<FluidSliderProps> = ({
         {/* 背景轨道槽 */}
         <div className="absolute inset-x-0 h-2 bg-slate-200/90 rounded-full overflow-hidden shadow-inner">
           {/* 已激活填充（width 由 applyLayout 写入） */}
-          <div ref={fillRef} className={`h-full rounded-full ${theme.fill}`} style={{ width: THUMB_R }} />
+          <div
+            ref={fillRef}
+            className={`h-full rounded-full ${theme.fill}`}
+            style={{
+              width: THUMB_R,
+              background: "fillGradient" in theme && theme.fillGradient ? theme.fillGradient : undefined,
+            }}
+          />
         </div>
 
         {/* 圆钮：外层负责位移（DOM 直写），内层 motion 负责缩放与光晕 */}

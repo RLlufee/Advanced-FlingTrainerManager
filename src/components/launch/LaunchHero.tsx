@@ -83,7 +83,7 @@ export const LaunchHero: React.FC<LaunchHeroProps> = ({
 
               {/* 属性与版本徽章 */}
               <div className="flex items-center gap-2 text-[11px] flex-wrap pt-0.5">
-                <span className="px-2 py-0.5 rounded-md bg-cyan-50 text-cyan-700 border border-cyan-200/80 font-medium shrink-0 whitespace-nowrap">
+                <span className="px-2 py-0.5 rounded-md bg-primary-soft text-primary-text border border-primary-border font-medium shrink-0 whitespace-nowrap">
                   修改器 {trainer.version}
                 </span>
 
@@ -200,7 +200,7 @@ export const LaunchHero: React.FC<LaunchHeroProps> = ({
               <button
                 onClick={onEnrichTrainer}
                 disabled={isEnriching}
-                className="px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md shadow-cyan-600/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className="px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-cyan-800 hover:from-cyan-500 hover:to-cyan-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md shadow-cyan-600/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 <JellyIcon intensity="bouncy">
                   <Sparkles className={`w-4 h-4 text-cyan-200 ${isEnriching ? "animate-spin" : ""}`} />

@@ -307,7 +307,7 @@ export const MigrationModal: React.FC<MigrationModalProps> = ({
           <button
             onClick={onStartMigration}
             disabled={isMigrating}
-            className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+            className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-cyan-800 hover:from-cyan-500 hover:to-cyan-700 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
           >
             {isMigrating ? (
               <>

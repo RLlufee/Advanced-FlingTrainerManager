@@ -257,7 +257,7 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
               <button
                 onClick={onOptimize}
                 disabled={isOptimizing}
-                className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:via-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-cyan-900/10 flex items-center justify-center gap-2 transition-all transform active:scale-98 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
+                className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-cyan-500 via-cyan-600 to-cyan-800 hover:from-cyan-400 hover:via-cyan-500 hover:to-cyan-700 text-white font-bold text-xs shadow-md shadow-cyan-900/10 flex items-center justify-center gap-2 transition-all transform active:scale-98 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
               >
                 {isOptimizing ? (
                   <>

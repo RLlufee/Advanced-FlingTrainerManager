@@ -2,6 +2,7 @@ import React from "react";
 import { Play, Download, Settings, LayoutGrid, Minus, Square, X } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { MagneticTab, JellyIcon, TypewriterTooltip } from "./ui/motion";
+import { useTheme } from "./ui/theme";
 
 export type NavTab = "launch" | "download" | "settings" | "more";
 
@@ -16,6 +17,8 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   activeTab,
   onTabChange,
 }) => {
+  const { currentAccent } = useTheme();
+
   const handleMinimize = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
     try {
@@ -74,7 +77,13 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         <TypewriterTooltip content="PCL II 灵动视觉内核 · 已就绪喵~">
           <div className="flex items-center gap-2 cursor-pointer">
             <JellyIcon intensity="bouncy">
-              <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_10px_#22d3ee] animate-pulse" />
+              <div
+                className="w-2.5 h-2.5 rounded-full animate-pulse transition-all duration-300"
+                style={{
+                  backgroundColor: currentAccent.primary,
+                  boxShadow: `0 0 10px ${currentAccent.primary}`,
+                }}
+              />
             </JellyIcon>
             <span
               data-tauri-drag-region
@@ -96,7 +105,8 @@ export const TitleBar: React.FC<TitleBarProps> = ({
               isActive={isActive}
               onClick={() => onTabChange(item.key)}
               layoutId="titlebar-capsule-pill"
-              activePillClassName="bg-white text-slate-900 shadow-md"
+              activePillClassName="bg-white shadow-md shadow-primary-glow"
+              activeTextClassName="text-primary-text"
             >
               <JellyIcon intensity="medium">{item.icon}</JellyIcon>
               <span>{item.label}</span>
