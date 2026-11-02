@@ -1,10 +1,10 @@
 import React from "react";
-import { Keyboard, FolderCog, Zap } from "lucide-react";
+import { Keyboard, FolderCog, Zap, Sparkles } from "lucide-react";
 import { motion } from "motion/react";
 import { JellyIcon } from "../ui/motion/JellyIcon";
 import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
 
-export type SettingsTab = "hotkey" | "management" | "network";
+export type SettingsTab = "hotkey" | "management" | "network" | "animation";
 
 interface SettingsSidebarProps {
   activeTab: SettingsTab;
@@ -48,6 +48,15 @@ const SETTINGS_TABS: SettingsTabConfig[] = [
     activeIconColor: "text-amber-400",
     dotColor: "bg-amber-400",
     tooltipText: "配置 HTTP/SOCKS5 代理、GitHub 镜像节点与 Steam 封面 CDN",
+  },
+  {
+    id: "animation",
+    label: "界面与动效调节",
+    icon: Sparkles,
+    iconColor: "text-slate-400 group-hover:text-purple-600",
+    activeIconColor: "text-purple-400",
+    dotColor: "bg-purple-400",
+    tooltipText: "借鉴 PCL-CE 动效速度算法，定制全局动画倍率、纸片飘落与交互游乐场",
   },
 ];
 

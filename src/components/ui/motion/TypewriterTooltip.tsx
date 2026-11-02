@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { useAnimationConfig } from "./AnimationContext";
 
 export interface TypewriterTooltipProps {
   children: React.ReactNode;
@@ -15,11 +16,12 @@ export const TypewriterTooltip: React.FC<TypewriterTooltipProps> = ({
   children,
   content,
   text,
-  speed = 18,
+  speed,
   delayMs = 0,
   position = "top",
   className = "",
 }) => {
+  const { effectiveTypewriterSpeed, isAnimEnabled, effectiveSpeed } = useAnimationConfig();
   const targetText = text ?? content ?? "";
   const [isVisible, setIsVisible] = useState(false);
   const [displayedText, setDisplayedText] = useState("");
@@ -27,11 +29,13 @@ export const TypewriterTooltip: React.FC<TypewriterTooltipProps> = ({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const delayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const actualSpeed = speed ?? effectiveTypewriterSpeed;
+
   const handleMouseEnter = () => {
-    if (delayMs > 0) {
+    if (delayMs > 0 && isAnimEnabled) {
       delayTimerRef.current = setTimeout(() => {
         setIsVisible(true);
-      }, delayMs);
+      }, delayMs / effectiveSpeed);
     } else {
       setIsVisible(true);
     }
@@ -56,6 +60,13 @@ export const TypewriterTooltip: React.FC<TypewriterTooltipProps> = ({
       return;
     }
 
+    // 若动效关闭或打字间隔设为 0，瞬间显示完整文本
+    if (!isAnimEnabled || actualSpeed <= 0) {
+      setDisplayedText(targetText);
+      setIsTyping(false);
+      return;
+    }
+
     setIsTyping(true);
     let currentIndex = 0;
     setDisplayedText("");
@@ -71,7 +82,7 @@ export const TypewriterTooltip: React.FC<TypewriterTooltipProps> = ({
           timerRef.current = null;
         }
       }
-    }, speed);
+    }, actualSpeed);
 
     return () => {
       if (timerRef.current) {
@@ -79,7 +90,7 @@ export const TypewriterTooltip: React.FC<TypewriterTooltipProps> = ({
         timerRef.current = null;
       }
     };
-  }, [isVisible, targetText, speed]);
+  }, [isVisible, targetText, actualSpeed, isAnimEnabled]);
 
   const getPositionClasses = () => {
     switch (position) {
@@ -106,10 +117,18 @@ export const TypewriterTooltip: React.FC<TypewriterTooltipProps> = ({
       <AnimatePresence>
         {isVisible && targetText && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.88, y: position === "top" ? 6 : -6 }}
+            initial={isAnimEnabled ? { opacity: 0, scale: 0.88, y: position === "top" ? 6 : -6 } : { opacity: 1 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: position === "top" ? 4 : -4 }}
-            transition={{ type: "spring", stiffness: 450, damping: 25 }}
+            exit={isAnimEnabled ? { opacity: 0, scale: 0.9, y: position === "top" ? 4 : -4 } : { opacity: 0 }}
+            transition={
+              isAnimEnabled
+                ? {
+                    type: "spring",
+                    stiffness: Math.round(450 * effectiveSpeed),
+                    damping: 25,
+                  }
+                : { duration: 0 }
+            }
             className={`absolute z-50 pointer-events-none whitespace-nowrap px-3 py-1.5 rounded-xl bg-slate-900/95 text-white border border-slate-700/80 shadow-xl backdrop-blur-md text-[11px] font-sans flex items-center gap-1.5 ${getPositionClasses()}`}
           >
             <span>{displayedText}</span>

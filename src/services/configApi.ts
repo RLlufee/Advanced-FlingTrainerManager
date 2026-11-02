@@ -35,10 +35,22 @@ export interface NetworkTestResult {
   message: string;
 }
 
+export type JellyIntensity = "off" | "gentle" | "medium" | "bouncy";
+
+export interface AnimationSettings {
+  enabled: boolean; // 动效总开关 (默认 true)
+  speed_multiplier: number; // PCL-CE 同款速度倍率 (0.25x ~ 3.0x，默认 1.0；若设为 0 或 >= 30 视为瞬间完成)
+  jelly_intensity: JellyIntensity; // 果冻弹性强度 (默认 "medium")
+  paper_flutter: boolean; // 3D 纸片轻盈悬浮飘落入场动效 (默认 true)
+  magnetic_tabs: boolean; // 磁吸跟手与流体滑动药丸 (默认 true)
+  typewriter_speed: number; // 打字机提示打字间隔毫秒数 (0 = 瞬间完成，默认 18ms)
+}
+
 export interface AppConfig {
   hotkey: HotkeySettings;
   management: ManagementSettings;
   network: NetworkSettings;
+  animation?: AnimationSettings;
 }
 
 export interface StorageStats {

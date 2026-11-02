@@ -13,6 +13,7 @@ import { SettingsSidebar, SettingsTab } from "./SettingsSidebar";
 import { HotkeyTab } from "./HotkeyTab";
 import { ManagementTab } from "./ManagementTab";
 import { NetworkTab } from "./NetworkTab";
+import { AnimationTab } from "./AnimationTab";
 import {
   ExportPresetModal,
   ImportPresetModal,
@@ -394,6 +395,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
             onResetNetwork={handleResetNetwork}
           />
         )}
+
+        {activeTab === "animation" && <AnimationTab />}
       </main>
 
       {/* 模态弹窗群 */}

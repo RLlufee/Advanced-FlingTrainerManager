@@ -1,5 +1,6 @@
 import React from "react";
 import { motion, HTMLMotionProps } from "motion/react";
+import { useAnimationConfig } from "./AnimationContext";
 
 export interface PaperContainerProps extends HTMLMotionProps<"div"> {
   children: React.ReactNode;
@@ -9,21 +10,26 @@ export interface PaperContainerProps extends HTMLMotionProps<"div"> {
 
 export const PaperContainer: React.FC<PaperContainerProps> = ({
   children,
-  staggerDelay = 0.06,
+  staggerDelay = 0.05,
   className = "",
   ...props
 }) => {
+  const { isPaperFlutterEnabled, effectiveSpeed } = useAnimationConfig();
+
+  const computedStagger = isPaperFlutterEnabled ? staggerDelay / effectiveSpeed : 0;
+  const computedDelay = isPaperFlutterEnabled ? 0.02 / effectiveSpeed : 0;
+
   return (
     <motion.div
       initial="hidden"
       animate="show"
       variants={{
-        hidden: { opacity: 0 },
+        hidden: { opacity: isPaperFlutterEnabled ? 0 : 1 },
         show: {
           opacity: 1,
           transition: {
-            staggerChildren: staggerDelay,
-            delayChildren: 0.02,
+            staggerChildren: computedStagger,
+            delayChildren: computedDelay,
           },
         },
       }}
@@ -49,8 +55,17 @@ export const PaperCard: React.FC<PaperCardProps> = ({
   delayIndex = 0,
   ...props
 }) => {
+  const { isPaperFlutterEnabled, effectiveSpeed } = useAnimationConfig();
   // 模拟纸片飘扬着从空中轻盈落下的物理轨迹（交替微倾斜与 3D 透视）
   const initialRotateZ = delayIndex % 2 === 0 ? -tiltAngle : tiltAngle;
+
+  if (!isPaperFlutterEnabled) {
+    return (
+      <div className={`transform-gpu ${className}`} {...(props as React.HTMLAttributes<HTMLDivElement>)}>
+        {children}
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -70,7 +85,7 @@ export const PaperCard: React.FC<PaperCardProps> = ({
           scale: 1,
           transition: {
             type: "spring",
-            stiffness: 260,
+            stiffness: Math.round(260 * effectiveSpeed),
             damping: 22,
             mass: 0.85,
           },
@@ -79,7 +94,11 @@ export const PaperCard: React.FC<PaperCardProps> = ({
       whileHover={{
         y: -3,
         rotateX: -2,
-        transition: { type: "spring", stiffness: 400, damping: 25 },
+        transition: {
+          type: "spring",
+          stiffness: Math.round(400 * effectiveSpeed),
+          damping: 25,
+        },
       }}
       className={`transform-gpu ${className}`}
       {...props}

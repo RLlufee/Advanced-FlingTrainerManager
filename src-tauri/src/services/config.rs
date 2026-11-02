@@ -112,12 +112,63 @@ impl Default for NetworkSettings {
     }
 }
 
+/// 4. 界面与动效个性化设置 (参考 PCL-CE)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AnimationSettings {
+    #[serde(default = "default_anim_enabled")]
+    pub enabled: bool,
+    #[serde(default = "default_anim_speed_multiplier")]
+    pub speed_multiplier: f64,
+    #[serde(default = "default_anim_jelly_intensity")]
+    pub jelly_intensity: String,
+    #[serde(default = "default_anim_paper_flutter")]
+    pub paper_flutter: bool,
+    #[serde(default = "default_anim_magnetic_tabs")]
+    pub magnetic_tabs: bool,
+    #[serde(default = "default_anim_typewriter_speed")]
+    pub typewriter_speed: u64,
+}
+
+fn default_anim_enabled() -> bool {
+    true
+}
+fn default_anim_speed_multiplier() -> f64 {
+    1.0
+}
+fn default_anim_jelly_intensity() -> String {
+    "medium".to_string()
+}
+fn default_anim_paper_flutter() -> bool {
+    true
+}
+fn default_anim_magnetic_tabs() -> bool {
+    true
+}
+fn default_anim_typewriter_speed() -> u64 {
+    18
+}
+
+impl Default for AnimationSettings {
+    fn default() -> Self {
+        Self {
+            enabled: default_anim_enabled(),
+            speed_multiplier: default_anim_speed_multiplier(),
+            jelly_intensity: default_anim_jelly_intensity(),
+            paper_flutter: default_anim_paper_flutter(),
+            magnetic_tabs: default_anim_magnetic_tabs(),
+            typewriter_speed: default_anim_typewriter_speed(),
+        }
+    }
+}
+
 /// 全局应用程序配置实体
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppConfig {
     pub hotkey: HotkeySettings,
     pub management: ManagementSettings,
     pub network: NetworkSettings,
+    #[serde(default)]
+    pub animation: AnimationSettings,
 }
 
 fn get_config_file_path() -> PathBuf {
