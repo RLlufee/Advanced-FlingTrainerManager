@@ -194,6 +194,29 @@ fn open_system_tool(tool: String) -> Result<(), String> {
     services::memory_optimizer::open_system_tool(&tool)
 }
 
+#[tauri::command]
+async fn get_hardware_overview() -> Result<services::hardware_inspector::HardwareOverview, String> {
+    tokio::task::spawn_blocking(services::hardware_inspector::collect_hardware_overview)
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn system_cleanup_scan() -> Result<services::system_cleaner::CleanupScanResult, String> {
+    tokio::task::spawn_blocking(services::system_cleaner::scan_system_cleanup)
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn system_cleanup_run(categories: Vec<String>) -> Result<services::system_cleaner::CleanupRunResult, String> {
+    tokio::task::spawn_blocking(move || {
+        services::system_cleaner::run_system_cleanup(categories)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -232,7 +255,10 @@ pub fn run() {
             get_system_memory_info,
             optimize_memory,
             restart_app_as_admin,
-            open_system_tool
+            open_system_tool,
+            get_hardware_overview,
+            system_cleanup_scan,
+            system_cleanup_run
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

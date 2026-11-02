@@ -1,7 +1,7 @@
 import React from "react";
-import { Cpu, Wrench, Info, Boxes } from "lucide-react";
+import { Cpu, Wrench, Info, Boxes, Monitor, Sparkles } from "lucide-react";
 
-export type MoreTab = "memory" | "tools" | "about";
+export type MoreTab = "memory" | "hardware" | "cleanup" | "tools" | "about";
 
 interface MoreSidebarProps {
   activeTab: MoreTab;
@@ -13,7 +13,7 @@ export const MoreSidebar: React.FC<MoreSidebarProps> = ({
   onTabChange,
 }) => {
   return (
-    <aside className="w-52 bg-white border-r border-slate-200/90 flex flex-col shrink-0 p-4 space-y-1.5 shadow-[2px_0_8px_rgba(0,0,0,0.02)]">
+    <aside className="w-52 bg-white border-r border-slate-200/90 flex flex-col shrink-0 p-4 space-y-1.5 shadow-[2px_0_8px_rgba(0,0,0,0.02)] select-none">
       <div className="px-3 py-2 mb-1 flex items-center gap-2 text-slate-800 font-bold text-sm">
         <Boxes className="w-4 h-4 text-cyan-600" />
         <span>百宝箱中心</span>
@@ -43,7 +43,55 @@ export const MoreSidebar: React.FC<MoreSidebarProps> = ({
         )}
       </button>
 
-      {/* 2. 实用百宝箱 */}
+      {/* 2. 硬件全景配置 */}
+      <button
+        onClick={() => onTabChange("hardware")}
+        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer group ${
+          activeTab === "hardware"
+            ? "bg-slate-900 text-white shadow-sm"
+            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+        }`}
+      >
+        <div className="flex items-center gap-2.5">
+          <Monitor
+            className={`w-4 h-4 ${
+              activeTab === "hardware"
+                ? "text-teal-400"
+                : "text-slate-400 group-hover:text-teal-600"
+            }`}
+          />
+          <span>硬件全景规格</span>
+        </div>
+        {activeTab === "hardware" && (
+          <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+        )}
+      </button>
+
+      {/* 3. 系统与游戏清理 */}
+      <button
+        onClick={() => onTabChange("cleanup")}
+        className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer group ${
+          activeTab === "cleanup"
+            ? "bg-slate-900 text-white shadow-sm"
+            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+        }`}
+      >
+        <div className="flex items-center gap-2.5">
+          <Sparkles
+            className={`w-4 h-4 ${
+              activeTab === "cleanup"
+                ? "text-emerald-400"
+                : "text-slate-400 group-hover:text-emerald-600"
+            }`}
+          />
+          <span>系统与游戏清理</span>
+        </div>
+        {activeTab === "cleanup" && (
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+        )}
+      </button>
+
+      {/* 4. 实用百宝箱 */}
       <button
         onClick={() => onTabChange("tools")}
         className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer group ${
@@ -67,7 +115,7 @@ export const MoreSidebar: React.FC<MoreSidebarProps> = ({
         )}
       </button>
 
-      {/* 3. 系统与关于 */}
+      {/* 5. 系统与关于 */}
       <button
         onClick={() => onTabChange("about")}
         className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all text-left cursor-pointer group ${
@@ -96,11 +144,11 @@ export const MoreSidebar: React.FC<MoreSidebarProps> = ({
       {/* 边栏底部信息 */}
       <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl text-xs text-slate-500 space-y-1">
         <div className="flex items-center justify-between">
-          <span className="font-medium text-slate-700">算法核心</span>
-          <span className="text-cyan-600 font-mono text-[10px] font-bold">PCL2 CE NT</span>
+          <span className="font-medium text-slate-700">优化与清理引擎</span>
+          <span className="text-cyan-600 font-mono text-[10px] font-bold">PCL2 & TK</span>
         </div>
         <p className="text-[10px] text-slate-400 leading-relaxed">
-          Windows NT 内核原生调用
+          Windows NT 原生内核 / CIM 采集
         </p>
       </div>
     </aside>

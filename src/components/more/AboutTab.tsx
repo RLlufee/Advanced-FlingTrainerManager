@@ -71,6 +71,13 @@ export const AboutTab: React.FC<AboutTabProps> = ({ memInfo }) => {
           </code>{" "}
           的内核设计思想，并完全采用 Rust 原生重构 Windows NT 底层系统调用，实现无托管垃圾回收开销的高性能内存优化。
         </p>
+        <p className="text-xs text-slate-600 leading-relaxed pt-2 border-t border-slate-100">
+          系统深层垃圾清理与硬件全景规格检测模块参考了开源桌面工具箱{" "}
+          <span className="font-semibold text-slate-800">
+            ToolKnit Desktop
+          </span>{" "}
+          的 Windows 原生只读检测与安全分级清理设计，针对游戏玩家场景深度定制了 DirectX / NVIDIA / AMD 显卡着色器缓存与游戏崩溃日志的高效瘦身方案。
+        </p>
       </div>
     </div>
   );

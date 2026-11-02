@@ -11,6 +11,8 @@ import {
 } from "../../services/memoryApi";
 import { MoreSidebar, MoreTab } from "./MoreSidebar";
 import { MemoryTab } from "./MemoryTab";
+import { HardwareTab } from "./HardwareTab";
+import { CleanupTab } from "./CleanupTab";
 import { ToolsTab } from "./ToolsTab";
 import { AboutTab } from "./AboutTab";
 
@@ -166,6 +168,10 @@ export const MoreView: React.FC<MoreViewProps> = ({ isActive = true }) => {
             formatBytes={formatBytes}
           />
         )}
+
+        {activeTab === "hardware" && <HardwareTab />}
+
+        {activeTab === "cleanup" && <CleanupTab />}
 
         {activeTab === "tools" && <ToolsTab onOpenTool={handleOpenTool} />}
 

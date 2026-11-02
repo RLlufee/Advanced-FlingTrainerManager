@@ -7,3 +7,5 @@ pub mod key_simulator;
 pub mod importer;
 pub mod config;
 pub mod memory_optimizer;
+pub mod hardware_inspector;
+pub mod system_cleaner;
