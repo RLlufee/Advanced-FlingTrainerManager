@@ -15,6 +15,7 @@ import { NetworkSettings, NetworkTestResult } from "../../services/configApi";
 import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
 import { JellyIcon } from "../ui/motion/JellyIcon";
 import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
+import { FluidSlider } from "../ui/motion/FluidSlider";
 
 interface NetworkTabProps {
   network: NetworkSettings;
@@ -414,22 +415,20 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                 {(network.timeout_ms / 1000).toFixed(0)} 秒 ({network.timeout_ms}ms)
               </span>
             </div>
-            <input
-              type="range"
-              min="3000"
-              max="30000"
-              step="1000"
+            <FluidSlider
+              min={3000}
+              max={30000}
+              step={1000}
               value={network.timeout_ms}
-              onChange={(e) =>
-                onUpdateNetwork({ timeout_ms: Number(e.target.value) })
-              }
-              className="w-full accent-cyan-600 cursor-pointer"
+              onChange={(val) => onUpdateNetwork({ timeout_ms: val })}
+              formatValue={(val) => `${(val / 1000).toFixed(0)} 秒`}
+              color="cyan"
+              marks={[
+                { value: 3000, label: "3 秒 (快速响应)" },
+                { value: 8000, label: "默认 8 秒" },
+                { value: 30000, label: "30 秒 (弱网宽容)" },
+              ]}
             />
-            <div className="flex justify-between text-[10px] text-slate-400">
-              <span>3 秒 (快速响应)</span>
-              <span>默认 8 秒</span>
-              <span>30 秒 (弱网宽容)</span>
-            </div>
           </div>
 
           {/* 重试滑块 */}
@@ -440,22 +439,20 @@ export const NetworkTab: React.FC<NetworkTabProps> = ({
                 {network.max_retry_count} 次
               </span>
             </div>
-            <input
-              type="range"
-              min="0"
-              max="5"
-              step="1"
+            <FluidSlider
+              min={0}
+              max={5}
+              step={1}
               value={network.max_retry_count}
-              onChange={(e) =>
-                onUpdateNetwork({ max_retry_count: Number(e.target.value) })
-              }
-              className="w-full accent-cyan-600 cursor-pointer"
+              onChange={(val) => onUpdateNetwork({ max_retry_count: val })}
+              formatValue={(val) => `${val} 次`}
+              color="cyan"
+              marks={[
+                { value: 0, label: "0 次 (不重试)" },
+                { value: 2, label: "默认 2 次" },
+                { value: 5, label: "5 次 (极限重试)" },
+              ]}
             />
-            <div className="flex justify-between text-[10px] text-slate-400">
-              <span>0 次 (不重试)</span>
-              <span>默认 2 次</span>
-              <span>5 次 (极限重试)</span>
-            </div>
           </div>
         </div>
 

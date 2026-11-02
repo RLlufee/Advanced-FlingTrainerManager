@@ -15,6 +15,7 @@ import { ManagementSettings, StorageStats } from "../../services/configApi";
 import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
 import { JellyIcon } from "../ui/motion/JellyIcon";
 import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
+import { FluidSlider } from "../ui/motion/FluidSlider";
 
 interface ManagementTabProps {
   management: ManagementSettings;
@@ -198,24 +199,20 @@ export const ManagementTab: React.FC<ManagementTabProps> = ({
                 {management.scan_depth} 层子目录
               </span>
             </div>
-            <input
-              type="range"
-              min="1"
-              max="4"
-              step="1"
+            <FluidSlider
+              min={1}
+              max={4}
+              step={1}
               value={management.scan_depth}
-              onChange={(e) =>
-                onUpdateManagement({
-                  scan_depth: Number(e.target.value),
-                })
-              }
-              className="w-full h-1.5 bg-indigo-200/80 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+              onChange={(val) => onUpdateManagement({ scan_depth: val })}
+              formatValue={(val) => `${val} 层`}
+              color="indigo"
+              marks={[
+                { value: 1, label: "1 层 (仅选定根目录)" },
+                { value: 2, label: "2 层 (推荐标准)" },
+                { value: 4, label: "4 层 (深度穿透)" },
+              ]}
             />
-            <div className="flex justify-between text-[10px] text-slate-400 font-mono">
-              <span>1 层 (仅选定根目录)</span>
-              <span>2 层 (推荐标准)</span>
-              <span>4 层 (深度穿透)</span>
-            </div>
           </div>
 
           {/* 黑名单内置说明 */}

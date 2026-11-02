@@ -16,6 +16,7 @@ import { useAnimationConfig } from "../ui/motion/AnimationContext";
 import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
 import { JellyIcon } from "../ui/motion/JellyIcon";
 import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
+import { FluidSlider } from "../ui/motion/FluidSlider";
 import { JellyIntensity } from "../../services/configApi";
 
 export const AnimationTab: React.FC = () => {
@@ -250,24 +251,25 @@ export const AnimationTab: React.FC = () => {
               {settings.speed_multiplier >= 30 ? "⚡ 瞬间完成 (>=30)" : `${settings.speed_multiplier.toFixed(2)}x`}
             </span>
           </div>
-          <input
-            type="range"
-            min="0.25"
-            max="3.0"
-            step="0.05"
+          <FluidSlider
+            min={0.25}
+            max={3.0}
+            step={0.05}
             value={settings.speed_multiplier >= 30 ? 3.0 : settings.speed_multiplier}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              updateSettings({ speed_multiplier: val });
-            }}
-            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+            onChange={(val) => updateSettings({ speed_multiplier: val })}
+            formatValue={(val) =>
+              settings.speed_multiplier >= 30 && val >= 3.0
+                ? "⚡ 瞬间完成"
+                : `${val.toFixed(2)}x`
+            }
+            color="cyan"
+            marks={[
+              { value: 0.25, label: "0.25x (慢镜头特写)" },
+              { value: 1.0, label: "1.00x (标准均衡)" },
+              { value: 2.0, label: "2.00x (干脆利落)" },
+              { value: 3.0, label: "3.00x (极限飞速)" },
+            ]}
           />
-          <div className="flex justify-between text-[10px] text-slate-400 font-mono">
-            <span>0.25x (慢镜头特写)</span>
-            <span>1.00x (标准均衡)</span>
-            <span>2.00x (干脆利落)</span>
-            <span>3.00x (极限飞速)</span>
-          </div>
         </div>
 
         {/* 滑块 2：打字机提示渲染间隔 */}
@@ -281,20 +283,22 @@ export const AnimationTab: React.FC = () => {
               {settings.typewriter_speed === 0 ? "即时显现 (0ms)" : `${settings.typewriter_speed} ms / 字符`}
             </span>
           </div>
-          <input
-            type="range"
-            min="0"
-            max="40"
-            step="2"
+          <FluidSlider
+            min={0}
+            max={40}
+            step={2}
             value={settings.typewriter_speed}
-            onChange={(e) => updateSettings({ typewriter_speed: Number(e.target.value) })}
-            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
+            onChange={(val) => updateSettings({ typewriter_speed: val })}
+            formatValue={(val) =>
+              val === 0 ? "即时显现 (0ms)" : `${val} ms`
+            }
+            color="amber"
+            marks={[
+              { value: 0, label: "0 ms (无打字即时)" },
+              { value: 18, label: "18 ms (推荐标准)" },
+              { value: 40, label: "40 ms (复古终端打字)" },
+            ]}
           />
-          <div className="flex justify-between text-[10px] text-slate-400 font-mono">
-            <span>0 ms (直接显示无打字)</span>
-            <span>18 ms (推荐标准)</span>
-            <span>40 ms (复古终端打字)</span>
-          </div>
         </div>
       </PaperCard>
 

@@ -14,6 +14,7 @@ import { HotkeySettings } from "../../services/configApi";
 import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
 import { JellyIcon } from "../ui/motion/JellyIcon";
 import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
+import { FluidSlider } from "../ui/motion/FluidSlider";
 
 interface HotkeyTabProps {
   hotkey: HotkeySettings;
@@ -99,22 +100,20 @@ export const HotkeyTab: React.FC<HotkeyTabProps> = ({
               {hotkey.key_interval_ms} ms
             </span>
           </div>
-          <input
-            type="range"
-            min="20"
-            max="300"
-            step="5"
+          <FluidSlider
+            min={20}
+            max={300}
+            step={5}
             value={hotkey.key_interval_ms}
-            onChange={(e) =>
-              onUpdateHotkey({ key_interval_ms: Number(e.target.value) })
-            }
-            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+            onChange={(val) => onUpdateHotkey({ key_interval_ms: val })}
+            formatValue={(val) => `${val} ms`}
+            color="cyan"
+            marks={[
+              { value: 20, label: "20 ms (极速激进)" },
+              { value: 100, label: "100 ms (推荐标准)" },
+              { value: 300, label: "300 ms (老游戏从容)" },
+            ]}
           />
-          <div className="flex justify-between text-[10px] text-slate-400 font-mono">
-            <span>20 ms (极速激进)</span>
-            <span>100 ms (推荐标准)</span>
-            <span>300 ms (老游戏从容)</span>
-          </div>
         </div>
 
         {/* 滑块 2：单键按下时长 */}
@@ -128,22 +127,20 @@ export const HotkeyTab: React.FC<HotkeyTabProps> = ({
               {hotkey.key_hold_ms} ms
             </span>
           </div>
-          <input
-            type="range"
-            min="15"
-            max="150"
-            step="5"
+          <FluidSlider
+            min={15}
+            max={150}
+            step={5}
             value={hotkey.key_hold_ms}
-            onChange={(e) =>
-              onUpdateHotkey({ key_hold_ms: Number(e.target.value) })
-            }
-            className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
+            onChange={(val) => onUpdateHotkey({ key_hold_ms: val })}
+            formatValue={(val) => `${val} ms`}
+            color="amber"
+            marks={[
+              { value: 15, label: "15 ms (瞬时点触)" },
+              { value: 40, label: "40 ms (默认稳定)" },
+              { value: 150, label: "150 ms (深按确认)" },
+            ]}
           />
-          <div className="flex justify-between text-[10px] text-slate-400 font-mono">
-            <span>15 ms (瞬时点触)</span>
-            <span>40 ms (默认稳定)</span>
-            <span>150 ms (深按确认)</span>
-          </div>
         </div>
 
         {/* 推荐调优说明 */}
@@ -214,18 +211,21 @@ export const HotkeyTab: React.FC<HotkeyTabProps> = ({
                   {hotkey.double_launch_delay_sec} 秒
                 </span>
               </div>
-              <input
-                type="range"
-                min="1"
-                max="15"
-                step="1"
+              <FluidSlider
+                min={1}
+                max={15}
+                step={1}
                 value={hotkey.double_launch_delay_sec}
-                onChange={(e) =>
-                  onUpdateHotkey({
-                    double_launch_delay_sec: Number(e.target.value),
-                  })
+                onChange={(val) =>
+                  onUpdateHotkey({ double_launch_delay_sec: val })
                 }
-                className="w-full h-1.5 bg-indigo-200/80 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                formatValue={(val) => `${val} 秒`}
+                color="indigo"
+                marks={[
+                  { value: 1, label: "1 秒 (极速就绪)" },
+                  { value: 5, label: "5 秒 (推荐均衡)" },
+                  { value: 15, label: "15 秒 (大型 3A 慢加载)" },
+                ]}
               />
             </div>
           )}
