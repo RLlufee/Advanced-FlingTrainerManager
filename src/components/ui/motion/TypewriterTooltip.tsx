@@ -14,13 +14,27 @@ export interface TypewriterTooltipProps {
   maxWidth?: number; // 最大宽度 (px)，默认 300
 }
 
+type Placement = "top" | "bottom" | "left" | "right";
+
+/**
+ * 气泡最终坐标（全部是视口坐标系下的“左上角”像素值）。
+ * 不再使用 translate(-50%) 居中 —— motion 在做 scale / y 动画时会接管 transform，
+ * 旧实现里写在 style.transform 上的 translateX(-50%) 会被覆盖掉，导致气泡整体右偏半个身位、
+ * 依然突出窗口。直接算好左上角就彻底没有这个问题。
+ */
 interface Coords {
-  top?: number;
-  bottom?: number;
-  left: number;
-  actualPos: "top" | "bottom" | "left" | "right";
-  arrowOffset: number;
+  x: number;
+  y: number;
+  placement: Placement;
+  /** 箭头在气泡内部的位置：top/bottom 时为距左边 px，left/right 时为距顶边 px */
+  arrow: number;
 }
+
+const PADDING = 12; // 距窗口边界最小安全距离
+const GAP = 8; // 气泡距触发元素的间距
+const ARROW_EDGE_MIN = 12; // 箭头距气泡边缘的最小距离（避开圆角）
+
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 export const TypewriterTooltip: React.FC<TypewriterTooltipProps> = ({
   children,
@@ -46,84 +60,91 @@ export const TypewriterTooltip: React.FC<TypewriterTooltipProps> = ({
 
   const actualSpeed = speed ?? effectiveTypewriterSpeed;
 
-  // 计算并夹逼气泡坐标，绝对防止超出窗口视口边界 (Viewport Safety Clamping)
+  /**
+   * 计算气泡位置。
+   * 关键：气泡里始终按“完整文本”排版（未打出的部分用 invisible 占位），
+   * 所以这里量到的就是最终尺寸，打字过程中气泡不会变宽变高、也不会越打越往外突。
+   */
   const calculatePosition = useCallback(() => {
-    if (!triggerRef.current) return;
-    const triggerRect = triggerRef.current.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const PADDING = 12; // 距窗口边界最小安全距离
-    const GAP = 8; // 气泡距触发元素的安全间距
+    const trigger = triggerRef.current;
+    const tip = tooltipRef.current;
+    if (!trigger || !tip) return;
 
-    const tooltipWidth = tooltipRef.current?.offsetWidth || Math.min(maxWidth, 260);
-    const tooltipHeight = tooltipRef.current?.offsetHeight || 44;
+    const t = trigger.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // offsetWidth/Height 不受 scale 动画影响，量到的是真实布局尺寸
+    const w = tip.offsetWidth;
+    const h = tip.offsetHeight;
 
-    let actualPos = position;
+    // 1. 选定方向：首选方向放不下时翻转到对侧；对侧也放不下就挑空间更大的一侧
+    const room = {
+      top: t.top - GAP - PADDING,
+      bottom: vh - t.bottom - GAP - PADDING,
+      left: t.left - GAP - PADDING,
+      right: vw - t.right - GAP - PADDING,
+    };
+    const need = { top: h, bottom: h, left: w, right: w };
+    const opposite: Record<Placement, Placement> = { top: "bottom", bottom: "top", left: "right", right: "left" };
 
-    // 1. 垂直方向边缘越界检测与自适应翻转 (Auto-Flip)
-    if (position === "top" && triggerRect.top - tooltipHeight - GAP < PADDING) {
-      actualPos = "bottom";
-    } else if (position === "bottom" && triggerRect.bottom + tooltipHeight + GAP > viewportHeight - PADDING) {
-      actualPos = "top";
+    let placement: Placement = position;
+    if (room[placement] < need[placement]) {
+      const alt = opposite[placement];
+      if (room[alt] >= need[alt]) {
+        placement = alt;
+      } else if (placement === "left" || placement === "right") {
+        // 左右都放不下（窄窗口 + 长文本）→ 退回上下方向
+        placement = room.bottom >= room.top ? "bottom" : "top";
+      } else if (room[alt] > room[placement]) {
+        placement = alt;
+      }
     }
 
-    // 2. 水平方向边缘越界检测与翻转
-    if (position === "left" && triggerRect.left - tooltipWidth - GAP < PADDING) {
-      actualPos = triggerRect.right + tooltipWidth + GAP <= viewportWidth - PADDING ? "right" : "bottom";
-    } else if (position === "right" && triggerRect.right + tooltipWidth + GAP > viewportWidth - PADDING) {
-      actualPos = triggerRect.left - tooltipWidth - GAP >= PADDING ? "left" : "bottom";
+    // 2. 理想左上角坐标
+    const cx = t.left + t.width / 2;
+    const cy = t.top + t.height / 2;
+    let x: number;
+    let y: number;
+    switch (placement) {
+      case "top":
+        x = cx - w / 2;
+        y = t.top - GAP - h;
+        break;
+      case "bottom":
+        x = cx - w / 2;
+        y = t.bottom + GAP;
+        break;
+      case "left":
+        x = t.left - GAP - w;
+        y = cy - h / 2;
+        break;
+      case "right":
+      default:
+        x = t.right + GAP;
+        y = cy - h / 2;
+        break;
     }
 
-    let idealX = 0;
-    let idealY = 0;
+    // 3. 视口夹逼：保证气泡完整落在窗口内
+    x = clamp(x, PADDING, Math.max(PADDING, vw - PADDING - w));
+    y = clamp(y, PADDING, Math.max(PADDING, vh - PADDING - h));
 
-    if (actualPos === "top") {
-      idealX = triggerRect.left + triggerRect.width / 2;
-      idealY = triggerRect.top - GAP;
-    } else if (actualPos === "bottom") {
-      idealX = triggerRect.left + triggerRect.width / 2;
-      idealY = triggerRect.bottom + GAP;
-    } else if (actualPos === "left") {
-      idealX = triggerRect.left - GAP - tooltipWidth / 2;
-      idealY = triggerRect.top + triggerRect.height / 2;
-    } else {
-      idealX = triggerRect.right + GAP + tooltipWidth / 2;
-      idealY = triggerRect.top + triggerRect.height / 2;
-    }
+    // 4. 箭头补偿：气泡被推开后，箭头仍然指向触发元素中心
+    const arrow =
+      placement === "top" || placement === "bottom"
+        ? clamp(cx - x, ARROW_EDGE_MIN, w - ARROW_EDGE_MIN)
+        : clamp(cy - y, ARROW_EDGE_MIN, h - ARROW_EDGE_MIN);
 
-    // 3. 水平安全夹逼（保证气泡 100% 落在窗口可视区域内）
-    const minX = PADDING + tooltipWidth / 2;
-    const maxX = viewportWidth - PADDING - tooltipWidth / 2;
-    const clampedX = Math.max(minX, Math.min(maxX, idealX));
-    const arrowOffset = Math.max(-tooltipWidth / 2 + 16, Math.min(tooltipWidth / 2 - 16, idealX - clampedX));
-
-    if (actualPos === "top") {
-      setCoords({
-        bottom: viewportHeight - idealY,
-        left: clampedX,
-        actualPos,
-        arrowOffset,
-      });
-    } else if (actualPos === "bottom") {
-      setCoords({
-        top: idealY,
-        left: clampedX,
-        actualPos,
-        arrowOffset,
-      });
-    } else {
-      const clampedY = Math.max(
-        PADDING + tooltipHeight / 2,
-        Math.min(viewportHeight - PADDING - tooltipHeight / 2, idealY)
-      );
-      setCoords({
-        top: clampedY,
-        left: clampedX,
-        actualPos,
-        arrowOffset,
-      });
-    }
-  }, [position, maxWidth]);
+    setCoords((prev) =>
+      prev &&
+      prev.x === x &&
+      prev.y === y &&
+      prev.placement === placement &&
+      prev.arrow === arrow
+        ? prev
+        : { x, y, placement, arrow }
+    );
+  }, [position]);
 
   const handleMouseEnter = () => {
     if (delayMs > 0 && isAnimEnabled) {
@@ -143,14 +164,20 @@ export const TypewriterTooltip: React.FC<TypewriterTooltipProps> = ({
     setIsVisible(false);
   };
 
-  // 显隐或尺寸变化时重新计算视口位置
-  useLayoutEffect(() => {
-    if (isVisible) {
-      calculatePosition();
-    }
-  }, [isVisible, calculatePosition]);
+  // 卸载时清理延迟定时器
+  useEffect(() => {
+    return () => {
+      if (delayTimerRef.current) clearTimeout(delayTimerRef.current);
+    };
+  }, []);
 
-  // 监听页面滚动与窗口缩放，实时修正浮标锚点
+  // 显示时（气泡已挂载、尚未绘制）同步测量并定位，首帧即在正确位置
+  useLayoutEffect(() => {
+    // 隐藏时保留旧坐标，让退场动画留在原地播放；再次显示时会在绘制前被重新计算覆盖
+    if (isVisible) calculatePosition();
+  }, [isVisible, targetText, calculatePosition]);
+
+  // 监听页面滚动与窗口缩放，实时修正位置
   useEffect(() => {
     if (!isVisible) return;
     const onScrollOrResize = () => calculatePosition();
@@ -174,6 +201,7 @@ export const TypewriterTooltip: React.FC<TypewriterTooltipProps> = ({
       return;
     }
 
+    // 若动效关闭或打字间隔设为 0，瞬间显示完整文本
     if (!isAnimEnabled || actualSpeed <= 0) {
       setDisplayedText(targetText);
       setIsTyping(false);
@@ -205,6 +233,37 @@ export const TypewriterTooltip: React.FC<TypewriterTooltipProps> = ({
     };
   }, [isVisible, targetText, actualSpeed, isAnimEnabled]);
 
+  // 根据方向决定弹出位移与缩放原点（原点放在箭头处，像从触发元素上“长”出来）
+  const placement: Placement = coords?.placement ?? position;
+  const offset = 6;
+  const enterFrom =
+    placement === "top"
+      ? { y: offset }
+      : placement === "bottom"
+        ? { y: -offset }
+        : placement === "left"
+          ? { x: offset }
+          : { x: -offset };
+  const exitTo =
+    placement === "top"
+      ? { y: offset * 0.6 }
+      : placement === "bottom"
+        ? { y: -offset * 0.6 }
+        : placement === "left"
+          ? { x: offset * 0.6 }
+          : { x: -offset * 0.6 };
+  const arrowPx = coords?.arrow ?? 0;
+  const transformOrigin =
+    placement === "top"
+      ? `${arrowPx}px 100%`
+      : placement === "bottom"
+        ? `${arrowPx}px 0%`
+        : placement === "left"
+          ? `100% ${arrowPx}px`
+          : `0% ${arrowPx}px`;
+
+  const remainingText = targetText.slice(displayedText.length);
+
   return (
     <div
       ref={triggerRef}
@@ -217,75 +276,72 @@ export const TypewriterTooltip: React.FC<TypewriterTooltipProps> = ({
       {typeof document !== "undefined" &&
         createPortal(
           <AnimatePresence>
-            {isVisible && targetText && coords && (
+            {isVisible && targetText && (
               <motion.div
                 ref={tooltipRef}
-                initial={
-                  isAnimEnabled
-                    ? {
-                        opacity: 0,
-                        scale: 0.88,
-                        y: coords.actualPos === "top" ? 6 : -6,
-                      }
-                    : { opacity: 1 }
-                }
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={
-                  isAnimEnabled
-                    ? {
-                        opacity: 0,
-                        scale: 0.9,
-                        y: coords.actualPos === "top" ? 4 : -4,
-                      }
-                    : { opacity: 0 }
-                }
+                initial={isAnimEnabled ? { opacity: 0, scale: 0.9, x: 0, y: 0, ...enterFrom } : { opacity: 1 }}
+                animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
+                exit={isAnimEnabled ? { opacity: 0, scale: 0.94, ...exitTo } : { opacity: 0 }}
                 transition={
                   isAnimEnabled
                     ? {
                         type: "spring",
                         stiffness: Math.round(480 * effectiveSpeed),
-                        damping: 26,
+                        damping: 28,
                       }
                     : { duration: 0 }
                 }
                 style={{
                   position: "fixed",
                   zIndex: 99999,
-                  maxWidth: `${maxWidth}px`,
-                  ...(coords.top !== undefined ? { top: coords.top } : {}),
-                  ...(coords.bottom !== undefined ? { bottom: coords.bottom } : {}),
-                  left: coords.left,
-                  transform:
-                    coords.actualPos === "left" || coords.actualPos === "right"
-                      ? "translate(-50%, -50%)"
-                      : "translateX(-50%)",
+                  left: coords?.x ?? 0,
+                  top: coords?.y ?? 0,
+                  // 首次测量前先隐藏，避免左上角闪现
+                  visibility: coords ? "visible" : "hidden",
+                  // 宽度按内容自适应，但不超过 maxWidth 和窗口可用宽度；
+                  // 用 max-content 让测量结果与 left 无关（fixed 元素默认会被右侧剩余空间挤压）
+                  width: "max-content",
+                  maxWidth: `min(${maxWidth}px, calc(100vw - ${PADDING * 2}px))`,
+                  transformOrigin,
                 }}
-                className="pointer-events-none px-3 py-2 rounded-xl bg-slate-900/95 text-slate-100 border border-slate-700/80 shadow-2xl backdrop-blur-md text-[11px] font-sans leading-relaxed whitespace-normal break-words flex items-start gap-1.5 select-none"
+                className="pointer-events-none px-3 py-2 rounded-xl bg-slate-900/95 text-slate-100 border border-slate-700/80 shadow-2xl backdrop-blur-md text-[11px] font-sans leading-relaxed whitespace-normal break-words select-none"
               >
-                <div className="flex-1">
-                  <span>{displayedText}</span>
-                  {isTyping && (
-                    <span className="inline-block w-1 h-3 bg-cyan-400 animate-pulse rounded-xs ml-0.5 align-middle" />
-                  )}
-                </div>
+                {/* 已打出的文字 + 零宽光标 + 未打出文字（不可见占位，锁定最终尺寸） */}
+                <span>{displayedText}</span>
+                {isTyping && (
+                  <span className="relative inline-block w-0 h-3 align-middle">
+                    <span className="absolute left-0.5 top-0 w-1 h-3 bg-cyan-400 animate-pulse rounded-xs" />
+                  </span>
+                )}
+                {remainingText && (
+                  <span className="invisible" aria-hidden>
+                    {remainingText}
+                  </span>
+                )}
 
-                {/* 居中或补偿对准触发器的指向小箭头 */}
-                {coords.actualPos === "top" && (
+                {/* 指向触发元素的小箭头（位置已做夹逼补偿） */}
+                {coords && placement === "top" && (
                   <div
-                    style={{
-                      left: `calc(50% + ${coords.arrowOffset}px)`,
-                      transform: "translateX(-50%) rotate(45deg)",
-                    }}
-                    className="absolute -bottom-1 w-2 h-2 bg-slate-900 border-r border-b border-slate-700/80"
+                    style={{ left: arrowPx }}
+                    className="absolute -bottom-1 w-2 h-2 -translate-x-1/2 rotate-45 bg-slate-900 border-r border-b border-slate-700/80"
                   />
                 )}
-                {coords.actualPos === "bottom" && (
+                {coords && placement === "bottom" && (
                   <div
-                    style={{
-                      left: `calc(50% + ${coords.arrowOffset}px)`,
-                      transform: "translateX(-50%) rotate(45deg)",
-                    }}
-                    className="absolute -top-1 w-2 h-2 bg-slate-900 border-l border-t border-slate-700/80"
+                    style={{ left: arrowPx }}
+                    className="absolute -top-1 w-2 h-2 -translate-x-1/2 rotate-45 bg-slate-900 border-l border-t border-slate-700/80"
+                  />
+                )}
+                {coords && placement === "left" && (
+                  <div
+                    style={{ top: arrowPx }}
+                    className="absolute -right-1 w-2 h-2 -translate-y-1/2 rotate-45 bg-slate-900 border-r border-t border-slate-700/80"
+                  />
+                )}
+                {coords && placement === "right" && (
+                  <div
+                    style={{ top: arrowPx }}
+                    className="absolute -left-1 w-2 h-2 -translate-y-1/2 rotate-45 bg-slate-900 border-l border-b border-slate-700/80"
                   />
                 )}
               </motion.div>

@@ -68,3 +68,25 @@ html {
 ::-webkit-scrollbar-thumb:active {
   background-color: rgba(71, 85, 105, 0.95);
 }
+
+/* FluidSlider 透明原生滑块：统一圆钮命中尺寸为 18px，与视觉圆钮 (THUMB_SIZE) 完全重合 */
+.fluid-slider-input {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+}
+
+.fluid-slider-input::-webkit-slider-runnable-track {
+  height: 100%;
+  background: transparent;
+}
+
+.fluid-slider-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 3px; /* (24px 轨道高 - 18px) / 2，垂直居中 */
+  border: none;
+  background: transparent;
+}
