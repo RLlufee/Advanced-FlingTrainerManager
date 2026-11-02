@@ -3,6 +3,7 @@ import { TitleBar, NavTab } from "./components/TitleBar";
 import { DownloadView } from "./components/DownloadView";
 import { LaunchView } from "./components/LaunchView";
 import { SettingsView } from "./components/SettingsView";
+import { MoreView } from "./components/MoreView";
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>("download"); // 默认展示装配好的下载页面
@@ -41,6 +42,13 @@ export const App: React.FC = () => {
           }`}
         >
           <SettingsView isActive={activeTab === "settings"} />
+        </div>
+        <div
+          className={`flex-1 flex overflow-hidden ${
+            activeTab === "more" ? "flex" : "hidden"
+          }`}
+        >
+          <MoreView isActive={activeTab === "more"} />
         </div>
       </div>
     </div>

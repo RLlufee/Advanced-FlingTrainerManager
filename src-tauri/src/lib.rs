@@ -172,6 +172,28 @@ async fn test_network_connectivity(target: Option<String>) -> Result<services::c
     services::config::test_network_connectivity(target).await
 }
 
+#[tauri::command]
+fn get_system_memory_info() -> Result<services::memory_optimizer::SystemMemoryInfo, String> {
+    services::memory_optimizer::get_system_memory_info()
+}
+
+#[tauri::command]
+async fn optimize_memory(options: Option<services::memory_optimizer::MemoryOptimizeOptions>) -> Result<services::memory_optimizer::MemoryOptimizeResult, String> {
+    tokio::task::spawn_blocking(move || {
+        services::memory_optimizer::optimize_memory(options)
+    }).await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn restart_app_as_admin() -> Result<(), String> {
+    services::memory_optimizer::restart_as_admin()
+}
+
+#[tauri::command]
+fn open_system_tool(tool: String) -> Result<(), String> {
+    services::memory_optimizer::open_system_tool(&tool)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -206,7 +228,11 @@ pub fn run() {
             clean_orphan_cache,
             migrate_trainers_dir,
             set_launch_at_startup,
-            test_network_connectivity
+            test_network_connectivity,
+            get_system_memory_info,
+            optimize_memory,
+            restart_app_as_admin,
+            open_system_tool
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
