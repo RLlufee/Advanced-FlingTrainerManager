@@ -55,12 +55,37 @@ export type AccentColorKey =
   | "gold"
   | "indigo"
   | "monochrome"
-  | "custom";
+  | "custom"
+  | "dynamic";
+
+export type DynamicColorSource = "windows" | "image";
+
+export interface MonetSavedImage {
+  id: string;
+  name: string;
+  /** 持久化保存在 app_data/theme_wallpapers/ 下的缩略图绝对路径 */
+  image_path: string;
+  /** Google Monet 算法提取出的多枚候选色号 (Hex) */
+  palette: string[];
+  /** 用户在该图片下当前选定的色号 (Hex) */
+  selected_hex: string;
+  added_at: string;
+}
 
 export interface ThemeSettings {
-  accent_color: AccentColorKey | string; // 预设标识或 "custom"
+  accent_color: AccentColorKey | string; // 预设标识 | "custom" | "dynamic"
   custom_accent_hex?: string | null; // 自定义十六进制颜色如 "#3b82f6"
   color_mode?: "light" | "dark" | "system"; // 颜色模式，默认 "light"
+  /** 动态取色激活源："windows" (系统强调色) | "image" (自定义图片莫奈色盘) */
+  dynamic_source?: DynamicColorSource;
+  /** 持久化保存的莫奈取色图片画廊列表 */
+  monet_saved_images?: MonetSavedImage[];
+  /** 当前激活的莫奈取色图片 ID */
+  active_monet_image_id?: string | null;
+  /** 动态取色最近一次生效的种子色号缓存 (冷启动 0ms 还原) */
+  dynamic_seed_hex?: string | null;
+  /** 高级选项：启动页选中修改器时跟随游戏封面动态变色 */
+  game_adaptive_accent?: boolean;
 }
 
 export interface AppConfig {
@@ -139,5 +164,25 @@ export const configApi = {
   // 测试网络/代理连通性
   async testNetworkConnectivity(target?: string): Promise<NetworkTestResult> {
     return await invoke<NetworkTestResult>("test_network_connectivity", { target });
+  },
+
+  // 读取 Windows 系统当前主题强调色 (DWM AccentColor)
+  async getWindowsAccentColor(): Promise<string> {
+    return await invoke<string>("get_windows_accent_color");
+  },
+
+  // 将莫奈取色图片缩略图持久化落盘到 app_data/theme_wallpapers/
+  async saveMonetWallpaperThumbnail(id: string, dataUrl: string): Promise<string> {
+    return await invoke<string>("save_monet_wallpaper_thumbnail", { id, dataUrl });
+  },
+
+  // 删除本地持久化的莫奈取色缩略图文件
+  async deleteMonetWallpaperFile(imagePath: string): Promise<void> {
+    return await invoke<void>("delete_monet_wallpaper_file", { imagePath });
+  },
+
+  // 通过后端读取本地或远程图片为 Data URL（规避 Canvas 跨域污染并复用代理配置）
+  async readImageAsDataUrl(source: string): Promise<string> {
+    return await invoke<string>("read_image_as_data_url", { source });
   },
 };

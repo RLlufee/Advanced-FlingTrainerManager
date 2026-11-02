@@ -217,6 +217,26 @@ async fn system_cleanup_run(categories: Vec<String>) -> Result<services::system_
     .map_err(|e| e.to_string())?
 }
 
+#[tauri::command]
+fn get_windows_accent_color() -> Result<String, String> {
+    services::monet::get_windows_accent_color()
+}
+
+#[tauri::command]
+fn save_monet_wallpaper_thumbnail(id: String, data_url: String) -> Result<String, String> {
+    services::monet::save_monet_wallpaper_thumbnail(&id, &data_url)
+}
+
+#[tauri::command]
+fn delete_monet_wallpaper_file(image_path: String) -> Result<(), String> {
+    services::monet::delete_monet_wallpaper_file(&image_path)
+}
+
+#[tauri::command]
+async fn read_image_as_data_url(source: String) -> Result<String, String> {
+    services::monet::read_image_as_data_url(&source).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -258,7 +278,11 @@ pub fn run() {
             open_system_tool,
             get_hardware_overview,
             system_cleanup_scan,
-            system_cleanup_run
+            system_cleanup_run,
+            get_windows_accent_color,
+            save_monet_wallpaper_thumbnail,
+            delete_monet_wallpaper_file,
+            read_image_as_data_url
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -20,7 +20,10 @@ export interface AccentColorConfig {
   gradient: string; // 渐变样式 (如用于大按钮或滑块)
 }
 
-export const ACCENT_PRESETS: Record<Exclude<AccentColorKey, "custom">, AccentColorConfig> = {
+export const ACCENT_PRESETS: Record<
+  Exclude<AccentColorKey, "custom" | "dynamic">,
+  AccentColorConfig
+> = {
   cyan: {
     id: "cyan",
     name: "青空之蓝",

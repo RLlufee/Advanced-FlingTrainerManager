@@ -154,6 +154,23 @@ fn default_theme_accent() -> String {
 fn default_color_mode() -> String {
     "light".to_string()
 }
+fn default_dynamic_source() -> String {
+    "windows".to_string()
+}
+
+/// 莫奈动态取色持久化自定义图片条目
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MonetSavedImage {
+    pub id: String,
+    pub name: String,
+    /// 保存在 app_data/theme_wallpapers/ 下的缩略图绝对路径
+    pub image_path: String,
+    /// Google Monet 算法量化评分提取出的多枚候选色号
+    pub palette: Vec<String>,
+    /// 用户在该图片下当前选定的色号
+    pub selected_hex: String,
+    pub added_at: String,
+}
 
 /// 主题与个性化外观配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -163,6 +180,21 @@ pub struct ThemeSettings {
     pub custom_accent_hex: Option<String>,
     #[serde(default = "default_color_mode")]
     pub color_mode: String,
+    /// 动态取色模式下的激活源: "windows" | "image"
+    #[serde(default = "default_dynamic_source")]
+    pub dynamic_source: String,
+    /// 持久化保存的莫奈自定义取色图片画廊
+    #[serde(default)]
+    pub monet_saved_images: Vec<MonetSavedImage>,
+    /// 当前激活的莫奈取色图片 ID
+    #[serde(default)]
+    pub active_monet_image_id: Option<String>,
+    /// 动态取色最近一次生效的种子色号 (保证冷启动 0ms 无闪烁还原)
+    #[serde(default)]
+    pub dynamic_seed_hex: Option<String>,
+    /// 高级选项：启动页选中修改器时跟随游戏封面动态变色
+    #[serde(default)]
+    pub game_adaptive_accent: bool,
 }
 
 impl Default for ThemeSettings {
@@ -171,6 +203,11 @@ impl Default for ThemeSettings {
             accent_color: default_theme_accent(),
             custom_accent_hex: None,
             color_mode: default_color_mode(),
+            dynamic_source: default_dynamic_source(),
+            monet_saved_images: Vec::new(),
+            active_monet_image_id: None,
+            dynamic_seed_hex: None,
+            game_adaptive_accent: false,
         }
     }
 }

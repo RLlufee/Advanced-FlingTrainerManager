@@ -18,6 +18,7 @@ import { LaunchHero } from "./LaunchHero";
 import { HotkeyPanel } from "./HotkeyPanel";
 import { LaunchEmptyState } from "./LaunchEmptyState";
 import { DeleteConfirmModal } from "./DeleteConfirmModal";
+import { useTheme, extractGameMonetHex } from "../ui/theme";
 
 export interface LaunchViewProps {
   onNavigateToDownload?: () => void;
@@ -57,6 +58,9 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
   // 修改器预设开关状态字典
   const [currentToggles, setCurrentToggles] = useState<Record<string, boolean>>({});
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+
+  // 莫奈动态主题引擎（用于第三级「游戏取色」：选中修改器实时提取封面代表色）
+  const { isDynamic, gameAdaptiveAccent, applyEphemeralGameAccent } = useTheme();
 
   // 显示临时通知
   const showToast = (type: "success" | "error" | "info", message: string) => {
@@ -117,6 +121,49 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
       setCurrentToggles({});
     }
   }, [selectedTrainer?.id]);
+
+  // 莫奈「游戏取色」实时联动：仅在处于启动页激活态且开启了动态游戏取色时触发（纯内存瞬态，0 写盘）
+  useEffect(() => {
+    if (!isDynamic || !gameAdaptiveAccent) return;
+    if (!isActive) return;
+
+    if (!selectedTrainer) {
+      applyEphemeralGameAccent(null);
+      return;
+    }
+
+    let cancelled = false;
+    const displayName = selectedTrainer.chinese_name || selectedTrainer.name;
+
+    extractGameMonetHex(selectedTrainer.id, displayName, [
+      selectedTrainer.capsule_image,
+      selectedTrainer.hero_image,
+      selectedTrainer.thumbnail,
+    ]).then((seedHex) => {
+      if (!cancelled) {
+        applyEphemeralGameAccent({
+          trainerId: selectedTrainer.id,
+          trainerName: displayName,
+          hex: seedHex,
+        });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isActive,
+    isDynamic,
+    gameAdaptiveAccent,
+    selectedTrainer?.id,
+    selectedTrainer?.capsule_image,
+    selectedTrainer?.hero_image,
+    selectedTrainer?.thumbnail,
+    selectedTrainer?.chinese_name,
+    selectedTrainer?.name,
+    applyEphemeralGameAccent,
+  ]);
 
   // 左侧已安装游戏过滤
   const filteredTrainers = useMemo(() => {
