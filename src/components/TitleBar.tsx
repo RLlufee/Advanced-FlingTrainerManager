@@ -15,30 +15,43 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   activeTab,
   onTabChange,
 }) => {
-  const handleMinimize = async () => {
+  const handleMinimize = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     try {
       const appWindow = getCurrentWindow();
       await appWindow.minimize();
-    } catch (e) {
-      console.warn("Tauri window API not available in browser mode", e);
+    } catch (err) {
+      console.warn("Tauri window API not available in browser mode", err);
     }
   };
 
-  const handleMaximize = async () => {
+  const handleMaximize = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     try {
       const appWindow = getCurrentWindow();
       await appWindow.toggleMaximize();
-    } catch (e) {
-      console.warn("Tauri window API not available in browser mode", e);
+    } catch (err) {
+      console.warn("Tauri window API not available in browser mode", err);
     }
   };
 
-  const handleClose = async () => {
+  const handleClose = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     try {
       const appWindow = getCurrentWindow();
       await appWindow.close();
-    } catch (e) {
-      console.warn("Tauri window API not available in browser mode", e);
+    } catch (err) {
+      console.warn("Tauri window API not available in browser mode", err);
+    }
+  };
+
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (
+      target === e.currentTarget ||
+      target.getAttribute("data-tauri-drag-region") !== null
+    ) {
+      handleMaximize();
     }
   };
 
@@ -52,6 +65,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   return (
     <header
       data-tauri-drag-region
+      onDoubleClick={handleDoubleClick}
       className="pcl-titlebar-bg h-12 w-full flex items-center justify-between px-4 select-none relative z-50 border-b border-slate-700/50 shadow-sm"
     >
       {/* 左侧：应用标题 */}
@@ -65,17 +79,17 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         </span>
       </div>
 
-      {/* 中间：居中胶囊导航栏 */}
-      <nav
-        data-tauri-drag-region
-        className="flex items-center justify-center p-1 bg-slate-900/60 backdrop-blur-md rounded-full border border-slate-600/40 shadow-inner"
-      >
+      {/* 中间：居中胶囊导航栏（不添加拖拽属性，确保点击与悬停事件正常） */}
+      <nav className="flex items-center justify-center p-1 bg-slate-900/60 backdrop-blur-md rounded-full border border-slate-600/40 shadow-inner">
         {navItems.map((item) => {
           const isActive = activeTab === item.key;
           return (
             <button
               key={item.key}
-              onClick={() => onTabChange(item.key)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onTabChange(item.key);
+              }}
               className={`flex items-center gap-1.5 px-4 py-1 rounded-full text-xs font-medium transition-all duration-200 cursor-pointer ${
                 isActive
                   ? "bg-white text-slate-900 shadow-md scale-100 font-semibold"

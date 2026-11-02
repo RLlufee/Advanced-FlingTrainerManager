@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Advanced FlingTrainerManager",
         "width": 1080,
         "height": 680,
