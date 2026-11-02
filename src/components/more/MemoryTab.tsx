@@ -122,10 +122,10 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
             <TypewriterTooltip text="通过 UAC 提权重新唤醒客户端以解锁 Windows NT 内核全部清退指令" position="left">
               <button
                 onClick={onRestartAdmin}
-                className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer shrink-0 active:scale-95"
+                className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-primary bg-primary-hover text-white text-xs font-semibold shadow-xs transition-all cursor-pointer shrink-0 active:scale-95"
               >
                 <JellyIcon intensity="bouncy">
-                  <Zap className="w-3.5 h-3.5 text-amber-300 fill-current" />
+                  <Zap className="w-3.5 h-3.5 text-amber-200 fill-current" />
                 </JellyIcon>
                 <span>以管理员重启</span>
               </button>

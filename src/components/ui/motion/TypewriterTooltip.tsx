@@ -304,13 +304,13 @@ export const TypewriterTooltip: React.FC<TypewriterTooltipProps> = ({
                   maxWidth: `min(${maxWidth}px, calc(100vw - ${PADDING * 2}px))`,
                   transformOrigin,
                 }}
-                className="pointer-events-none px-3 py-2 rounded-xl bg-slate-900/95 text-slate-100 border border-slate-700/80 shadow-2xl backdrop-blur-md text-[11px] font-sans leading-relaxed whitespace-normal break-words select-none"
+                className="pointer-events-none px-3 py-2 rounded-xl bg-cyan-900/95 text-white border border-cyan-500/40 shadow-xl shadow-primary-glow backdrop-blur-md text-[11px] font-sans leading-relaxed whitespace-normal break-words select-none"
               >
                 {/* 已打出的文字 + 零宽光标 + 未打出文字（不可见占位，锁定最终尺寸） */}
                 <span>{displayedText}</span>
                 {isTyping && (
                   <span className="relative inline-block w-0 h-3 align-middle">
-                    <span className="absolute left-0.5 top-0 w-1 h-3 bg-cyan-400 animate-pulse rounded-xs" />
+                    <span className="absolute left-0.5 top-0 w-1 h-3 bg-cyan-300 animate-pulse rounded-xs" />
                   </span>
                 )}
                 {remainingText && (
@@ -323,25 +323,25 @@ export const TypewriterTooltip: React.FC<TypewriterTooltipProps> = ({
                 {coords && placement === "top" && (
                   <div
                     style={{ left: arrowPx }}
-                    className="absolute -bottom-1 w-2 h-2 -translate-x-1/2 rotate-45 bg-slate-900 border-r border-b border-slate-700/80"
+                    className="absolute -bottom-1 w-2 h-2 -translate-x-1/2 rotate-45 bg-cyan-900 border-r border-b border-cyan-500/40"
                   />
                 )}
                 {coords && placement === "bottom" && (
                   <div
                     style={{ left: arrowPx }}
-                    className="absolute -top-1 w-2 h-2 -translate-x-1/2 rotate-45 bg-slate-900 border-l border-t border-slate-700/80"
+                    className="absolute -top-1 w-2 h-2 -translate-x-1/2 rotate-45 bg-cyan-900 border-l border-t border-cyan-500/40"
                   />
                 )}
                 {coords && placement === "left" && (
                   <div
                     style={{ top: arrowPx }}
-                    className="absolute -right-1 w-2 h-2 -translate-y-1/2 rotate-45 bg-slate-900 border-r border-t border-slate-700/80"
+                    className="absolute -right-1 w-2 h-2 -translate-y-1/2 rotate-45 bg-cyan-900 border-r border-t border-cyan-500/40"
                   />
                 )}
                 {coords && placement === "right" && (
                   <div
                     style={{ top: arrowPx }}
-                    className="absolute -left-1 w-2 h-2 -translate-y-1/2 rotate-45 bg-slate-900 border-l border-b border-slate-700/80"
+                    className="absolute -left-1 w-2 h-2 -translate-y-1/2 rotate-45 bg-cyan-900 border-l border-b border-cyan-500/40"
                   />
                 )}
               </motion.div>

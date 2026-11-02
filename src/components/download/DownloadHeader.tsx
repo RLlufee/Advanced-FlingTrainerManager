@@ -32,7 +32,7 @@ export const DownloadHeader: React.FC<DownloadHeaderProps> = ({
         </div>
         <button
           onClick={onSearchSubmit}
-          className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-medium cursor-pointer transition-all shrink-0 active:scale-95"
+          className="px-3.5 py-1.5 bg-primary bg-primary-hover text-white rounded-lg text-xs font-medium cursor-pointer transition-all shrink-0 active:scale-95 shadow-xs"
         >
           搜索
         </button>
@@ -42,9 +42,9 @@ export const DownloadHeader: React.FC<DownloadHeaderProps> = ({
         <button
           onClick={onRefresh}
           title="刷新数据（强制从风灵月影官网重新拉取）"
-          className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all cursor-pointer"
+          className="p-2 text-slate-500 hover:text-primary hover:bg-primary-soft rounded-lg transition-all cursor-pointer"
         >
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-primary" : ""}`} />
         </button>
       </div>
     </div>

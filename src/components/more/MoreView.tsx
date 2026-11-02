@@ -139,7 +139,7 @@ export const MoreView: React.FC<MoreViewProps> = ({ isActive = true }) => {
               ? "bg-emerald-500/90 text-white border-emerald-400/50 shadow-emerald-500/20"
               : toast.type === "error"
               ? "bg-rose-500/90 text-white border-rose-400/50 shadow-rose-500/20"
-              : "bg-slate-800/90 text-white border-slate-700/50 shadow-slate-900/30"
+              : "bg-cyan-900/95 text-white border-cyan-500/40 shadow-primary-glow"
           }`}
         >
           {toast.type === "success" && <Check className="w-4 h-4 stroke-[2.5]" />}

@@ -48,10 +48,10 @@ export const LaunchEmptyState: React.FC<LaunchEmptyStateProps> = ({
               <TypewriterTooltip text="浏览风灵月影千款热门游戏修改器并在本地一键下载" position="top">
                 <button
                   onClick={onNavigateToDownload}
-                  className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-md hover:shadow-lg transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+                  className="px-5 py-2.5 bg-primary bg-primary-hover text-white rounded-xl text-xs font-semibold shadow-md hover:shadow-lg transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
                 >
                   <JellyIcon intensity="gentle">
-                    <PlusCircle className="w-4 h-4 text-cyan-400" />
+                    <PlusCircle className="w-4 h-4 text-white" />
                   </JellyIcon>
                   <span>前往下载库下载修改器</span>
                 </button>

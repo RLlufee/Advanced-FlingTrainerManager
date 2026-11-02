@@ -86,14 +86,19 @@ body {
   color: #1e293b;
 }
 
-/* 顶部暗色波纹背景质感 */
+/* 顶部主题色波纹背景质感（跟随 --color-primary 实时换肤） */
 .pcl-titlebar-bg {
-  background-color: #2b313d;
+  background-color: color-mix(in oklab, var(--color-primary-active) 78%, #0f172a);
   background-image: 
-    radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.08) 0%, transparent 65%),
-    radial-gradient(ellipse at 80% 50%, rgba(129, 140, 248, 0.06) 0%, transparent 60%),
-    linear-gradient(180deg, #323846 0%, #252a34 100%);
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.16) 0%, transparent 65%),
+    radial-gradient(ellipse at 80% 50%, rgba(var(--color-primary-rgb), 0.35) 0%, transparent 60%),
+    linear-gradient(
+      180deg,
+      color-mix(in oklab, var(--color-primary) 72%, #0f172a) 0%,
+      color-mix(in oklab, var(--color-primary-active) 76%, #0f172a) 100%
+    );
   position: relative;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .pcl-titlebar-bg::after {

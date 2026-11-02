@@ -386,7 +386,7 @@ export const AnimationTab: React.FC = () => {
                     type="button"
                     onClick={() => updateSettings({ jelly_intensity: level })}
                     className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${isSelected
-                        ? "bg-slate-900 text-white shadow-xs"
+                        ? "bg-primary text-white shadow-xs"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                       }`}
                   >

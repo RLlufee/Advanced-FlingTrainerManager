@@ -506,7 +506,7 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
                 ? "bg-emerald-950/85 text-emerald-300 border-emerald-500/40"
                 : toast.type === "error"
                 ? "bg-rose-950/85 text-rose-300 border-rose-500/40"
-                : "bg-slate-900/90 text-cyan-300 border-cyan-500/40"
+                : "bg-cyan-900/95 text-cyan-200 border-cyan-500/40 shadow-primary-glow"
             }`}
           >
             {toast.type === "success" ? (

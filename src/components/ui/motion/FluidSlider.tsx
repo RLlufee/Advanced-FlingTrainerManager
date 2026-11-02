@@ -235,13 +235,13 @@ export const FluidSlider: React.FC<FluidSliderProps> = ({
                 : { opacity: 0, scale: isAnimEnabled ? 0.8 : 1, y: isAnimEnabled ? 4 : 0 }
             }
             transition={popTransition}
-            className={`relative px-2 py-0.5 rounded-md bg-slate-900/95 text-[11px] font-mono font-bold shadow-lg border ${theme.badgeBorder} whitespace-nowrap`}
+            className={`relative px-2 py-0.5 rounded-md bg-cyan-900/95 text-[11px] font-mono font-bold shadow-lg border ${theme.badgeBorder} whitespace-nowrap`}
           >
             <span className={theme.badgeText}>{displayValue}</span>
             {/* 指向圆钮的小箭头（left 由 applyLayout 写入） */}
             <div
               ref={arrowRef}
-              className={`absolute top-full -mt-1 w-2 h-2 -translate-x-1/2 rotate-45 bg-slate-900 border-r border-b ${theme.badgeBorder}`}
+              className={`absolute top-full -mt-1 w-2 h-2 -translate-x-1/2 rotate-45 bg-cyan-900 border-r border-b ${theme.badgeBorder}`}
             />
           </motion.div>
         </div>

@@ -110,7 +110,7 @@ export const HardwareTab: React.FC = () => {
         <div className="text-xs text-slate-500">{errorMsg}</div>
         <button
           onClick={loadData}
-          className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition-all cursor-pointer"
+          className="px-4 py-2 bg-primary bg-primary-hover text-white rounded-xl text-xs font-semibold transition-all cursor-pointer"
         >
           重试
         </button>

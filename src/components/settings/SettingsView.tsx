@@ -343,7 +343,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
               ? "bg-emerald-500/90 text-white border-emerald-400/50"
               : toast.type === "error"
               ? "bg-rose-500/90 text-white border-rose-400/50"
-              : "bg-slate-800/90 text-white border-slate-700/50"
+              : "bg-cyan-900/95 text-white border-cyan-500/40 shadow-primary-glow"
           }`}
         >
           <span>{toast.message}</span>

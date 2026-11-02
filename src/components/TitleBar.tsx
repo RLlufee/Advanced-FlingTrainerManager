@@ -70,7 +70,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
     <header
       data-tauri-drag-region
       onDoubleClick={handleDoubleClick}
-      className="pcl-titlebar-bg h-12 w-full flex items-center justify-between px-4 select-none relative z-50 border-b border-slate-700/50 shadow-sm"
+      className="pcl-titlebar-bg h-12 w-full flex items-center justify-between px-4 select-none relative z-50 border-b border-white/15 shadow-sm"
     >
       {/* 左侧：应用标题（集成打字机 Tooltip 提示） */}
       <div data-tauri-drag-region className="flex items-center gap-2 min-w-[180px]">
@@ -96,7 +96,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
       </div>
 
       {/* 中间：居中磁吸胶囊导航栏（交互式磁吸吸引 + 液体平滑滑块） */}
-      <nav className="flex items-center justify-center p-1 bg-slate-900/60 backdrop-blur-md rounded-full border border-slate-600/40 shadow-inner">
+      <nav className="flex items-center justify-center p-1 bg-black/25 backdrop-blur-md rounded-full border border-white/20 shadow-inner">
         {navItems.map((item) => {
           const isActive = activeTab === item.key;
           return (
@@ -121,7 +121,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           <button
             onClick={handleMinimize}
             title="最小化"
-            className="w-8 h-8 flex items-center justify-center rounded text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="w-8 h-8 flex items-center justify-center rounded text-white/80 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
           >
             <Minus className="w-3.5 h-3.5" />
           </button>
@@ -131,7 +131,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           <button
             onClick={handleMaximize}
             title="最大化 / 还原"
-            className="w-8 h-8 flex items-center justify-center rounded text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            className="w-8 h-8 flex items-center justify-center rounded text-white/80 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
           >
             <Square className="w-3 h-3" />
           </button>
@@ -141,7 +141,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
           <JellyIcon intensity="bouncy">
             <button
               onClick={handleClose}
-              className="w-8 h-8 flex items-center justify-center rounded text-slate-300 hover:text-white hover:bg-rose-600/90 transition-colors cursor-pointer"
+              className="w-8 h-8 flex items-center justify-center rounded text-white/80 hover:text-white hover:bg-rose-600/90 transition-colors cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>

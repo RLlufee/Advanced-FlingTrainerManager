@@ -280,10 +280,10 @@ export const HotkeyTab: React.FC<HotkeyTabProps> = ({
             <button
               type="button"
               onClick={onExportPresets}
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+              className="px-4 py-2 bg-primary bg-primary-hover active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <JellyIcon intensity="gentle">
-                <Download className="w-3.5 h-3.5 text-cyan-400" />
+                <Download className="w-3.5 h-3.5 text-white" />
               </JellyIcon>
               <span>导出所有预设 (JSON)</span>
             </button>
