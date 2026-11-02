@@ -14,6 +14,9 @@ import {
   translateHotkeyTitle,
   isToggleableOption,
 } from "../../lib/hotkeyTranslate";
+import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
+import { JellyIcon } from "../ui/motion/JellyIcon";
+import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
 
 export interface HotkeyPanelProps {
   trainer: InstalledTrainerRecord;
@@ -59,9 +62,11 @@ export const HotkeyPanel: React.FC<HotkeyPanelProps> = ({
       {/* 热键看板标题与状态预设工具栏 */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
-            <Sliders className="w-4 h-4" />
-          </div>
+          <JellyIcon intensity="gentle">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
+              <Sliders className="w-4 h-4" />
+            </div>
+          </JellyIcon>
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-sm font-bold text-slate-800">修改器功能热键看板</h2>
@@ -82,17 +87,20 @@ export const HotkeyPanel: React.FC<HotkeyPanelProps> = ({
 
         <div className="flex flex-wrap items-center gap-2.5 w-full xl:w-auto">
           {/* 一键同步预设按钮 */}
-          <button
-            onClick={onSyncHotkeys}
-            disabled={enabledTogglesCount === 0 || isSyncing}
-            title="在修改器启动后，自动模拟键盘依次开启所有已预设的开关项"
-            className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 active:scale-95 text-white flex items-center gap-1.5 transition-all shadow-sm shadow-emerald-600/20 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-          >
-            <Zap className={`w-3.5 h-3.5 fill-white ${isSyncing ? "animate-bounce" : ""}`} />
-            <span>
-              {isSyncing ? "正在模拟按键同步..." : `一键同步预设 (${enabledTogglesCount})`}
-            </span>
-          </button>
+          <TypewriterTooltip text="在修改器启动后，自动模拟键盘依次开启所有已预设的开关项" position="top">
+            <button
+              onClick={onSyncHotkeys}
+              disabled={enabledTogglesCount === 0 || isSyncing}
+              className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 active:scale-95 text-white flex items-center gap-1.5 transition-all shadow-sm shadow-emerald-600/20 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            >
+              <JellyIcon intensity="bouncy">
+                <Zap className={`w-3.5 h-3.5 fill-white ${isSyncing ? "animate-bounce" : ""}`} />
+              </JellyIcon>
+              <span>
+                {isSyncing ? "正在模拟按键同步..." : `一键同步预设 (${enabledTogglesCount})`}
+              </span>
+            </button>
+          </TypewriterTooltip>
 
           {/* 批量全开/清空开关小工具 */}
           <div className="flex items-center gap-1 bg-slate-50 p-0.5 rounded-lg border border-slate-200/80 text-[11px] shrink-0">
@@ -146,7 +154,9 @@ export const HotkeyPanel: React.FC<HotkeyPanelProps> = ({
               </>
             ) : (
               <>
-                <Copy className="w-3.5 h-3.5 text-slate-500" />
+                <JellyIcon intensity="gentle">
+                  <Copy className="w-3.5 h-3.5 text-slate-500" />
+                </JellyIcon>
                 <span>复制清单</span>
               </>
             )}
@@ -174,7 +184,9 @@ export const HotkeyPanel: React.FC<HotkeyPanelProps> = ({
               disabled={isEnriching}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-xl text-xs font-bold shadow-md shadow-cyan-600/20 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
             >
-              <Sparkles className={`w-4 h-4 text-cyan-200 ${isEnriching ? "animate-spin" : ""}`} />
+              <JellyIcon intensity="bouncy">
+                <Sparkles className={`w-4 h-4 text-cyan-200 ${isEnriching ? "animate-spin" : ""}`} />
+              </JellyIcon>
               <span>
                 {isEnriching ? "正在匹配风灵月影官方数据..." : "一键获取官方功能看板与封面"}
               </span>
@@ -182,7 +194,11 @@ export const HotkeyPanel: React.FC<HotkeyPanelProps> = ({
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <PaperContainer
+          key={trainer.id + (hotkeyQuery ? "-filtered" : "")}
+          staggerDelay={0.018}
+          className="grid grid-cols-1 md:grid-cols-2 gap-3"
+        >
           {filteredHotkeys.map((item, idx) => {
             const cnTag = translateHotkeyTitle(item.title);
             const isCopied = copiedKeyIdx === idx;
@@ -190,8 +206,10 @@ export const HotkeyPanel: React.FC<HotkeyPanelProps> = ({
             const isToggled = Boolean(currentToggles[item.title]);
 
             return (
-              <div
+              <PaperCard
                 key={idx}
+                delayIndex={idx}
+                tiltAngle={1.2}
                 className={`rounded-xl border p-3 shadow-2xs transition-all flex items-start justify-between gap-3 group ${
                   isToggled
                     ? "bg-emerald-50/20 border-emerald-300/80 ring-1 ring-emerald-500/15 shadow-xs"
@@ -273,17 +291,19 @@ export const HotkeyPanel: React.FC<HotkeyPanelProps> = ({
                     </span>
                   )}
                 </div>
-              </div>
+              </PaperCard>
             );
           })}
-        </div>
+        </PaperContainer>
       )}
 
       {/* 官方使用说明卡片 (Description) */}
       {trainer.description && trainer.description.trim() && (
         <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs space-y-2">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-            <FileText className="w-4 h-4 text-slate-400" />
+            <JellyIcon intensity="gentle">
+              <FileText className="w-4 h-4 text-slate-400" />
+            </JellyIcon>
             <span>修改器特别说明与注意事项</span>
           </div>
           <div className="text-xs text-slate-500 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto bg-slate-50/70 p-3 rounded-xl border border-slate-100 font-mono text-[11px]">

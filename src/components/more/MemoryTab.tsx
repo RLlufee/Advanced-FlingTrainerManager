@@ -16,6 +16,9 @@ import {
   MemoryOptimizeOptions,
   MemoryOptimizeResult,
 } from "../../services/memoryApi";
+import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
+import { JellyIcon } from "../ui/motion/JellyIcon";
+import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
 
 interface MemoryTabProps {
   memInfo: SystemMemoryInfo | null;
@@ -46,14 +49,16 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
   const percent = memInfo ? Math.round(memInfo.used_percent) : 0;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4 animate-in fade-in duration-150">
+    <PaperContainer className="max-w-4xl mx-auto space-y-4">
       {/* 顶部横幅卡片：介绍与权限状态 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600 shrink-0">
-              <Cpu className="w-5 h-5" />
-            </div>
+            <JellyIcon intensity="bouncy">
+              <div className="w-10 h-10 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600 shrink-0">
+                <Cpu className="w-5 h-5" />
+              </div>
+            </JellyIcon>
             <div>
               <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 系统物理内存深度优化调度引擎
@@ -68,14 +73,18 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => onRefresh(true)}
-              disabled={isLoading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-medium transition-all shadow-2xs cursor-pointer disabled:opacity-50"
-            >
-              <RotateCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-cyan-600" : ""}`} />
-              <span>刷新</span>
-            </button>
+            <TypewriterTooltip text="重新读取当前系统物理内存与虚拟分页实时状态" position="left">
+              <button
+                onClick={() => onRefresh(true)}
+                disabled={isLoading}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-medium transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+              >
+                <JellyIcon intensity="gentle">
+                  <RotateCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-cyan-600" : ""}`} />
+                </JellyIcon>
+                <span>刷新</span>
+              </button>
+            </TypewriterTooltip>
           </div>
         </div>
 
@@ -84,7 +93,9 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
           <div className="flex items-center gap-2 text-xs">
             {memInfo?.is_admin ? (
               <>
-                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <JellyIcon intensity="gentle">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                </JellyIcon>
                 <span className="font-semibold text-emerald-800">
                   管理员特权模式
                 </span>
@@ -94,7 +105,9 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
               </>
             ) : (
               <>
-                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+                <JellyIcon intensity="gentle">
+                  <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+                </JellyIcon>
                 <span className="font-semibold text-amber-800">
                   普通权限模式
                 </span>
@@ -106,19 +119,23 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
           </div>
 
           {!memInfo?.is_admin && (
-            <button
-              onClick={onRestartAdmin}
-              className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer shrink-0 active:scale-95"
-            >
-              <Zap className="w-3.5 h-3.5 text-amber-300 fill-current" />
-              <span>以管理员重启</span>
-            </button>
+            <TypewriterTooltip text="通过 UAC 提权重新唤醒客户端以解锁 Windows NT 内核全部清退指令" position="left">
+              <button
+                onClick={onRestartAdmin}
+                className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer shrink-0 active:scale-95"
+              >
+                <JellyIcon intensity="bouncy">
+                  <Zap className="w-3.5 h-3.5 text-amber-300 fill-current" />
+                </JellyIcon>
+                <span>以管理员重启</span>
+              </button>
+            </TypewriterTooltip>
           )}
         </div>
-      </div>
+      </PaperCard>
 
       {/* 仪表盘核心卡片：内存占用与一键优化 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-6">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
           {/* 1. 动态 SVG 圆环占用率 */}
           <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-50 border border-slate-200/80">
@@ -236,23 +253,27 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
 
           {/* 3. 一键优化主操作区 */}
           <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-4">
-            <button
-              onClick={onOptimize}
-              disabled={isOptimizing}
-              className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:via-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-cyan-900/10 flex items-center justify-center gap-2 transition-all transform active:scale-98 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
-            >
-              {isOptimizing ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin text-cyan-200" />
-                  <span>正在进行内核级深层优化……</span>
-                </>
-              ) : (
-                <>
-                  <Zap className="w-4 h-4 text-amber-300 fill-current group-hover:scale-110 transition-transform" />
-                  <span>⚡ 一键深度优化物理内存</span>
-                </>
-              )}
-            </button>
+            <TypewriterTooltip text="执行 NT 内核原生内存修剪与缓存回收" position="top">
+              <button
+                onClick={onOptimize}
+                disabled={isOptimizing}
+                className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:via-blue-500 hover:to-indigo-500 text-white font-bold text-xs shadow-md shadow-cyan-900/10 flex items-center justify-center gap-2 transition-all transform active:scale-98 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
+              >
+                {isOptimizing ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin text-cyan-200" />
+                    <span>正在进行内核级深层优化……</span>
+                  </>
+                ) : (
+                  <>
+                    <JellyIcon intensity="bouncy">
+                      <Zap className="w-4 h-4 text-amber-300 fill-current group-hover:scale-110 transition-transform" />
+                    </JellyIcon>
+                    <span>⚡ 一键深度优化物理内存</span>
+                  </>
+                )}
+              </button>
+            </TypewriterTooltip>
 
             <p className="text-[11px] text-slate-400 leading-relaxed text-center px-2">
               💡 非普通 GC 伪释放，直接调度 NT 内核清退待机缓存与多余工作集。
@@ -268,16 +289,18 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
             )}
           </div>
         </div>
-      </div>
+      </PaperCard>
 
       {/* 高级细粒度系统调用配置卡片 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
         <button
           onClick={() => setShowOptions(!showOptions)}
           className="flex items-center justify-between w-full text-xs text-slate-600 hover:text-slate-900 transition-colors py-1 cursor-pointer"
         >
           <div className="flex items-center gap-2">
-            <Sliders className="w-4 h-4 text-cyan-600" />
+            <JellyIcon intensity="gentle">
+              <Sliders className="w-4 h-4 text-cyan-600" />
+            </JellyIcon>
             <span className="font-bold text-slate-900 text-sm">
               高级内存清理项目细粒度配置 (7 大系统级动作)
             </span>
@@ -471,13 +494,15 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
             </div>
           </div>
         )}
-      </div>
+      </PaperCard>
 
       {/* 执行战报与审计日志 */}
       {lastResult && lastResult.logs.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-3">
+        <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-900 pb-2 border-b border-slate-100">
-            <Terminal className="w-4 h-4 text-cyan-600" />
+            <JellyIcon intensity="gentle">
+              <Terminal className="w-4 h-4 text-cyan-600" />
+            </JellyIcon>
             <span>本次内核调用执行日志</span>
           </div>
           <div className="p-3.5 rounded-xl bg-slate-900 text-slate-200 font-mono text-[11px] space-y-1 shadow-inner max-h-36 overflow-y-auto custom-scrollbar">
@@ -488,8 +513,8 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
               </div>
             ))}
           </div>
-        </div>
+        </PaperCard>
       )}
-    </div>
+    </PaperContainer>
   );
 };

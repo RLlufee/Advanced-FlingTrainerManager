@@ -14,6 +14,8 @@ import {
 import type { InstalledTrainerRecord, TrainerUpdateInfo } from "../../services/trainerApi";
 import { trainerApi } from "../../services/trainerApi";
 import { GamePoster } from "../GamePoster";
+import { JellyIcon } from "../ui/motion/JellyIcon";
+import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
 
 export interface LaunchHeroProps {
   trainer: InstalledTrainerRecord;
@@ -47,7 +49,7 @@ export const LaunchHero: React.FC<LaunchHeroProps> = ({
   onDeleteClick,
 }) => {
   return (
-    <div className="relative overflow-hidden bg-white text-slate-800 border-b border-slate-200/90 shadow-2xs shrink-0">
+    <div className="relative overflow-hidden bg-white text-slate-800 border-b border-slate-200/90 shadow-2xs shrink-0 select-none">
       <div className="p-6 space-y-4">
         {/* 上层：封面 + 游戏标题 + 属性徽章 + 右侧小工具 */}
         <div className="flex items-start justify-between gap-5">
@@ -122,88 +124,110 @@ export const LaunchHero: React.FC<LaunchHeroProps> = ({
 
           {/* 右上角辅助小工具：打开目录与删除 */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={onOpenInstallDir}
-              title="在系统资源管理器中打开当前修改器子目录"
-              className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200/80 transition-colors cursor-pointer"
-            >
-              <FolderOpen className="w-4 h-4 text-cyan-600" />
-            </button>
-            <button
-              onClick={onDeleteClick}
-              title="删除修改器及所有数据"
-              className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-slate-200/80 transition-colors cursor-pointer"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            <TypewriterTooltip text="在系统文件资源管理器中打开此修改器所在目录" position="left">
+              <button
+                onClick={onOpenInstallDir}
+                className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200/80 transition-colors cursor-pointer"
+              >
+                <JellyIcon intensity="gentle">
+                  <FolderOpen className="w-4 h-4 text-cyan-600" />
+                </JellyIcon>
+              </button>
+            </TypewriterTooltip>
+            <TypewriterTooltip text="卸载并清理本地修改器程序与相关配置" position="left">
+              <button
+                onClick={onDeleteClick}
+                className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-slate-200/80 transition-colors cursor-pointer"
+              >
+                <JellyIcon intensity="gentle">
+                  <Trash2 className="w-4 h-4" />
+                </JellyIcon>
+              </button>
+            </TypewriterTooltip>
           </div>
         </div>
 
         {/* 下层：核心大动作操作栏 */}
         <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2.5">
           {/* 一键启动修改器主按钮 */}
-          <button
-            onClick={onLaunchTrainer}
-            disabled={isLaunching}
-            className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-95 text-slate-950 rounded-xl text-xs font-bold shadow-md shadow-amber-500/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-          >
-            <Zap className="w-4 h-4 fill-slate-950" />
-            <span>{isLaunching ? "正在启动..." : "启动修改器"}</span>
-          </button>
+          <TypewriterTooltip text="安全唤醒风灵月影修改器独立进程" position="top">
+            <button
+              onClick={onLaunchTrainer}
+              disabled={isLaunching}
+              className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-95 text-slate-950 rounded-xl text-xs font-bold shadow-md shadow-amber-500/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              <JellyIcon intensity="bouncy">
+                <Zap className="w-4 h-4 fill-slate-950" />
+              </JellyIcon>
+              <span>{isLaunching ? "正在启动..." : "启动修改器"}</span>
+            </button>
+          </TypewriterTooltip>
 
           {/* 一键双启 (游戏 + 修改器) */}
           {trainer.steam_app_id && (
-            <button
-              onClick={onLaunchDual}
-              disabled={isLaunching}
-              title="先启动 Steam 游戏，随后自动唤醒修改器"
-              className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-md shadow-cyan-600/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-            >
-              <Play className="w-3.5 h-3.5 fill-white" />
-              <span>一键双启</span>
-            </button>
+            <TypewriterTooltip text="先启动 Steam 游戏，随后自动唤醒修改器" position="top">
+              <button
+                onClick={onLaunchDual}
+                disabled={isLaunching}
+                className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-md shadow-cyan-600/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <JellyIcon intensity="gentle">
+                  <Play className="w-3.5 h-3.5 fill-white" />
+                </JellyIcon>
+                <span>一键双启</span>
+              </button>
+            </TypewriterTooltip>
           )}
 
           {/* 仅启动 Steam 游戏 */}
           {trainer.steam_app_id && (
-            <button
-              onClick={onLaunchSteamOnly}
-              title="直接唤醒 Steam 客户端启动该游戏"
-              className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 border border-slate-200/80 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <Gamepad2 className="w-3.5 h-3.5 text-sky-600" />
-              <span>运行游戏</span>
-            </button>
+            <TypewriterTooltip text="直接唤醒 Steam 客户端启动该游戏" position="top">
+              <button
+                onClick={onLaunchSteamOnly}
+                className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 border border-slate-200/80 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <JellyIcon intensity="gentle">
+                  <Gamepad2 className="w-3.5 h-3.5 text-sky-600" />
+                </JellyIcon>
+                <span>运行游戏</span>
+              </button>
+            </TypewriterTooltip>
           )}
 
           {/* 一键获取官方功能与封面数据 (当选项为空时突出呈现) */}
           {activeOptionCount === 0 && (
-            <button
-              onClick={onEnrichTrainer}
-              disabled={isEnriching}
-              title="联网匹配风灵月影官方所有功能开关、热键说明与官方海报"
-              className="px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md shadow-cyan-600/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-            >
-              <Sparkles className={`w-4 h-4 text-cyan-200 ${isEnriching ? "animate-spin" : ""}`} />
-              <span>{isEnriching ? "正在匹配数据..." : "获取修改器数据"}</span>
-            </button>
+            <TypewriterTooltip text="联网匹配风灵月影官方所有功能开关、热键说明与官方海报" position="top">
+              <button
+                onClick={onEnrichTrainer}
+                disabled={isEnriching}
+                className="px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md shadow-cyan-600/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <JellyIcon intensity="bouncy">
+                  <Sparkles className={`w-4 h-4 text-cyan-200 ${isEnriching ? "animate-spin" : ""}`} />
+                </JellyIcon>
+                <span>{isEnriching ? "正在匹配数据..." : "获取修改器数据"}</span>
+              </button>
+            </TypewriterTooltip>
           )}
 
           {/* 一键无感增量升级新版本按钮 */}
           {updateInfo?.has_update && (
-            <button
-              onClick={onUpdateTrainer}
-              disabled={updatingId === trainer.id}
-              title={`检测到官网最新版本 ${updateInfo.latest_version}，点击一键下载覆盖 exe，保留所有配置与开关预设`}
-              className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-500/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 animate-pulse"
-            >
-              <ArrowUpCircle className={`w-4 h-4 ${updatingId === trainer.id ? "animate-spin" : ""}`} />
-              <span>
-                {updatingId === trainer.id
-                  ? "正在升级中..."
-                  : `一键升级 (${updateInfo.latest_version})`}
-              </span>
-            </button>
+            <TypewriterTooltip text={`检测到官网最新版本 ${updateInfo.latest_version}，点击一键覆盖升级`} position="top">
+              <button
+                onClick={onUpdateTrainer}
+                disabled={updatingId === trainer.id}
+                className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-500/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 animate-pulse"
+              >
+                <JellyIcon intensity="bouncy">
+                  <ArrowUpCircle className={`w-4 h-4 ${updatingId === trainer.id ? "animate-spin" : ""}`} />
+                </JellyIcon>
+                <span>
+                  {updatingId === trainer.id
+                    ? "正在升级中..."
+                    : `一键升级 (${updateInfo.latest_version})`}
+                </span>
+              </button>
+            </TypewriterTooltip>
           )}
         </div>
       </div>

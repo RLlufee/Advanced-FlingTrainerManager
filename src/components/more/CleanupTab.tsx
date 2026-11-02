@@ -14,6 +14,9 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { cleanupApi, CleanupScanResult, CleanupRunResult } from "../../services/cleanupApi";
+import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
+import { JellyIcon } from "../ui/motion/JellyIcon";
+import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
 
 export const CleanupTab: React.FC = () => {
   const [scanResult, setScanResult] = useState<CleanupScanResult | null>(null);
@@ -109,13 +112,15 @@ export const CleanupTab: React.FC = () => {
     : 0;
 
   return (
-    <div className="space-y-5 animate-in fade-in duration-200 select-none">
+    <PaperContainer className="space-y-5 select-none">
       {/* 顶部主横幅：扫描统计与一键清理 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 shrink-0">
-            <Sparkles className="w-6 h-6" />
-          </div>
+          <JellyIcon intensity="bouncy">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-md shadow-emerald-500/20 shrink-0">
+              <Sparkles className="w-6 h-6" />
+            </div>
+          </JellyIcon>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base font-extrabold text-slate-900">
@@ -139,38 +144,45 @@ export const CleanupTab: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-auto">
-          <button
-            onClick={handleScan}
-            disabled={isScanning || isCleaning}
-            className="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all cursor-pointer disabled:opacity-50"
-            title="重新扫描垃圾缓存"
-          >
-            <RefreshCw className={`w-4 h-4 ${isScanning ? "animate-spin" : ""}`} />
-          </button>
+          <TypewriterTooltip text="全面重新扫描游戏着色器、DirectX 缓存及系统碎片" position="top">
+            <button
+              onClick={handleScan}
+              disabled={isScanning || isCleaning}
+              className="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <JellyIcon intensity="gentle">
+                <RefreshCw className={`w-4 h-4 ${isScanning ? "animate-spin" : ""}`} />
+              </JellyIcon>
+            </button>
+          </TypewriterTooltip>
 
-          <button
-            onClick={handleClean}
-            disabled={isCleaning || isScanning || selectedIds.length === 0 || selectedBytes === 0}
-            className="flex-1 md:flex-initial px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-95 text-white rounded-xl text-xs font-bold shadow-sm shadow-emerald-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {isCleaning ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>正在深度释放中...</span>
-              </>
-            ) : (
-              <>
-                <Trash2 className="w-4 h-4" />
-                <span>立即释放 ({formatBytes(selectedBytes)})</span>
-              </>
-            )}
-          </button>
+          <TypewriterTooltip text="安全销毁选中的垃圾缓存文件，立即回收物理磁盘可用空间" position="top">
+            <button
+              onClick={handleClean}
+              disabled={isCleaning || isScanning || selectedIds.length === 0 || selectedBytes === 0}
+              className="flex-1 md:flex-initial px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-95 text-white rounded-xl text-xs font-bold shadow-sm shadow-emerald-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {isCleaning ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>正在深度释放中...</span>
+                </>
+              ) : (
+                <>
+                  <JellyIcon intensity="bouncy">
+                    <Trash2 className="w-4 h-4" />
+                  </JellyIcon>
+                  <span>立即释放 ({formatBytes(selectedBytes)})</span>
+                </>
+              )}
+            </button>
+          </TypewriterTooltip>
         </div>
-      </div>
+      </PaperCard>
 
       {/* 清理成功反馈横幅 */}
       {runResult && (
-        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-900 flex items-center justify-between gap-3 animate-in slide-in-from-top-2 duration-200">
+        <PaperCard className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-900 flex items-center justify-between gap-3 animate-in slide-in-from-top-2 duration-200">
           <div className="flex items-center gap-2.5">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <div className="text-xs">
@@ -192,19 +204,19 @@ export const CleanupTab: React.FC = () => {
           >
             关闭
           </button>
-        </div>
+        </PaperCard>
       )}
 
       {/* 报错反馈 */}
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+        <PaperCard className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
           <span>{errorMsg}</span>
-        </div>
+        </PaperCard>
       )}
 
       {/* 清理分类列表 */}
-      <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-4">
+      <PaperCard className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h3 className="text-xs font-bold text-slate-800">可清理专项缓存清单</h3>
@@ -264,7 +276,9 @@ export const CleanupTab: React.FC = () => {
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center justify-between gap-1">
                       <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800">
-                        {getCategoryIcon(cat.icon)}
+                        <JellyIcon intensity="gentle">
+                          {getCategoryIcon(cat.icon)}
+                        </JellyIcon>
                         <span>{cat.name}</span>
                       </div>
                       <span
@@ -289,7 +303,7 @@ export const CleanupTab: React.FC = () => {
             })}
           </div>
         )}
-      </div>
-    </div>
+      </PaperCard>
+    </PaperContainer>
   );
 };

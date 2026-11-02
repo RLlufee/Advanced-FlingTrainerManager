@@ -7,6 +7,8 @@ import {
   FolderOpen,
   ExternalLink,
 } from "lucide-react";
+import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
+import { JellyIcon } from "../ui/motion/JellyIcon";
 
 interface ToolsTabProps {
   onOpenTool: (
@@ -17,13 +19,15 @@ interface ToolsTabProps {
 
 export const ToolsTab: React.FC<ToolsTabProps> = ({ onOpenTool }) => {
   return (
-    <div className="max-w-4xl mx-auto space-y-4 animate-in fade-in duration-150">
+    <PaperContainer className="max-w-4xl mx-auto space-y-4">
       {/* 百宝箱介绍卡片 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5">
         <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
-            <Gamepad2 className="w-5 h-5" />
-          </div>
+          <JellyIcon intensity="bouncy">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+              <Gamepad2 className="w-5 h-5" />
+            </div>
+          </JellyIcon>
           <div>
             <h2 className="text-sm font-bold text-slate-900">
               游戏与系统诊断百宝箱
@@ -33,19 +37,21 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({ onOpenTool }) => {
             </p>
           </div>
         </div>
-      </div>
+      </PaperCard>
 
       {/* 工具网格 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* 1. DirectX 诊断工具 */}
-        <div
+        <PaperCard
           onClick={() => onOpenTool("dxdiag", "DirectX 诊断工具")}
           className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs hover:shadow-md hover:border-cyan-300 transition-all cursor-pointer group flex flex-col justify-between space-y-3"
         >
           <div className="flex items-start justify-between">
-            <div className="w-10 h-10 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600 group-hover:scale-105 transition-transform">
-              <Monitor className="w-5 h-5" />
-            </div>
+            <JellyIcon intensity="gentle">
+              <div className="w-10 h-10 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600 group-hover:scale-105 transition-transform">
+                <Monitor className="w-5 h-5" />
+              </div>
+            </JellyIcon>
             <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-cyan-600 transition-colors" />
           </div>
           <div>
@@ -56,17 +62,19 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({ onOpenTool }) => {
               排查显卡驱动、声卡及 DirectX 3D 游戏硬件加速状态
             </p>
           </div>
-        </div>
+        </PaperCard>
 
         {/* 2. 游戏手柄与控制器设置 */}
-        <div
+        <PaperCard
           onClick={() => onOpenTool("joy.cpl", "游戏控制器设置")}
           className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer group flex flex-col justify-between space-y-3"
         >
           <div className="flex items-start justify-between">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:scale-105 transition-transform">
-              <Gamepad2 className="w-5 h-5" />
-            </div>
+            <JellyIcon intensity="gentle">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 group-hover:scale-105 transition-transform">
+                <Gamepad2 className="w-5 h-5" />
+              </div>
+            </JellyIcon>
             <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 transition-colors" />
           </div>
           <div>
@@ -77,17 +85,19 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({ onOpenTool }) => {
               Windows 原生手柄校准中心、摇杆死区与按键测试
             </p>
           </div>
-        </div>
+        </PaperCard>
 
         {/* 3. 任务管理器 */}
-        <div
+        <PaperCard
           onClick={() => onOpenTool("taskmgr", "任务管理器")}
           className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs hover:shadow-md hover:border-emerald-300 transition-all cursor-pointer group flex flex-col justify-between space-y-3"
         >
           <div className="flex items-start justify-between">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:scale-105 transition-transform">
-              <Activity className="w-5 h-5" />
-            </div>
+            <JellyIcon intensity="gentle">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 group-hover:scale-105 transition-transform">
+                <Activity className="w-5 h-5" />
+              </div>
+            </JellyIcon>
             <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors" />
           </div>
           <div>
@@ -98,17 +108,19 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({ onOpenTool }) => {
               排查后台占用率极高的流氓进程、GPU 占用与游戏假死
             </p>
           </div>
-        </div>
+        </PaperCard>
 
         {/* 4. 高级系统属性与虚拟内存设置 */}
-        <div
+        <PaperCard
           onClick={() => onOpenTool("sysdm.cpl", "高级系统设置")}
           className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs hover:shadow-md hover:border-purple-300 transition-all cursor-pointer group flex flex-col justify-between space-y-3"
         >
           <div className="flex items-start justify-between">
-            <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:scale-105 transition-transform">
-              <Layers className="w-5 h-5" />
-            </div>
+            <JellyIcon intensity="gentle">
+              <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 group-hover:scale-105 transition-transform">
+                <Layers className="w-5 h-5" />
+              </div>
+            </JellyIcon>
             <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-purple-600 transition-colors" />
           </div>
           <div>
@@ -119,17 +131,19 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({ onOpenTool }) => {
               配置 Windows 虚拟内存分页大小、环境变量与视觉性能
             </p>
           </div>
-        </div>
+        </PaperCard>
 
         {/* 5. 打开系统临时目录 */}
-        <div
+        <PaperCard
           onClick={() => onOpenTool("temp", "系统临时文件夹")}
           className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs hover:shadow-md hover:border-amber-300 transition-all cursor-pointer group flex flex-col justify-between space-y-3"
         >
           <div className="flex items-start justify-between">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 group-hover:scale-105 transition-transform">
-              <FolderOpen className="w-5 h-5" />
-            </div>
+            <JellyIcon intensity="gentle">
+              <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 group-hover:scale-105 transition-transform">
+                <FolderOpen className="w-5 h-5" />
+              </div>
+            </JellyIcon>
             <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-amber-600 transition-colors" />
           </div>
           <div>
@@ -140,8 +154,8 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({ onOpenTool }) => {
               在文件资源管理器中打开 Windows 临时文件夹清理冗余缓存
             </p>
           </div>
-        </div>
+        </PaperCard>
       </div>
-    </div>
+    </PaperContainer>
   );
 };

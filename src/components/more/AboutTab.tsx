@@ -1,6 +1,8 @@
 import React from "react";
 import { Sparkles, Boxes } from "lucide-react";
 import { SystemMemoryInfo } from "../../services/memoryApi";
+import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
+import { JellyIcon } from "../ui/motion/JellyIcon";
 
 interface AboutTabProps {
   memInfo: SystemMemoryInfo | null;
@@ -8,13 +10,15 @@ interface AboutTabProps {
 
 export const AboutTab: React.FC<AboutTabProps> = ({ memInfo }) => {
   return (
-    <div className="max-w-4xl mx-auto space-y-4 animate-in fade-in duration-150">
+    <PaperContainer className="max-w-4xl mx-auto space-y-4">
       {/* 系统环境看板 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
         <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-          <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
-            <Sparkles className="w-5 h-5" />
-          </div>
+          <JellyIcon intensity="bouncy">
+            <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+              <Sparkles className="w-5 h-5" />
+            </div>
+          </JellyIcon>
           <div>
             <h2 className="text-sm font-bold text-slate-900">
               系统运行环境与内核状态
@@ -52,12 +56,14 @@ export const AboutTab: React.FC<AboutTabProps> = ({ memInfo }) => {
             </span>
           </div>
         </div>
-      </div>
+      </PaperCard>
 
       {/* 致敬开源社区 */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-3">
+      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-3">
         <h3 className="text-xs font-bold text-slate-900 flex items-center gap-2">
-          <Boxes className="w-4 h-4 text-cyan-600" />
+          <JellyIcon intensity="gentle">
+            <Boxes className="w-4 h-4 text-cyan-600" />
+          </JellyIcon>
           <span>致敬与开源技术鸣谢</span>
         </h3>
         <p className="text-xs text-slate-600 leading-relaxed">
@@ -78,7 +84,7 @@ export const AboutTab: React.FC<AboutTabProps> = ({ memInfo }) => {
           </span>{" "}
           的 Windows 原生只读检测与安全分级清理设计，针对游戏玩家场景深度定制了 DirectX / NVIDIA / AMD 显卡着色器缓存与游戏崩溃日志的高效瘦身方案。
         </p>
-      </div>
-    </div>
+      </PaperCard>
+    </PaperContainer>
   );
 };
