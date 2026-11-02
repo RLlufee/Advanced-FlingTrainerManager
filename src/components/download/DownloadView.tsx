@@ -177,7 +177,7 @@ export const DownloadView: React.FC = () => {
   const currentDownload = selectedTrainer ? downloads[selectedTrainer.id] : undefined;
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#f3f4f6]">
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#f3f4f6] dark:bg-[#0b101b] transition-colors duration-200">
       {/* 顶部搜索与过滤条 */}
       <DownloadHeader
         searchQuery={searchQuery}

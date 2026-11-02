@@ -56,9 +56,9 @@ export const LaunchSidebar: React.FC<LaunchSidebarProps> = ({
   onNavigateToDownload,
 }) => {
   return (
-    <aside className="w-72 bg-white border-r border-slate-200/90 flex flex-col shrink-0 select-none shadow-[2px_0_8px_rgba(0,0,0,0.02)]">
+    <aside className="w-72 bg-white dark:bg-[#0f172a] border-r border-slate-200/90 dark:border-slate-800 flex flex-col shrink-0 select-none shadow-[2px_0_8px_rgba(0,0,0,0.02)] transition-colors duration-200">
       {/* 顶部搜索过滤与工具栏 */}
-      <div className="p-3 border-b border-slate-100 space-y-2">
+      <div className="p-3 border-b border-slate-100 dark:border-slate-800 space-y-2">
         <div className="relative">
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
           <input
@@ -66,7 +66,7 @@ export const LaunchSidebar: React.FC<LaunchSidebarProps> = ({
             value={searchQuery}
             onChange={(e) => onSearchQueryChange(e.target.value)}
             placeholder="搜索已安装修改器..."
-            className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:bg-white transition-all text-slate-800 placeholder-slate-400"
+            className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary focus:bg-white dark:focus:bg-slate-750 transition-all text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500"
           />
           {searchQuery && (
             <button
@@ -172,8 +172,8 @@ export const LaunchSidebar: React.FC<LaunchSidebarProps> = ({
                 onClick={() => onSelectTrainer(t.id)}
                 className={`relative w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-xs font-medium transition-colors text-left group cursor-pointer ${
                   isSelected
-                    ? "text-slate-900 font-semibold"
-                    : "text-slate-600 hover:text-slate-900"
+                    ? "text-slate-900 dark:text-slate-100 font-semibold"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
                 }`}
               >
                 {/* 活跃项流体药丸滑动背景 */}
@@ -190,7 +190,7 @@ export const LaunchSidebar: React.FC<LaunchSidebarProps> = ({
                 )}
 
                 {/* 微缩海报 */}
-                <div className="relative z-10 w-9 h-11 rounded-md overflow-hidden shrink-0 border border-slate-200/80 bg-slate-100 shadow-2xs">
+                <div className="relative z-10 w-9 h-11 rounded-md overflow-hidden shrink-0 border border-slate-200/80 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 shadow-2xs">
                   <GamePoster
                     key={`${t.id}-${t.capsule_image || ""}-${t.thumbnail || ""}-${optionCount}`}
                     primarySrc={t.capsule_image}
@@ -235,31 +235,31 @@ export const LaunchSidebar: React.FC<LaunchSidebarProps> = ({
       </div>
 
       {/* 边栏底部：导入与去下载 */}
-      <div className="p-3 border-t border-slate-100 bg-slate-50/70 space-y-1.5">
+      <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 space-y-1.5">
         <button
           onClick={onImportExternal}
           disabled={isImporting}
-          className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
         >
           <JellyIcon intensity="bouncy">
-            <FolderInput className={`w-3.5 h-3.5 text-cyan-600 ${isImporting ? "animate-bounce" : ""}`} />
+            <FolderInput className={`w-3.5 h-3.5 text-primary ${isImporting ? "animate-bounce" : ""}`} />
           </JellyIcon>
           <span>{isImporting ? "正在扫描纳管中..." : "批量导入已有修改器..."}</span>
         </button>
         {onNavigateToDownload && (
           <button
             onClick={onNavigateToDownload}
-            className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200/60 shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary-text bg-primary-soft hover:bg-primary-soft/80 border border-primary-border shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
           >
             <JellyIcon intensity="gentle">
-              <PlusCircle className="w-3.5 h-3.5 text-cyan-600" />
+              <PlusCircle className="w-3.5 h-3.5 text-primary" />
             </JellyIcon>
             <span>从官网下载更多修改器...</span>
           </button>
         )}
-        <div className="flex items-center justify-between text-[11px] text-slate-400 px-1 pt-0.5">
+        <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 px-1 pt-0.5">
           <span>便携独立存储架构</span>
-          <span className="text-cyan-600/80 font-mono">trainers/</span>
+          <span className="text-primary font-mono">trainers/</span>
         </div>
       </div>
     </aside>

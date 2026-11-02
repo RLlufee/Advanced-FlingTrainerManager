@@ -17,17 +17,17 @@ export const DownloadHeader: React.FC<DownloadHeaderProps> = ({
   onRefresh,
 }) => {
   return (
-    <div className="h-14 px-6 bg-white border-b border-slate-200/80 flex items-center justify-between shrink-0 shadow-xs select-none">
+    <div className="h-14 px-6 bg-white dark:bg-[#0f172a] border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between shrink-0 shadow-xs select-none transition-colors duration-200">
       <div className="flex items-center gap-3 flex-1 max-w-md">
         <div className="relative w-full">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+          <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onSearchSubmit()}
             placeholder="搜索游戏修改器（支持中文或英文名，按 Enter 检索）..."
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 text-slate-800 transition-all"
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 transition-all"
           />
         </div>
         <button
@@ -42,7 +42,7 @@ export const DownloadHeader: React.FC<DownloadHeaderProps> = ({
         <button
           onClick={onRefresh}
           title="刷新数据（强制从风灵月影官网重新拉取）"
-          className="p-2 text-slate-500 hover:text-primary hover:bg-primary-soft rounded-lg transition-all cursor-pointer"
+          className="p-2 text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary-soft rounded-lg transition-all cursor-pointer"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-primary" : ""}`} />
         </button>

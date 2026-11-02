@@ -13,7 +13,7 @@ export const App: React.FC = () => {
   return (
     <ThemeProvider>
       <AnimationProvider>
-        <div className="h-screen w-screen flex flex-col overflow-hidden bg-slate-900 border border-slate-700/50 shadow-2xl font-sans">
+        <div className="h-screen w-screen flex flex-col overflow-hidden bg-[#edf0f5] dark:bg-slate-950 border border-slate-300 dark:border-slate-800 shadow-2xl font-sans transition-colors duration-300">
           {/* 顶部现代化无边框标题栏（PCL II 风格） */}
           <TitleBar
             title="PCL II  |  Fling Trainer"

@@ -72,10 +72,12 @@ export interface MonetSavedImage {
   added_at: string;
 }
 
+export type ColorMode = "system" | "light" | "dark";
+
 export interface ThemeSettings {
   accent_color: AccentColorKey | string; // 预设标识 | "custom" | "dynamic"
   custom_accent_hex?: string | null; // 自定义十六进制颜色如 "#3b82f6"
-  color_mode?: "light" | "dark" | "system"; // 颜色模式，默认 "light"
+  color_mode?: ColorMode; // 界面深浅色彩模式，默认 "system" (跟随系统)
   /** 动态取色激活源："windows" (系统强调色) | "image" (自定义图片莫奈色盘) */
   dynamic_source?: DynamicColorSource;
   /** 持久化保存的莫奈取色图片画廊列表 */

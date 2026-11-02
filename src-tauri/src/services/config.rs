@@ -152,7 +152,7 @@ fn default_theme_accent() -> String {
     "cyan".to_string()
 }
 fn default_color_mode() -> String {
-    "light".to_string()
+    "system".to_string()
 }
 fn default_dynamic_source() -> String {
     "windows".to_string()

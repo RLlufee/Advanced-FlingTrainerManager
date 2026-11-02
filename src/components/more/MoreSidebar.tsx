@@ -74,10 +74,10 @@ export const MoreSidebar: React.FC<MoreSidebarProps> = ({
   onTabChange,
 }) => {
   return (
-    <aside className="w-56 bg-white border-r border-slate-200/90 flex flex-col shrink-0 p-4 space-y-1.5 shadow-[2px_0_8px_rgba(0,0,0,0.02)] select-none">
-      <div className="px-3 py-2 mb-1 flex items-center gap-2 text-slate-800 font-bold text-sm">
+    <aside className="w-56 bg-white dark:bg-[#0f172a] border-r border-slate-200/90 dark:border-slate-800 flex flex-col shrink-0 p-4 space-y-1.5 shadow-[2px_0_8px_rgba(0,0,0,0.02)] select-none transition-colors duration-200">
+      <div className="px-3 py-2 mb-1 flex items-center gap-2 text-slate-800 dark:text-slate-100 font-bold text-sm">
         <JellyIcon intensity="medium">
-          <Boxes className="w-4 h-4 text-cyan-600" />
+          <Boxes className="w-4 h-4 text-primary" />
         </JellyIcon>
         <span>百宝箱中心</span>
       </div>
@@ -100,7 +100,7 @@ export const MoreSidebar: React.FC<MoreSidebarProps> = ({
                 className={`relative w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors duration-200 text-left cursor-pointer group ${
                   isActive
                     ? "text-primary-text"
-                    : "text-slate-600 hover:text-slate-900"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
                 }`}
               >
                 {/* 活跃背景滑动药丸动画 (Mineradio 风格流畅胶囊动画) */}

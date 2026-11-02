@@ -62,7 +62,7 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
     <div className="max-w-3xl space-y-6">
       {/* 头部大卡片 (支持 Steam 宽屏原画 Hero 沉浸式背景) */}
       <div
-        className="relative rounded-2xl p-6 border border-slate-200/90 shadow-xs bg-white text-slate-900 transition-all duration-300 overflow-hidden"
+        className="relative rounded-2xl p-6 border border-slate-200/90 dark:border-slate-800 shadow-xs bg-white dark:bg-[#131c31] text-slate-900 dark:text-slate-100 transition-all duration-300 overflow-hidden"
         style={
           hasHero
             ? {
@@ -75,12 +75,12 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
       >
         {/* 通透浅色毛玻璃与渐变遮罩 (在有 Hero 原画时通透呈现，右侧透光，左侧保持文字极致清晰与浅色风格统一) */}
         {hasHero && (
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 to-white/25 backdrop-blur-[1.5px]" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/85 to-white/25 dark:from-[#131c31] dark:via-[#131c31]/90 dark:to-[#131c31]/30 backdrop-blur-[1.5px]" />
         )}
 
         <div className="relative z-10 flex gap-6 items-start">
           {/* 官方胶囊原画 / 封面 (多级平滑回退，防图裂) */}
-          <div className="w-32 h-24 rounded-xl bg-slate-100 overflow-hidden shrink-0 border border-slate-200/80 shadow-md">
+          <div className="w-32 h-24 rounded-xl bg-slate-100 dark:bg-slate-900 overflow-hidden shrink-0 border border-slate-200/80 dark:border-slate-700/80 shadow-md">
             <GamePoster
               primarySrc={selectedTrainer.capsule_image}
               secondarySrc={
@@ -97,11 +97,11 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-xl font-bold tracking-tight text-slate-900">
+              <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                 {selectedTrainer.chinese_name || selectedTrainer.name}
               </h2>
               {isInstalled && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   已就绪
                 </span>
@@ -110,7 +110,7 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                 <button
                   onClick={() => trainerApi.openSteamStore(selectedTrainer.steam_app_id!)}
                   title="在 Steam 商店中查看此游戏"
-                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 cursor-pointer transition-all active:scale-95 shadow-2xs"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-sky-50 dark:bg-sky-950/70 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 cursor-pointer transition-all active:scale-95 shadow-2xs"
                 >
                   <Gamepad2 className="w-3 h-3" />
                   <span>Steam: {selectedTrainer.steam_app_id}</span>
@@ -120,7 +120,7 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
             </div>
 
             {selectedTrainer.chinese_name && (
-              <p className="text-xs mt-1 truncate text-slate-500">
+              <p className="text-xs mt-1 truncate text-slate-500 dark:text-slate-400">
                 {selectedTrainer.name}
               </p>
             )}
@@ -133,13 +133,13 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                 </span>
               )}
               {selectedTrainer.game_version && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium bg-slate-100 text-slate-700 border border-slate-200/70">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700">
                   <ShieldCheck className="w-3.5 h-3.5 opacity-70" />
                   游戏版本: {selectedTrainer.game_version}
                 </span>
               )}
               {selectedTrainer.last_update && (
-                <span className="inline-flex items-center gap-1 text-slate-500">
+                <span className="inline-flex items-center gap-1 text-slate-500 dark:text-slate-400">
                   <Calendar className="w-3.5 h-3.5" />
                   更新于 {selectedTrainer.last_update}
                 </span>
@@ -148,7 +148,7 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                 onClick={() => onSelectTrainer(selectedTrainer, true)}
                 disabled={detailLoading}
                 title="从风灵月影官网强制重新拉取最新功能与下载数据（跳过本地缓存）"
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-transparent hover:border-slate-200"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
               >
                 <RefreshCw className={`w-3 h-3 ${detailLoading ? "animate-spin" : ""}`} />
                 <span>{detailLoading ? "刷新中..." : "重新抓取"}</span>
@@ -214,7 +214,7 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
               {isInstalled && (
                 <button
                   onClick={() => onDownload(selectedTrainer)}
-                  className="px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/60"
+                  className="px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/60 dark:border-slate-700"
                 >
                   重新下载
                 </button>
@@ -225,17 +225,17 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
       </div>
 
       {/* 修改功能选项清单 (Options / Cheats) */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+      <div className="bg-white dark:bg-[#131c31] rounded-2xl p-6 border border-slate-200/90 dark:border-slate-800 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-slate-900">修改器功能与热键清单</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">修改器功能与热键清单</h3>
             {selectedTrainer.options && selectedTrainer.options.length > 0 && (
               <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary-soft text-primary-text">
                 {selectedTrainer.options.length} 项修改
               </span>
             )}
             {copyFeedback && (
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 flex items-center gap-1 animate-pulse">
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 flex items-center gap-1 animate-pulse border border-emerald-200 dark:border-emerald-800">
                 <Check className="w-3 h-3" />
                 {copyFeedback}
               </span>
@@ -251,7 +251,7 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                 value={hotkeyFilter}
                 onChange={(e) => setHotkeyFilter(e.target.value)}
                 placeholder="过滤热键 (生命 / 金钱 / Num 1...)"
-                className="pl-7 pr-2.5 py-1 text-xs bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-cyan-500 w-44 sm:w-52 transition-all text-slate-700 placeholder:text-slate-400"
+                className="pl-7 pr-2.5 py-1 text-xs bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-750 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary w-44 sm:w-52 transition-all text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
 
@@ -280,7 +280,7 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                 setTimeout(() => setCopyFeedback(null), 2000);
               }}
               title="复制所有热键至剪贴板（附带中文标注）"
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all cursor-pointer active:scale-95 shrink-0"
+              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-all cursor-pointer active:scale-95 shrink-0"
             >
               <Copy className="w-3 h-3" />
               <span>复制全部</span>
@@ -318,12 +318,12 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                           setTimeout(() => setCopyFeedback(null), 1500);
                         }}
                         title="点击复制此项热键与中文说明"
-                        className="group flex flex-col p-3 rounded-xl bg-slate-50/80 border border-slate-200/70 hover:bg-slate-100/90 hover:border-primary transition-all gap-1.5 cursor-pointer"
+                        className="group flex flex-col p-3 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 hover:bg-slate-100/90 dark:hover:bg-slate-850 hover:border-primary transition-all gap-1.5 cursor-pointer"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-2 flex-wrap flex-1">
                             <div className="w-2 h-2 rounded-full bg-primary shadow-xs shrink-0 mt-1" />
-                            <span className="text-xs text-slate-800 font-semibold font-mono tracking-tight break-words">
+                            <span className="text-xs text-slate-800 dark:text-slate-200 font-semibold font-mono tracking-tight break-words">
                               {item.title}
                             </span>
                             {cnTag && (
@@ -335,7 +335,7 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                           <Copy className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
                         </div>
                         {item.note && (
-                          <div className="pl-4 text-[11px] text-slate-500 bg-white/70 border border-slate-200/50 rounded-lg p-1.5 leading-relaxed font-sans">
+                          <div className="pl-4 text-[11px] text-slate-500 dark:text-slate-400 bg-white/70 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/60 rounded-lg p-1.5 leading-relaxed font-sans">
                             <span className="font-medium text-primary mr-1">ℹ️ 生效说明:</span>
                             {item.note}
                           </div>
@@ -358,11 +358,11 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                           setTimeout(() => setCopyFeedback(null), 1500);
                         }}
                         title="点击复制此项热键"
-                        className="group flex items-center justify-between p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/60 hover:bg-slate-100/90 hover:border-primary transition-all cursor-pointer"
+                        className="group flex items-center justify-between p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 hover:bg-slate-100/90 dark:hover:bg-slate-850 hover:border-primary transition-all cursor-pointer"
                       >
                         <div className="flex items-center gap-2 flex-wrap flex-1">
                           <div className="w-2 h-2 rounded-full bg-primary shadow-xs shrink-0" />
-                          <span className="text-xs text-slate-700 font-medium font-mono">
+                          <span className="text-xs text-slate-700 dark:text-slate-200 font-medium font-mono">
                             {opt}
                           </span>
                           {cnTag && (

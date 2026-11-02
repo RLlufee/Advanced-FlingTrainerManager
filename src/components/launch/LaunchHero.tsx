@@ -49,13 +49,13 @@ export const LaunchHero: React.FC<LaunchHeroProps> = ({
   onDeleteClick,
 }) => {
   return (
-    <div className="relative overflow-hidden bg-white text-slate-800 border-b border-slate-200/90 shadow-2xs shrink-0 select-none">
+    <div className="relative overflow-hidden bg-white dark:bg-[#131c31] text-slate-800 dark:text-slate-100 border-b border-slate-200/90 dark:border-slate-800 shadow-2xs shrink-0 select-none transition-colors duration-200">
       <div className="p-6 space-y-4">
         {/* 上层：封面 + 游戏标题 + 属性徽章 + 右侧小工具 */}
         <div className="flex items-start justify-between gap-5">
           <div className="flex items-center gap-5 min-w-0 flex-1">
             {/* 游戏封面海报 */}
-            <div className="w-20 h-28 rounded-xl overflow-hidden shrink-0 border border-slate-200 shadow-md bg-slate-100">
+            <div className="w-20 h-28 rounded-xl overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-md bg-slate-100 dark:bg-slate-900">
               <GamePoster
                 key={`${trainer.id}-${trainer.capsule_image || ""}-${trainer.thumbnail || ""}-${activeOptionCount}`}
                 primarySrc={trainer.capsule_image}
@@ -68,11 +68,11 @@ export const LaunchHero: React.FC<LaunchHeroProps> = ({
             {/* 标题与属性标签 */}
             <div className="min-w-0 flex-1 space-y-1.5">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="text-xl font-extrabold text-slate-900 tracking-tight truncate">
+                <h1 className="text-xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight truncate">
                   {trainer.chinese_name || trainer.name}
                 </h1>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shrink-0 whitespace-nowrap">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800 shrink-0 whitespace-nowrap">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   已就绪
                 </span>
               </div>
@@ -127,17 +127,17 @@ export const LaunchHero: React.FC<LaunchHeroProps> = ({
             <TypewriterTooltip text="在系统文件资源管理器中打开此修改器所在目录" position="left">
               <button
                 onClick={onOpenInstallDir}
-                className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200/80 transition-colors cursor-pointer"
+                className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-700 transition-colors cursor-pointer"
               >
                 <JellyIcon intensity="gentle">
-                  <FolderOpen className="w-4 h-4 text-cyan-600" />
+                  <FolderOpen className="w-4 h-4 text-primary" />
                 </JellyIcon>
               </button>
             </TypewriterTooltip>
             <TypewriterTooltip text="卸载并清理本地修改器程序与相关配置" position="left">
               <button
                 onClick={onDeleteClick}
-                className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-slate-200/80 transition-colors cursor-pointer"
+                className="p-2 rounded-xl text-slate-400 dark:text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 border border-slate-200/80 dark:border-slate-700 transition-colors cursor-pointer"
               >
                 <JellyIcon intensity="gentle">
                   <Trash2 className="w-4 h-4" />
@@ -148,7 +148,7 @@ export const LaunchHero: React.FC<LaunchHeroProps> = ({
         </div>
 
         {/* 下层：核心大动作操作栏 */}
-        <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2.5">
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-2.5">
           {/* 一键启动修改器主按钮 */}
           <TypewriterTooltip text="安全唤醒风灵月影修改器独立进程" position="top">
             <button

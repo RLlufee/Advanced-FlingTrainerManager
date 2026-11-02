@@ -18,6 +18,7 @@ import {
   ThemeSettings,
   DynamicColorSource,
   MonetSavedImage,
+  ColorMode,
 } from "../../../services/configApi";
 import {
   ACCENT_PRESETS,
@@ -45,6 +46,11 @@ export interface ThemeContextValue {
   isCustom: boolean;
   isDynamic: boolean;
 
+  // --- 界面深浅色彩模式 (默认 system 跟随系统) ---
+  colorMode: ColorMode; // "system" | "light" | "dark"
+  resolvedColorMode: "light" | "dark"; // 最终解析生效的模式
+  isDark: boolean; // 是否处于深色模式
+
   // --- 莫奈三级动态取色状态 ---
   dynamicSource: DynamicColorSource;
   windowsAccentHex: string;
@@ -55,6 +61,8 @@ export interface ThemeContextValue {
   isExtractingMonet: boolean;
 
   // --- 操作方法 ---
+  setColorMode: (mode: ColorMode) => Promise<void>;
+  toggleColorMode: () => Promise<void>;
   setAccentColor: (colorId: string) => Promise<void>;
   setCustomHex: (hex: string) => Promise<void>;
   enableDynamicColor: () => Promise<void>;
@@ -91,8 +99,52 @@ function applyAccentToDom(accent: AccentColorConfig) {
 const SUPPORTED_IMAGE_EXT = /\.(png|jpe?g|webp|bmp)$/i;
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // 界面深浅模式（默认 "system" 跟随 Windows 系统）
+  const [colorMode, setColorModeState] = useState<ColorMode>("system");
+  const [systemPrefersDark, setSystemPrefersDark] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
+
   const [accentColor, setAccentColorState] = useState<string>("cyan");
   const [customHex, setCustomHexState] = useState<string>("#06b6d4");
+
+  // 监听系统深色模式偏好实时变化
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleSystemChange = (e: MediaQueryListEvent | MediaQueryList) => {
+      setSystemPrefersDark(e.matches);
+    };
+    handleSystemChange(mq);
+
+    if (mq.addEventListener) {
+      mq.addEventListener("change", handleSystemChange);
+      return () => mq.removeEventListener("change", handleSystemChange);
+    } else if ((mq as any).addListener) {
+      (mq as any).addListener(handleSystemChange);
+      return () => (mq as any).removeListener(handleSystemChange);
+    }
+  }, []);
+
+  // 解析最终生效的深浅模式
+  const isDark = useMemo<boolean>(() => {
+    if (colorMode === "dark") return true;
+    if (colorMode === "light") return false;
+    return systemPrefersDark;
+  }, [colorMode, systemPrefersDark]);
+
+  const resolvedColorMode: "light" | "dark" = isDark ? "dark" : "light";
+
+  // 同步暗色类名与属性至 documentElement (:root)
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    root.classList.toggle("dark", isDark);
+    root.setAttribute("data-theme", isDark ? "dark" : "light");
+    root.setAttribute("data-color-mode", colorMode);
+    root.style.colorScheme = isDark ? "dark" : "light";
+  }, [isDark, colorMode]);
 
   // 莫奈三级动态取色状态
   const [dynamicSource, setDynamicSourceState] = useState<DynamicColorSource>("windows");
@@ -228,6 +280,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         configRef.current = cfg;
         const t = cfg.theme;
         if (t) {
+          if (t.color_mode === "light" || t.color_mode === "dark" || t.color_mode === "system") {
+            setColorModeState(t.color_mode);
+          }
           if (t.accent_color) setAccentColorState(t.accent_color);
           if (t.custom_accent_hex) setCustomHexState(t.custom_accent_hex);
           if (t.dynamic_source === "windows" || t.dynamic_source === "image") {
@@ -256,6 +311,21 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       mounted = false;
     };
   }, []);
+
+  // 3.5. 切换深浅色彩外观模式 ("system" | "light" | "dark")
+  const setColorMode = useCallback(
+    async (mode: ColorMode) => {
+      setColorModeState(mode);
+      persistTheme({ color_mode: mode });
+    },
+    [persistTheme]
+  );
+
+  const toggleColorMode = useCallback(async () => {
+    const nextMode: ColorMode =
+      colorMode === "system" ? "light" : colorMode === "light" ? "dark" : "system";
+    await setColorMode(nextMode);
+  }, [colorMode, setColorMode]);
 
   // 4. 切换固定预设主题色
   const setAccentColor = useCallback(
@@ -600,6 +670,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     presets,
     isCustom: accentColor === "custom",
     isDynamic: accentColor === "dynamic",
+    colorMode,
+    resolvedColorMode,
+    isDark,
+    setColorMode,
+    toggleColorMode,
     dynamicSource,
     windowsAccentHex,
     monetSavedImages,

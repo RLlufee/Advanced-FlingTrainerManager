@@ -18,16 +18,16 @@ export const LaunchEmptyState: React.FC<LaunchEmptyStateProps> = ({
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center select-none">
       <PaperContainer className="flex flex-col items-center justify-center max-w-md">
-        <PaperCard className="p-8 rounded-3xl bg-white border border-slate-200/90 shadow-sm flex flex-col items-center">
+        <PaperCard className="p-8 rounded-3xl bg-white dark:bg-[#131c31] border border-slate-200/90 dark:border-slate-800 shadow-sm flex flex-col items-center">
           <div className="mb-4">
             <JellyIcon intensity="bouncy">
-              <div className="w-16 h-16 rounded-2xl bg-cyan-50 border border-cyan-100 shadow-xs flex items-center justify-center text-cyan-600">
+              <div className="w-16 h-16 rounded-2xl bg-primary-soft border border-primary-border shadow-xs flex items-center justify-center text-primary">
                 <Gamepad2 className="w-8 h-8" />
               </div>
             </JellyIcon>
           </div>
-          <h2 className="text-lg font-bold text-slate-800">未选择任何修改器</h2>
-          <p className="text-xs text-slate-500 max-w-sm mt-1.5 mb-6 leading-relaxed">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">未选择任何修改器</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1.5 mb-6 leading-relaxed">
             笨蛋主人，这里还没有选中的修改器喵！可以点击下方扫描电脑里已下载的修改器，或者去下载库挑选新游戏吧~
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
@@ -35,10 +35,10 @@ export const LaunchEmptyState: React.FC<LaunchEmptyStateProps> = ({
               <button
                 onClick={onImportExternal}
                 disabled={isImporting}
-                className="px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 rounded-xl text-xs font-semibold shadow-xs hover:shadow-md transition-all flex items-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
+                className="px-5 py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold shadow-xs hover:shadow-md transition-all flex items-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
               >
                 <JellyIcon intensity="gentle">
-                  <FolderInput className={`w-4 h-4 text-cyan-600 ${isImporting ? "animate-bounce" : ""}`} />
+                  <FolderInput className={`w-4 h-4 text-primary ${isImporting ? "animate-bounce" : ""}`} />
                 </JellyIcon>
                 <span>{isImporting ? "正在扫描纳管..." : "批量导入已有修改器"}</span>
               </button>

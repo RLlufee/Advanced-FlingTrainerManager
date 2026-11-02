@@ -14,6 +14,7 @@ import {
   Layers,
   Heart,
   Sun,
+  Moon,
   Image as ImageIcon,
   RotateCcw,
   Wand2,
@@ -85,6 +86,9 @@ const MonetThumbnail: React.FC<{ imagePath: string; alt: string }> = ({
 
 export const AppearanceTab: React.FC = () => {
   const {
+    colorMode,
+    resolvedColorMode,
+    setColorMode,
     accentColor,
     customHex,
     currentAccent,
@@ -248,7 +252,7 @@ export const AppearanceTab: React.FC = () => {
               setAccentColor("cyan");
               setHexInput("#06b6d4");
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 active:scale-95 text-slate-600 hover:text-slate-900 text-xs font-semibold shadow-2xs transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 active:scale-95 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>恢复默认青蓝</span>
@@ -256,22 +260,229 @@ export const AppearanceTab: React.FC = () => {
         </TypewriterTooltip>
       </div>
 
-      {/* 卡片 1：主题强调色矩阵调色盘 + 莫奈动态取色 */}
-      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 space-y-4">
+      {/* 卡片 0：界面深浅色彩模式（默认跟随系统） */}
+      <PaperCard className="bg-white dark:bg-[#131c31] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs p-5 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-slate-900">官方推荐强调色调色盘</h3>
-            <span className="text-[11px] text-slate-400">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+              界面深浅色彩模式
+            </h3>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500">
+              （默认自动跟随系统，亦可固定浅色或深色）
+            </span>
+          </div>
+          <span className="text-xs font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <span>当前生效:</span>
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium"
+              style={{
+                backgroundColor: currentAccent.soft,
+                color: currentAccent.text,
+                border: `1px solid ${currentAccent.border}`,
+              }}
+            >
+              {colorMode === "system"
+                ? `跟随系统 (${resolvedColorMode === "dark" ? "深色" : "浅色"})`
+                : colorMode === "dark"
+                ? "极客深色"
+                : "明亮浅色"}
+            </span>
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* 跟随系统选项 */}
+          <div
+            onClick={() => setColorMode("system")}
+            className={`group relative p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-3 select-none ${
+              colorMode === "system"
+                ? "bg-primary-soft/40 border-primary shadow-xs"
+                : "bg-white dark:bg-slate-900/60 hover:bg-slate-50/70 dark:hover:bg-slate-800/50 border-slate-200/70 dark:border-slate-800"
+            }`}
+            style={{
+              borderColor: colorMode === "system" ? currentAccent.primary : undefined,
+              boxShadow: colorMode === "system" ? `0 0 0 1.5px ${currentAccent.primary}` : undefined,
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <JellyIcon intensity="gentle">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                    style={{
+                      backgroundColor:
+                        colorMode === "system" ? currentAccent.primary : undefined,
+                      color: colorMode === "system" ? "#ffffff" : undefined,
+                    }}
+                  >
+                    <Monitor
+                      className={`w-4 h-4 ${
+                        colorMode === "system"
+                          ? "text-white"
+                          : "text-slate-500 dark:text-slate-400 group-hover:text-primary"
+                      }`}
+                    />
+                  </div>
+                </JellyIcon>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <span>跟随系统</span>
+                    <span className="text-[10px] font-normal px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                      默认推荐
+                    </span>
+                  </h4>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                    Windows 系统首选
+                  </span>
+                </div>
+              </div>
+              {colorMode === "system" && (
+                <div
+                  className="w-5 h-5 rounded-full flex items-center justify-center text-white"
+                  style={{ backgroundColor: currentAccent.primary }}
+                >
+                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                </div>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              随 Windows 系统夜间/深浅主题自动无缝切换，当前检测为{" "}
+              <strong className="text-slate-700 dark:text-slate-300">
+                {resolvedColorMode === "dark" ? "深色夜空" : "明亮浅色"}
+              </strong>
+            </p>
+          </div>
+
+          {/* 浅色模式 */}
+          <div
+            onClick={() => setColorMode("light")}
+            className={`group relative p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-3 select-none ${
+              colorMode === "light"
+                ? "bg-primary-soft/40 border-primary shadow-xs"
+                : "bg-white dark:bg-slate-900/60 hover:bg-slate-50/70 dark:hover:bg-slate-800/50 border-slate-200/70 dark:border-slate-800"
+            }`}
+            style={{
+              borderColor: colorMode === "light" ? currentAccent.primary : undefined,
+              boxShadow: colorMode === "light" ? `0 0 0 1.5px ${currentAccent.primary}` : undefined,
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <JellyIcon intensity="gentle">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                    style={{
+                      backgroundColor:
+                        colorMode === "light" ? currentAccent.primary : undefined,
+                      color: colorMode === "light" ? "#ffffff" : undefined,
+                    }}
+                  >
+                    <Sun
+                      className={`w-4 h-4 ${
+                        colorMode === "light"
+                          ? "text-white"
+                          : "text-amber-500 group-hover:scale-110 transition-transform"
+                      }`}
+                    />
+                  </div>
+                </JellyIcon>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    明亮浅色
+                  </h4>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                    Light Mode
+                  </span>
+                </div>
+              </div>
+              {colorMode === "light" && (
+                <div
+                  className="w-5 h-5 rounded-full flex items-center justify-center text-white"
+                  style={{ backgroundColor: currentAccent.primary }}
+                >
+                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                </div>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              纯净明亮，文字通透高反差，适合明朗白昼环境与习惯经典浅底的用户
+            </p>
+          </div>
+
+          {/* 深色模式 */}
+          <div
+            onClick={() => setColorMode("dark")}
+            className={`group relative p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-3 select-none ${
+              colorMode === "dark"
+                ? "bg-primary-soft/40 border-primary shadow-xs"
+                : "bg-white dark:bg-slate-900/60 hover:bg-slate-50/70 dark:hover:bg-slate-800/50 border-slate-200/70 dark:border-slate-800"
+            }`}
+            style={{
+              borderColor: colorMode === "dark" ? currentAccent.primary : undefined,
+              boxShadow: colorMode === "dark" ? `0 0 0 1.5px ${currentAccent.primary}` : undefined,
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <JellyIcon intensity="gentle">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                    style={{
+                      backgroundColor:
+                        colorMode === "dark" ? currentAccent.primary : undefined,
+                      color: colorMode === "dark" ? "#ffffff" : undefined,
+                    }}
+                  >
+                    <Moon
+                      className={`w-4 h-4 ${
+                        colorMode === "dark"
+                          ? "text-white"
+                          : "text-indigo-400 group-hover:scale-110 transition-transform"
+                      }`}
+                    />
+                  </div>
+                </JellyIcon>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    沉浸深色
+                  </h4>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                    Dark Mode
+                  </span>
+                </div>
+              </div>
+              {colorMode === "dark" && (
+                <div
+                  className="w-5 h-5 rounded-full flex items-center justify-center text-white"
+                  style={{ backgroundColor: currentAccent.primary }}
+                >
+                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                </div>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              深邃深空黑灰层次，柔和护眼，大幅降低暗光眩光，尽显游戏极客质感
+            </p>
+          </div>
+        </div>
+      </PaperCard>
+
+      {/* 卡片 1：主题强调色矩阵调色盘 + 莫奈动态取色 */}
+      <PaperCard className="bg-white dark:bg-[#131c31] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs p-5 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">官方推荐强调色调色盘</h3>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500">
               （8 款固定色系 + 莫奈智能动态取色）
             </span>
           </div>
-          <span className="text-xs font-mono text-slate-500 flex items-center gap-1.5">
+          <span className="text-xs font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
             <span>当前生效:</span>
             <span
               className="inline-block w-2.5 h-2.5 rounded-full shadow-2xs"
               style={{ backgroundColor: currentAccent.primary }}
             />
-            <strong className="text-slate-800">{currentAccent.primary}</strong>
+            <strong className="text-slate-800 dark:text-slate-200">{currentAccent.primary}</strong>
           </span>
         </div>
 
@@ -285,8 +496,8 @@ export const AppearanceTab: React.FC = () => {
                 onClick={() => setAccentColor(p.id)}
                 className={`group relative p-3 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-3 select-none ${
                   isSelected
-                    ? "bg-slate-50/80 shadow-xs"
-                    : "bg-white hover:bg-slate-50/60 border-slate-200/70 hover:border-slate-300"
+                    ? "bg-slate-50/80 dark:bg-slate-800/80 shadow-xs"
+                    : "bg-white dark:bg-slate-900/60 hover:bg-slate-50/60 dark:hover:bg-slate-800/50 border-slate-200/70 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
                 }`}
                 style={{
                   borderColor: isSelected ? p.primary : undefined,
@@ -713,10 +924,10 @@ export const AppearanceTab: React.FC = () => {
         </div>
 
         {/* 自定义颜色拾色器输入栏 */}
-        <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Pipette className="w-4 h-4 text-slate-400" />
-            <span className="text-xs font-medium text-slate-700">
+            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
               想要精确指定固定色号？支持手动自定义 Hex
             </span>
           </div>
@@ -730,7 +941,7 @@ export const AppearanceTab: React.FC = () => {
                   setHexInput(e.target.value);
                   setCustomHex(e.target.value);
                 }}
-                className="w-8 h-8 rounded-lg cursor-pointer border border-slate-200 shadow-2xs overflow-hidden p-0 bg-transparent"
+                className="w-8 h-8 rounded-lg cursor-pointer border border-slate-200 dark:border-slate-700 shadow-2xs overflow-hidden p-0 bg-transparent"
                 title="打开系统调色盘精选颜色"
               />
             </div>
@@ -741,7 +952,7 @@ export const AppearanceTab: React.FC = () => {
                 value={hexInput}
                 onChange={(e) => setHexInput(e.target.value)}
                 placeholder="#3b82f6"
-                className="w-28 px-2.5 py-1 text-xs font-mono bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:bg-white text-slate-800"
+                className="w-28 px-2.5 py-1 text-xs font-mono bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:bg-white dark:focus:bg-slate-750 text-slate-800 dark:text-slate-100"
                 style={{
                   borderColor: isCustom ? currentAccent.primary : undefined,
                 }}
@@ -762,24 +973,24 @@ export const AppearanceTab: React.FC = () => {
       </PaperCard>
 
       {/* 卡片 2：个性化即时效果预览沙盒 */}
-      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 space-y-4">
+      <PaperCard className="bg-white dark:bg-[#131c31] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4" style={{ color: currentAccent.primary }} />
-            <h3 className="text-sm font-bold text-slate-900">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
               强调色即时交互沙盒 (Live Sandbox)
             </h3>
           </div>
-          <span className="text-[11px] text-slate-400">
+          <span className="text-[11px] text-slate-400 dark:text-slate-500">
             切换上方颜色或莫奈色票，下方控件光速响应换装
           </span>
         </div>
 
-        <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-200/80 space-y-4">
+        <div className="p-4 rounded-xl bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
             {/* 样例 1：主力操作按键 */}
             <div className="space-y-1.5">
-              <span className="text-[11px] font-medium text-slate-500">
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
                 主力操作按钮高亮
               </span>
               <div>
@@ -798,7 +1009,7 @@ export const AppearanceTab: React.FC = () => {
 
             {/* 样例 2：胶囊属性徽章群 */}
             <div className="space-y-1.5">
-              <span className="text-[11px] font-medium text-slate-500">
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
                 微拟物徽章与状态
               </span>
               <div className="flex flex-wrap items-center gap-2">
@@ -829,7 +1040,7 @@ export const AppearanceTab: React.FC = () => {
 
             {/* 样例 3：果冻弹性回弹图标 */}
             <div className="space-y-1.5">
-              <span className="text-[11px] font-medium text-slate-500">
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
                 果冻图标与发光
               </span>
               <div className="flex items-center gap-3">
@@ -846,10 +1057,10 @@ export const AppearanceTab: React.FC = () => {
                   </div>
                 </JellyIcon>
                 <div className="text-xs">
-                  <span className="font-semibold text-slate-700 block">
+                  <span className="font-semibold text-slate-700 dark:text-slate-300 block">
                     鼠标悬停感受弹力
                   </span>
-                  <span className="text-[10px] text-slate-400">
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
                     支持 3 级物理挤压
                   </span>
                 </div>
@@ -858,9 +1069,9 @@ export const AppearanceTab: React.FC = () => {
           </div>
 
           {/* 样例 4：流体滑块微控件联动 */}
-          <div className="pt-2 border-t border-slate-200/60 space-y-1.5">
+          <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800 space-y-1.5">
             <div className="flex justify-between items-center text-xs">
-              <span className="font-medium text-slate-600">
+              <span className="font-medium text-slate-600 dark:text-slate-400">
                 流体滑块发光与填充跟随联动
               </span>
               <span
@@ -883,47 +1094,47 @@ export const AppearanceTab: React.FC = () => {
       </PaperCard>
 
       {/* 卡片 3：个性化进阶规划路线 */}
-      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 space-y-3">
-        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+      <PaperCard className="bg-white dark:bg-[#131c31] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs p-5 space-y-3">
+        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
           <span>个性化皮肤未来蓝图</span>
-          <span className="text-[10px] font-mono text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-full font-medium">
+          <span className="text-[10px] font-mono text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/80 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-full font-medium">
             后续规划
           </span>
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
           {/* 明暗模式 */}
-          <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-200/70 flex items-start gap-3 opacity-80">
-            <div className="p-2 rounded-lg bg-amber-50 text-amber-600 shrink-0 border border-amber-200/60">
-              <Sun className="w-4 h-4" />
+          <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 shrink-0 border border-emerald-200/60 dark:border-emerald-800">
+              <Check className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-800">深浅外观模式切换</span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-200/70 text-slate-600 font-mono">
-                  即将推出
+                <span className="font-bold text-slate-800 dark:text-slate-200">深浅外观模式切换</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-mono">
+                  已上线实装
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                支持浅色模式（默认）、纯净暗夜深色模式与跟随 Windows 系统外观自动切换。
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                支持跟随 Windows 系统自动变色（默认）、固定雅致明亮浅色、与纯净夜幕极客深色模式。
               </p>
             </div>
           </div>
 
           {/* 自定义全局背景壁纸与毛玻璃 */}
-          <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-200/70 flex items-start gap-3 opacity-80">
-            <div className="p-2 rounded-lg bg-cyan-50 text-cyan-600 shrink-0 border border-cyan-200/60">
+          <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 flex items-start gap-3 opacity-80">
+            <div className="p-2 rounded-lg bg-cyan-50 dark:bg-cyan-950/80 text-cyan-600 dark:text-cyan-400 shrink-0 border border-cyan-200/60 dark:border-cyan-800">
               <ImageIcon className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-800">
+                <span className="font-bold text-slate-800 dark:text-slate-200">
                   全局背景壁纸铺底与毛玻璃 (Mica)
                 </span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-200/70 text-slate-600 font-mono">
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">
                   规划中
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                 支持将画廊壁纸直接铺设为主界面半透明底图，并调节磨砂毛玻璃虚化模糊深度。
               </p>
             </div>

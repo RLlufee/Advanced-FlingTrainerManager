@@ -1,5 +1,5 @@
 import React from "react";
-import { Play, Download, Settings, LayoutGrid, Minus, Square, X } from "lucide-react";
+import { Play, Download, Settings, LayoutGrid, Minus, Square, X, Sun, Moon, Monitor } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { MagneticTab, JellyIcon, TypewriterTooltip } from "./ui/motion";
 import { useTheme } from "./ui/theme";
@@ -17,7 +17,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   activeTab,
   onTabChange,
 }) => {
-  const { currentAccent } = useTheme();
+  const { currentAccent, colorMode, isDark, toggleColorMode } = useTheme();
 
   const handleMinimize = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -116,7 +116,38 @@ export const TitleBar: React.FC<TitleBarProps> = ({
       </nav>
 
       {/* 右侧：窗口控制按钮组（Q 弹果冻微动效） */}
-      <div className="flex items-center gap-1 min-w-[120px] justify-end">
+      <div className="flex items-center gap-1 min-w-[140px] justify-end">
+        {/* 深浅色彩模式快速切换按钮 */}
+        <TypewriterTooltip
+          content={
+            colorMode === "system"
+              ? `当前色彩：跟随系统 (${isDark ? "深色" : "浅色"}) · 点击切换`
+              : colorMode === "dark"
+              ? "当前色彩：极客深色 · 点击切换"
+              : "当前色彩：明亮浅色 · 点击切换"
+          }
+          position="bottom"
+        >
+          <JellyIcon intensity="gentle">
+            <button
+              onClick={toggleColorMode}
+              className="w-8 h-8 flex items-center justify-center rounded text-white/80 hover:text-white hover:bg-white/15 transition-colors cursor-pointer mr-1 relative"
+              title="切换界面深浅色彩模式"
+            >
+              {colorMode === "system" ? (
+                <Monitor className="w-3.5 h-3.5 text-white/90" />
+              ) : isDark ? (
+                <Moon className="w-3.5 h-3.5 text-indigo-200" />
+              ) : (
+                <Sun className="w-3.5 h-3.5 text-amber-300" />
+              )}
+              {colorMode === "system" && (
+                <span className="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-xs" />
+              )}
+            </button>
+          </JellyIcon>
+        </TypewriterTooltip>
+
         <JellyIcon intensity="gentle">
           <button
             onClick={handleMinimize}

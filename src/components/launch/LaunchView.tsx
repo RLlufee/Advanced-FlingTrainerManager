@@ -597,7 +597,7 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
       />
 
       {/* 右侧工作区视口 */}
-      <main className="flex-1 bg-[#edf0f5] flex flex-col overflow-y-auto">
+      <main className="flex-1 bg-[#edf0f5] dark:bg-[#0b101b] flex flex-col overflow-y-auto transition-colors duration-200">
         {!selectedTrainer ? (
           <LaunchEmptyState
             isImporting={isImporting}

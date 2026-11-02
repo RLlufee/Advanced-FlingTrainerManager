@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /*
  * 全局强调色接管：把 Tailwind 内置的 cyan / sky 色阶全部重定向到主题强调色变量。
  * 这样项目里历史遗留的 bg-cyan-600、text-sky-700、border-cyan-200/70 等写法
@@ -98,6 +100,15 @@
     --color-primary-glow 0.36s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* 深色模式全局对比度增强与色彩变量自适应 */
+html.dark {
+  color-scheme: dark;
+  --color-primary-text: color-mix(in oklab, var(--color-primary) 88%, white);
+  --color-primary-soft: rgba(var(--color-primary-rgb), 0.22);
+  --color-primary-border: rgba(var(--color-primary-rgb), 0.48);
+  --color-primary-glow: rgba(var(--color-primary-rgb), 0.55);
+}
+
 /* 强调色实用工具类 */
 .bg-primary {
   background-color: var(--color-primary);
@@ -130,6 +141,15 @@ body {
   overflow: hidden;
   background-color: transparent;
   color: #1e293b;
+}
+
+html.dark body {
+  color: #f1f5f9;
+}
+
+::selection {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-text);
 }
 
 /* 顶部主题色波纹背景质感（跟随 --color-primary 实时换肤） */
@@ -191,6 +211,18 @@ html {
   background-color: rgba(71, 85, 105, 0.95);
 }
 
+html.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.25);
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(148, 163, 184, 0.5);
+}
+
+html.dark ::-webkit-scrollbar-thumb:active {
+  background-color: rgba(203, 213, 225, 0.75);
+}
+
 /* FluidSlider 透明原生滑块：统一圆钮命中尺寸为 18px，与视觉圆钮 (THUMB_SIZE) 完全重合 */
 .fluid-slider-input {
   -webkit-appearance: none;
@@ -211,4 +243,67 @@ html {
   margin-top: 3px; /* (24px 轨道高 - 18px) / 2，垂直居中 */
   border: none;
   background: transparent;
+}
+
+/* ========================================================
+ * 深色模式全局深度浸润自适应系统 (Dark Mode Fluent Layer)
+ * 确保所有卡片、边框、文字层级与输入控件在深色模式下浑然一体
+ * ======================================================== */
+html.dark {
+  /* 基础高对比度文字反转与舒适护眼色 */
+  .text-slate-900:not([class*="dark:text-"]) {
+    color: #f8fafc;
+  }
+  .text-slate-800:not([class*="dark:text-"]) {
+    color: #f1f5f9;
+  }
+  .text-slate-700:not([class*="dark:text-"]) {
+    color: #e2e8f0;
+  }
+  .text-slate-600:not([class*="dark:text-"]) {
+    color: #cbd5e1;
+  }
+  .text-slate-500:not([class*="dark:text-"]) {
+    color: #94a3b8;
+  }
+  .text-slate-400:not([class*="dark:text-"]) {
+    color: #64748b;
+  }
+
+  /* 基础白底与浅色卡片浸润暗色 */
+  .bg-white:not([class*="dark:bg-"]):not(.bg-primary):not([class*="bg-primary"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]) {
+    background-color: #131c31;
+  }
+
+  /* 浅灰嵌层底色浸润 */
+  .bg-slate-50:not([class*="dark:bg-"]),
+  .bg-slate-50\/50:not([class*="dark:bg-"]),
+  .bg-slate-50\/60:not([class*="dark:bg-"]),
+  .bg-slate-50\/70:not([class*="dark:bg-"]),
+  .bg-slate-50\/80:not([class*="dark:bg-"]),
+  .bg-slate-50\/90:not([class*="dark:bg-"]) {
+    background-color: #182238;
+  }
+
+  .bg-slate-100:not([class*="dark:bg-"]) {
+    background-color: #1e293b;
+  }
+
+  /* 浅色细边框软化为暗色夜空透明度 */
+  .border-slate-100:not([class*="dark:border-"]),
+  .border-slate-200:not([class*="dark:border-"]),
+  .border-slate-200\/60:not([class*="dark:border-"]),
+  .border-slate-200\/70:not([class*="dark:border-"]),
+  .border-slate-200\/80:not([class*="dark:border-"]),
+  .border-slate-200\/90:not([class*="dark:border-"]),
+  .border-slate-300:not([class*="dark:border-"]) {
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  /* 通用输入框与文本域深色适配 */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]),
+  textarea,
+  select {
+    color-scheme: dark;
+  }
 }

@@ -74,7 +74,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   onTabChange,
 }) => {
   return (
-    <aside className="w-52 bg-white border-r border-slate-200/90 flex flex-col shrink-0 select-none shadow-[2px_0_8px_rgba(0,0,0,0.02)] p-3">
+    <aside className="w-52 bg-white dark:bg-[#0f172a] border-r border-slate-200/90 dark:border-slate-800 flex flex-col shrink-0 select-none shadow-[2px_0_8px_rgba(0,0,0,0.02)] p-3 transition-colors duration-200">
       <div className="space-y-1 relative">
         {SETTINGS_TABS.map((tab) => {
           const IconComponent = tab.icon;
@@ -93,7 +93,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                 className={`relative w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-colors duration-200 text-left cursor-pointer group ${
                   isActive
                     ? "text-primary-text"
-                    : "text-slate-600 hover:text-slate-900"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
                 }`}
               >
                 {/* 活跃背景滑动药丸动画 (Mineradio 风格流畅胶囊动画) */}
@@ -133,20 +133,20 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
         })}
       </div>
 
-      <div className="mt-auto p-3 border-t border-slate-100 text-[11px] text-slate-400 space-y-1">
+      <div className="mt-auto p-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 dark:text-slate-500 space-y-1">
         <TypewriterTooltip
           text="设置项实时写入独立配置存储，重启客户端无缝还原喵~"
           position="top"
           delayMs={250}
         >
-          <div className="space-y-1 cursor-help hover:text-slate-600 transition-colors">
+          <div className="space-y-1 cursor-help hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
             <div className="flex items-center justify-between">
               <span>配置持久化</span>
-              <span className="text-cyan-600 font-mono text-[10px] font-bold">
+              <span className="text-primary font-mono text-[10px] font-bold">
                 app_config.json
               </span>
             </div>
-            <p className="text-[10px] text-slate-400/80 leading-relaxed">
+            <p className="text-[10px] text-slate-400/80 dark:text-slate-500/80 leading-relaxed">
               修改即时自动落盘保存
             </p>
           </div>
