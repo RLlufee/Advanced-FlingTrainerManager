@@ -65,13 +65,20 @@ pub fn get_cached_game_meta(trainer_id: &str, game_name: &str) -> Option<GameMet
 
 /// 定位本地 `fling_translations.db` 路径
 fn find_translations_db_path() -> Option<PathBuf> {
-    let candidates = [
+    let mut candidates = vec![
         PathBuf::from("resources/fling_translations.db"),
         PathBuf::from("src-tauri/resources/fling_translations.db"),
         PathBuf::from("../resources/fling_translations.db"),
         PathBuf::from("libs/FLiNG-Downloader/resources/fling_translations.db"),
         get_app_data_dir().join("fling_translations.db"),
     ];
+
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            candidates.push(exe_dir.join("resources").join("fling_translations.db"));
+            candidates.push(exe_dir.join("fling_translations.db"));
+        }
+    }
 
     for path in &candidates {
         if path.exists() {
