@@ -75,11 +75,37 @@ fn delete_installed_trainer(id: String) -> Result<(), String> {
 
 #[tauri::command]
 async fn launch_game_and_trainer(id: String, app_id: Option<u32>) -> Result<String, String> {
+    let config = services::config::load_config();
+
     if let Some(aid) = app_id {
-        let _ = launch_steam_game(aid);
-        tokio::time::sleep(tokio::time::Duration::from_millis(600)).await;
+        launch_steam_game(aid).map_err(|e| format!("调起 Steam 游戏失败: {}", e))?;
+        // 消费用户配置的双启延时（P1-08）
+        let delay_ms = (config.hotkey.double_launch_delay_sec.max(1) * 1000).max(600);
+        tokio::time::sleep(tokio::time::Duration::from_millis(delay_ms)).await;
     }
-    launcher::launch_trainer(&id)
+
+    let launch_msg = launcher::launch_trainer(&id)?;
+
+    // 若配置开启了一键双启自动同步热键，等待窗口就绪后触发同步 (P1-08)
+    if config.hotkey.auto_sync_on_double_launch {
+        let records = storage::load_installed_records();
+        if let Some(record) = records.iter().find(|r| r.id == id) {
+            let active_keys: Vec<String> = record
+                .saved_toggles
+                .iter()
+                .filter(|(_, v)| **v)
+                .map(|(k, _)| k.clone())
+                .collect();
+            if !active_keys.is_empty() {
+                tokio::time::sleep(tokio::time::Duration::from_millis(1500)).await;
+                #[cfg(target_os = "windows")]
+                services::key_simulator::focus_window_for_exe(&record.exe_name);
+                let _ = services::key_simulator::simulate_hotkeys_sequence(&active_keys).await;
+            }
+        }
+    }
+
+    Ok(launch_msg)
 }
 
 #[tauri::command]
@@ -88,7 +114,25 @@ fn save_trainer_toggles(id: String, toggles: std::collections::HashMap<String, b
 }
 
 #[tauri::command]
-async fn sync_trainer_hotkeys(_id: String, hotkeys: Vec<String>) -> Result<u32, String> {
+async fn sync_trainer_hotkeys(id: String, hotkeys: Vec<String>) -> Result<u32, String> {
+    let records = storage::load_installed_records();
+    let record = records
+        .iter()
+        .find(|r| r.id == id)
+        .ok_or_else(|| format!("未找到修改器: {}", id))?;
+
+    #[cfg(target_os = "windows")]
+    {
+        let focused = services::key_simulator::focus_window_for_exe(&record.exe_name);
+        if !focused {
+            return Err(format!(
+                "未检测到修改器 '{}' 的运行窗口，请先启动修改器后再同步按键喵~",
+                record.exe_name
+            ));
+        }
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    }
+
     services::key_simulator::simulate_hotkeys_sequence(&hotkeys).await
 }
 
@@ -118,7 +162,7 @@ async fn enrich_installed_trainer(id: String) -> Result<InstalledTrainerRecord, 
 }
 
 #[tauri::command]
-async fn enrich_all_installed_trainers() -> Result<usize, String> {
+async fn enrich_all_installed_trainers() -> Result<models::BatchEnrichResult, String> {
     services::importer::enrich_all_installed_trainers().await
 }
 

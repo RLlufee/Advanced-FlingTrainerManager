@@ -353,13 +353,50 @@ fn get_config_file_path() -> PathBuf {
     get_app_data_dir().join("app_config.json")
 }
 
-/// 读取应用全局配置，若不存在则生成默认配置
+/// 原子安全写盘辅助函数（写入临时文件、强制刷盘后再原子替换，防止断电或并发导致空文件/半成品）
+pub fn atomic_write_file(path: &std::path::Path, content: &[u8]) -> Result<(), String> {
+    use std::io::Write;
+    if let Some(parent) = path.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    let tmp_path = path.with_extension(format!("tmp.{}", std::process::id()));
+    {
+        let mut file = fs::File::create(&tmp_path)
+            .map_err(|e| format!("创建临时文件失败: {}", e))?;
+        file.write_all(content)
+            .map_err(|e| format!("写入临时文件失败: {}", e))?;
+        file.flush()
+            .map_err(|e| format!("刷盘临时文件失败: {}", e))?;
+        let _ = file.sync_all();
+    }
+    if fs::rename(&tmp_path, path).is_err() {
+        fs::copy(&tmp_path, path).map_err(|e| format!("原子替换目标文件失败: {}", e))?;
+        let _ = fs::remove_file(&tmp_path);
+    }
+    Ok(())
+}
+
+/// 读取应用全局配置，若不存在则生成默认配置；若存在但损坏则安全隔离备份，绝不静默覆盖
 pub fn load_config() -> AppConfig {
     let file = get_config_file_path();
     if file.exists() {
         if let Ok(content) = fs::read_to_string(&file) {
-            if let Ok(config) = serde_json::from_str::<AppConfig>(&content) {
-                return config;
+            match serde_json::from_str::<AppConfig>(&content) {
+                Ok(config) => return config,
+                Err(e) => {
+                    // 配置损坏安全防线：备份损坏的原配置文件，保留用户历史与排查证据
+                    if let Some(parent) = file.parent() {
+                        let corrupt_backup = parent.join(format!(
+                            "app_config.corrupt.{}.json",
+                            chrono::Utc::now().timestamp()
+                        ));
+                        let _ = fs::copy(&file, &corrupt_backup);
+                        eprintln!(
+                            "全局配置文件 {:?} 解析损坏，已自动备份至 {:?}: {}",
+                            file, corrupt_backup, e
+                        );
+                    }
+                }
             }
         }
     }
@@ -368,16 +405,12 @@ pub fn load_config() -> AppConfig {
     default_config
 }
 
-/// 保存应用全局配置
+/// 保存应用全局配置（原子替换落盘）
 pub fn save_config(config: &AppConfig) -> Result<(), String> {
     let file = get_config_file_path();
-    if let Some(parent) = file.parent() {
-        let _ = fs::create_dir_all(parent);
-    }
     let json = serde_json::to_string_pretty(config)
         .map_err(|e| format!("序列化配置失败: {}", e))?;
-    fs::write(&file, json).map_err(|e| format!("写入配置文件失败: {}", e))?;
-    Ok(())
+    atomic_write_file(&file, json.as_bytes())
 }
 
 /// 预设备份单项实体
@@ -407,7 +440,7 @@ pub fn export_all_presets() -> Result<String, String> {
         .map_err(|e| format!("导出预设序列化失败: {}", e))
 }
 
-/// 从 JSON 恢复导入所有修改器的预设
+/// 从 JSON 恢复导入所有修改器的预设（严格核验写盘结果，写盘失败不计入成功）
 pub fn import_all_presets(json_str: &str) -> Result<u32, String> {
     let items: Vec<TrainerPresetBackupItem> = serde_json::from_str(json_str)
         .map_err(|e| format!("导入预设解析失败，请确保格式正确: {}", e))?;
@@ -418,7 +451,10 @@ pub fn import_all_presets(json_str: &str) -> Result<u32, String> {
     for item in items {
         if let Some(record) = records.iter_mut().find(|r| r.id == item.id || r.name == item.name) {
             record.saved_toggles = item.saved_toggles;
-            let _ = save_installed_record(record.clone());
+            if let Err(e) = save_installed_record(record.clone()) {
+                eprintln!("预设落盘失败 [{}]: {}", record.id, e);
+                continue;
+            }
             updated_count += 1;
         }
     }
@@ -426,7 +462,7 @@ pub fn import_all_presets(json_str: &str) -> Result<u32, String> {
     Ok(updated_count)
 }
 
-/// 清空所有已安装修改器的开关预设
+/// 清空所有已安装修改器的开关预设（严格核验写盘结果）
 pub fn clear_all_presets() -> Result<u32, String> {
     let mut records = load_installed_records();
     let mut cleared_count = 0u32;
@@ -434,7 +470,10 @@ pub fn clear_all_presets() -> Result<u32, String> {
     for record in records.iter_mut() {
         if !record.saved_toggles.is_empty() {
             record.saved_toggles.clear();
-            let _ = save_installed_record(record.clone());
+            if let Err(e) = save_installed_record(record.clone()) {
+                eprintln!("清空预设写盘失败 [{}]: {}", record.id, e);
+                continue;
+            }
             cleared_count += 1;
         }
     }

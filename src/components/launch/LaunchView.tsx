@@ -416,14 +416,19 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
       "正在全量匹配补齐所有缺失修改器的官方功能与封面，请稍候喵..."
     );
     try {
-      const count = await trainerApi.enrichAllInstalledTrainers();
-      if (count > 0) {
+      const res = await trainerApi.enrichAllInstalledTrainers();
+      if (res.attempted === 0) {
+        showToast("info", "所有修改器的数据均已是完整状态喵~");
+      } else if (res.failed > 0) {
         showToast(
-          "success",
-          `🎉 补全大成功！已为 ${count} 款修改器同步官方功能看板与高清海报喵~`
+          res.succeeded > 0 ? "success" : "error",
+          `补全处理完成：成功 ${res.succeeded} 款，${res.failed} 款因网络超时或未匹配失败喵~`
         );
       } else {
-        showToast("info", "所有修改器的数据均已是完整状态喵~");
+        showToast(
+          "success",
+          `🎉 补全大成功！已为全部 ${res.succeeded} 款修改器同步官方功能看板与高清海报喵~`
+        );
       }
       await loadTrainers(selectedId || undefined);
     } catch (e) {

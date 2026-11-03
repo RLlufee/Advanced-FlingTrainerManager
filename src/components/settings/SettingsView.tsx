@@ -103,19 +103,23 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
   }, [isActive, activeTab]);
 
   // 保存热键子项配置并即时写盘
-  const updateHotkeySettings = async (partial: Partial<HotkeySettings>) => {
-    if (!config) return;
+  const updateHotkeySettings = async (partial: Partial<HotkeySettings>): Promise<boolean> => {
+    if (!config) return false;
+    const oldConfig = config;
     const newHotkey = { ...config.hotkey, ...partial };
     const newConfig: AppConfig = {
       ...config,
       hotkey: newHotkey,
     };
-    setConfig(newConfig);
 
     try {
       await configApi.saveConfig(newConfig);
+      setConfig(newConfig);
+      return true;
     } catch (e) {
+      setConfig(oldConfig);
       showToast("error", `保存配置失败: ${e}`);
+      return false;
     }
   };
 
@@ -170,20 +174,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
     }
   };
 
-  // 更新管理模块配置
-  const updateManagementSettings = async (partial: Partial<ManagementSettings>) => {
-    if (!config) return;
+  // 更新管理模块配置 (带错误回滚与状态反馈 P1-05)
+  const updateManagementSettings = async (partial: Partial<ManagementSettings>): Promise<boolean> => {
+    if (!config) return false;
+    const oldConfig = config;
     const newMgmt = { ...config.management, ...partial };
     const newConfig: AppConfig = {
       ...config,
       management: newMgmt,
     };
-    setConfig(newConfig);
 
     try {
       await configApi.saveConfig(newConfig);
+      setConfig(newConfig);
+      return true;
     } catch (e) {
+      setConfig(oldConfig);
       showToast("error", `保存管理设置失败: ${e}`);
+      return false;
     }
   };
 
@@ -222,10 +230,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
     }
   };
 
-  // 仅切换路径不移动文件
+  // 仅切换路径不移动文件（只有落盘成功后才提示成功并关闭弹窗 P1-05）
   const handleSwitchPathOnly = async () => {
     if (!migrateTargetDir) return;
-    await updateManagementSettings({ custom_trainers_dir: migrateTargetDir });
+    const ok = await updateManagementSettings({ custom_trainers_dir: migrateTargetDir });
+    if (!ok) return;
+
     showToast("success", "已将修改器存储路径切换到新目录喵~");
     setShowMigrateModal(false);
     setMigrateTargetDir(null);
@@ -269,20 +279,24 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
     }
   };
 
-  // 更新网络与加速设置
-  const updateNetworkSettings = async (partial: Partial<NetworkSettings>) => {
-    if (!config) return;
+  // 更新网络与加速设置 (带回滚与布尔返回)
+  const updateNetworkSettings = async (partial: Partial<NetworkSettings>): Promise<boolean> => {
+    if (!config) return false;
+    const oldConfig = config;
     const newNet = { ...config.network, ...partial };
     const newConfig: AppConfig = {
       ...config,
       network: newNet,
     };
-    setConfig(newConfig);
 
     try {
       await configApi.saveConfig(newConfig);
+      setConfig(newConfig);
+      return true;
     } catch (e) {
+      setConfig(oldConfig);
       showToast("error", `保存网络设置失败: ${e}`);
+      return false;
     }
   };
 

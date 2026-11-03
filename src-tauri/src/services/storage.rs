@@ -79,84 +79,102 @@ pub fn load_installed_records() -> Vec<InstalledTrainerRecord> {
             let path = entry.path();
             if path.is_dir() {
                 let info_file = path.join("trainer.json");
+                let mut has_existing_info_file = false;
+
                 if info_file.exists() {
+                    has_existing_info_file = true;
                     if let Ok(content) = fs::read_to_string(&info_file) {
-                        if let Ok(mut record) = serde_json::from_str::<InstalledTrainerRecord>(&content) {
-                            // 自动校准真实的 install_dir 与 exe_path（防止因手动复制/多库迁移导致路径陈旧指向原路径）
-                            let real_dir = strip_verbatim_prefix(&path).to_string_lossy().to_string();
-                            let mut record_changed = false;
+                        match serde_json::from_str::<InstalledTrainerRecord>(&content) {
+                            Ok(mut record) => {
+                                // 自动校准真实的 install_dir 与 exe_path（防止因手动复制/多库迁移导致路径陈旧指向原路径）
+                                let real_dir = strip_verbatim_prefix(&path).to_string_lossy().to_string();
+                                let mut record_changed = false;
 
-                            if record.install_dir != real_dir {
-                                record.install_dir = real_dir;
-                                record_changed = true;
-                            }
-
-                            let expected_exe = path.join(&record.exe_name);
-                            if expected_exe.exists() {
-                                let clean_exe = strip_verbatim_prefix(&expected_exe).to_string_lossy().to_string();
-                                if record.exe_path != clean_exe {
-                                    record.exe_path = clean_exe;
+                                if record.install_dir != real_dir {
+                                    record.install_dir = real_dir;
                                     record_changed = true;
                                 }
-                            } else if let Ok(sub_entries) = fs::read_dir(&path) {
-                                for sub in sub_entries.flatten() {
-                                    let sp = sub.path();
-                                    if sp.is_file() && sp.extension().map(|e| e.to_ascii_lowercase() == "exe").unwrap_or(false) {
-                                        record.exe_path = strip_verbatim_prefix(&sp).to_string_lossy().to_string();
-                                        record.exe_name = sp.file_name().unwrap_or_default().to_string_lossy().to_string();
+
+                                let expected_exe = path.join(&record.exe_name);
+                                if expected_exe.exists() {
+                                    let clean_exe = strip_verbatim_prefix(&expected_exe).to_string_lossy().to_string();
+                                    if record.exe_path != clean_exe {
+                                        record.exe_path = clean_exe;
                                         record_changed = true;
-                                        break;
+                                    }
+                                } else if let Ok(sub_entries) = fs::read_dir(&path) {
+                                    for sub in sub_entries.flatten() {
+                                        let sp = sub.path();
+                                        if sp.is_file() && sp.extension().map(|e| e.to_ascii_lowercase() == "exe").unwrap_or(false) {
+                                            record.exe_path = strip_verbatim_prefix(&sp).to_string_lossy().to_string();
+                                            record.exe_name = sp.file_name().unwrap_or_default().to_string_lossy().to_string();
+                                            record_changed = true;
+                                            break;
+                                        }
                                     }
                                 }
-                            }
 
-                            if record_changed {
-                                let _ = save_installed_record(record.clone());
-                            }
+                                if record_changed {
+                                    let _ = save_installed_record(record.clone());
+                                }
 
-                            // 1. 优先检测子目录下是否存在本地封面图片 (零网络秒开)
-                            let cover_jpg = path.join("cover.jpg");
-                            let cover_png = path.join("cover.png");
-                            if cover_jpg.exists() {
-                                record.capsule_image = Some(cover_jpg.to_string_lossy().to_string());
-                            } else if cover_png.exists() {
-                                record.capsule_image = Some(cover_png.to_string_lossy().to_string());
-                            }
+                                // 1. 优先检测子目录下是否存在本地封面图片 (零网络秒开)
+                                let cover_jpg = path.join("cover.jpg");
+                                let cover_png = path.join("cover.png");
+                                if cover_jpg.exists() {
+                                    record.capsule_image = Some(cover_jpg.to_string_lossy().to_string());
+                                } else if cover_png.exists() {
+                                    record.capsule_image = Some(cover_png.to_string_lossy().to_string());
+                                }
 
-                            // 2. 从本地元数据持久化缓存 (game_meta_cache.json) 补齐 Steam 胶囊图、原画与 AppID
-                            if record.capsule_image.is_none() || record.hero_image.is_none() || record.steam_app_id.is_none() || record.chinese_name.is_none() {
-                                if let Some(cached) = crate::services::game_meta::get_cached_game_meta(&record.id, &record.name) {
-                                    let mut need_save = false;
-                                    if record.capsule_image.is_none() && cached.capsule_image.is_some() {
-                                        record.capsule_image = cached.capsule_image;
-                                        need_save = true;
-                                    }
-                                    if record.hero_image.is_none() && cached.hero_image.is_some() {
-                                        record.hero_image = cached.hero_image;
-                                        need_save = true;
-                                    }
-                                    if record.steam_app_id.is_none() && cached.steam_app_id.is_some() {
-                                        record.steam_app_id = cached.steam_app_id;
-                                        need_save = true;
-                                    }
-                                    if (record.chinese_name.is_none() || record.chinese_name.as_deref() == Some(&record.name)) && cached.chinese_name.is_some() {
-                                        record.chinese_name = cached.chinese_name;
-                                        need_save = true;
-                                    }
-                                    if need_save {
-                                        let _ = save_installed_record(record.clone());
+                                // 2. 从本地元数据持久化缓存 (game_meta_cache.json) 补齐 Steam 胶囊图、原画与 AppID
+                                if record.capsule_image.is_none() || record.hero_image.is_none() || record.steam_app_id.is_none() || record.chinese_name.is_none() {
+                                    if let Some(cached) = crate::services::game_meta::get_cached_game_meta(&record.id, &record.name) {
+                                        let mut need_save = false;
+                                        if record.capsule_image.is_none() && cached.capsule_image.is_some() {
+                                            record.capsule_image = cached.capsule_image;
+                                            need_save = true;
+                                        }
+                                        if record.hero_image.is_none() && cached.hero_image.is_some() {
+                                            record.hero_image = cached.hero_image;
+                                            need_save = true;
+                                        }
+                                        if record.steam_app_id.is_none() && cached.steam_app_id.is_some() {
+                                            record.steam_app_id = cached.steam_app_id;
+                                            need_save = true;
+                                        }
+                                        if (record.chinese_name.is_none() || record.chinese_name.as_deref() == Some(&record.name)) && cached.chinese_name.is_some() {
+                                            record.chinese_name = cached.chinese_name;
+                                            need_save = true;
+                                        }
+                                        if need_save {
+                                            let _ = save_installed_record(record.clone());
+                                        }
                                     }
                                 }
-                            }
 
-                            records.push(record);
-                            continue;
+                                records.push(record);
+                                continue;
+                            }
+                            Err(e) => {
+                                // 损坏文件安全隔离与备份，严禁直接被下方推断逻辑覆盖并重置 ID
+                                let corrupt_backup = path.join(format!(
+                                    "trainer.json.corrupt.{}.json",
+                                    chrono::Utc::now().timestamp()
+                                ));
+                                let _ = fs::copy(&info_file, &corrupt_backup);
+                                eprintln!(
+                                    "修改器记录文件 {:?} 损坏，已备份至 {:?}: {}",
+                                    info_file, corrupt_backup, e
+                                );
+                            }
                         }
                     }
                 }
 
-                // 兼容：如果文件夹内没有 trainer.json，但存在 exe（用户手动放入的情况）
-                if let Ok(sub_entries) = fs::read_dir(&path) {
+                // 兼容：仅在原本没有 trainer.json 的情况下，才根据目录中的 exe 推断新记录
+                if !has_existing_info_file {
+                    if let Ok(sub_entries) = fs::read_dir(&path) {
                     let mut found_exe: Option<PathBuf> = None;
                     for sub in sub_entries.flatten() {
                         let sp = sub.path();
@@ -192,6 +210,7 @@ pub fn load_installed_records() -> Vec<InstalledTrainerRecord> {
                         let _ = save_installed_record(inferred.clone());
                         records.push(inferred);
                     }
+                    }
                 }
             }
         }
@@ -202,7 +221,7 @@ pub fn load_installed_records() -> Vec<InstalledTrainerRecord> {
     records
 }
 
-/// 保存单个修改器的 trainer.json 到其安装目录
+/// 保存单个修改器的 trainer.json 到其安装目录（原子安全写入）
 pub fn save_installed_record(record: InstalledTrainerRecord) -> Result<(), String> {
     let dir = PathBuf::from(&record.install_dir);
     if !dir.exists() {
@@ -211,8 +230,7 @@ pub fn save_installed_record(record: InstalledTrainerRecord) -> Result<(), Strin
     let file = dir.join("trainer.json");
     let json = serde_json::to_string_pretty(&record)
         .map_err(|e| format!("序列化 trainer.json 失败: {}", e))?;
-    fs::write(&file, json).map_err(|e| format!("写入 trainer.json 失败: {}", e))?;
-    Ok(())
+    crate::services::config::atomic_write_file(&file, json.as_bytes())
 }
 
 /// 更新并保存指定修改器的热键开关预设

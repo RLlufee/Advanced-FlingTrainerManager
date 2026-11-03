@@ -211,54 +211,151 @@ pub async fn download_and_install_trainer<R: Runtime>(
     Ok(record)
 }
 
-fn process_package(package_path: &Path, extract_to: &Path, trainer_id: &str) -> Result<PathBuf, String> {
-    if is_zip_file(package_path) {
-        let file = fs::File::open(package_path)
-            .map_err(|e| format!("打开压缩包失败: {}", e))?;
-        let mut archive = zip::ZipArchive::new(file)
-            .map_err(|e| format!("解析 ZIP 压缩文件失败: {}", e))?;
+pub fn process_package(package_path: &Path, extract_to: &Path, trainer_id: &str) -> Result<PathBuf, String> {
+    let is_zip = is_zip_file(package_path);
+    let is_exe = is_pe_exe_file(package_path);
 
-        for i in 0..archive.len() {
-            let mut file = archive.by_index(i)
-                .map_err(|e| format!("读取压缩项失败: {}", e))?;
-            let outpath = match file.enclosed_name() {
-                Some(path) => extract_to.join(path),
-                None => continue,
-            };
-
-            if file.is_dir() {
-                let _ = fs::create_dir_all(&outpath);
-            } else {
-                if let Some(p) = outpath.parent() {
-                    let _ = fs::create_dir_all(p);
-                }
-                let mut outfile = fs::File::create(&outpath)
-                    .map_err(|e| format!("解压文件失败: {}", e))?;
-                std::io::copy(&mut file, &mut outfile)
-                    .map_err(|e| format!("写入解压文件失败: {}", e))?;
-            }
-        }
-    } else {
-        // 如果不是 zip，直接作为单个 exe 重命名
-        let direct_exe = extract_to.join(format!("{}.exe", trainer_id));
-        let _ = fs::copy(package_path, &direct_exe);
+    if !is_zip && !is_exe {
+        return Err("下载内容非有效的 ZIP 压缩包或 Windows 可执行程序 (MZ)，可能遭遇了网络拦截或错误页".to_string());
     }
 
-    // 查找解压出的可执行程序
-    if let Ok(entries) = fs::read_dir(extract_to) {
+    // 采用独立隔离 Staging 目录，防止解压中途失败污染或半覆盖已有版本
+    let staging_dir = extract_to.parent().unwrap_or(extract_to).join(format!(
+        ".staging_{}_{}",
+        trainer_id,
+        chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0)
+    ));
+    fs::create_dir_all(&staging_dir)
+        .map_err(|e| format!("创建临时解压隔离目录失败: {}", e))?;
+
+    let staging_result = (|| -> Result<PathBuf, String> {
+        if is_zip {
+            let file = fs::File::open(package_path)
+                .map_err(|e| format!("打开压缩包失败: {}", e))?;
+            let mut archive = zip::ZipArchive::new(file)
+                .map_err(|e| format!("解析 ZIP 压缩文件失败: {}", e))?;
+
+            for i in 0..archive.len() {
+                let mut file = archive.by_index(i)
+                    .map_err(|e| format!("读取压缩项失败: {}", e))?;
+                let outpath = match file.enclosed_name() {
+                    Some(path) => staging_dir.join(path),
+                    None => continue,
+                };
+
+                if file.is_dir() {
+                    let _ = fs::create_dir_all(&outpath);
+                } else {
+                    if let Some(p) = outpath.parent() {
+                        let _ = fs::create_dir_all(p);
+                    }
+                    let mut outfile = fs::File::create(&outpath)
+                        .map_err(|e| format!("解压文件失败: {}", e))?;
+                    std::io::copy(&mut file, &mut outfile)
+                        .map_err(|e| format!("写入解压文件失败: {}", e))?;
+                }
+            }
+        } else {
+            // 如果不是 zip 且为合法 PE，复制为单个 exe
+            let direct_exe = staging_dir.join(format!("{}.exe", trainer_id));
+            fs::copy(package_path, &direct_exe)
+                .map_err(|e| format!("复制执行文件失败: {}", e))?;
+        }
+
+        // 递归扫描 staging 目录中的所有有效可执行程序
+        let mut candidates = Vec::new();
+        collect_all_exes_recursive(&staging_dir, &mut candidates);
+
+        if candidates.is_empty() {
+            return Err("未在解压结果中找到有效的修改器 .exe 文件".to_string());
+        }
+
+        // 启发式挑选最佳修改器主程序：优先名称带 trainer，其次按体积最大挑选
+        let best_exe = if candidates.len() == 1 {
+            candidates[0].clone()
+        } else {
+            let matched = candidates.iter().find(|p| {
+                let name = p.file_name().unwrap_or_default().to_string_lossy().to_lowercase();
+                name.contains("trainer") || name == format!("{}.exe", trainer_id.to_lowercase())
+            });
+            if let Some(m) = matched {
+                m.clone()
+            } else {
+                candidates.sort_by_key(|p| p.metadata().map(|m| m.len()).unwrap_or(0));
+                candidates.last().unwrap().clone()
+            }
+        };
+
+        let rel_exe_path = best_exe.strip_prefix(&staging_dir)
+            .map_err(|e| format!("计算相对路径失败: {}", e))?
+            .to_path_buf();
+
+        Ok(rel_exe_path)
+    })();
+
+    match staging_result {
+        Ok(rel_exe_path) => {
+            // 解压与校验完整成功，向目标目录提升安装
+            fs::create_dir_all(extract_to)
+                .map_err(|e| format!("创建目标目录失败: {}", e))?;
+
+            if let Err(e) = copy_and_promote_staging(&staging_dir, extract_to) {
+                let _ = fs::remove_dir_all(&staging_dir);
+                return Err(format!("提升安装文件至目标目录失败: {}", e));
+            }
+
+            let _ = fs::remove_dir_all(&staging_dir);
+            let final_exe = extract_to.join(rel_exe_path);
+            Ok(final_exe)
+        }
+        Err(e) => {
+            // 失败时回滚并清理 staging 目录，保护现有目标目录
+            let _ = fs::remove_dir_all(&staging_dir);
+            Err(e)
+        }
+    }
+}
+
+fn copy_and_promote_staging(src: &Path, dst: &Path) -> std::io::Result<()> {
+    fs::create_dir_all(dst)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let p = entry.path();
+        let target = dst.join(entry.file_name());
+        if p.is_dir() {
+            copy_and_promote_staging(&p, &target)?;
+        } else {
+            fs::copy(&p, &target)?;
+        }
+    }
+    Ok(())
+}
+
+fn collect_all_exes_recursive(dir: &Path, results: &mut Vec<PathBuf>) {
+    if let Ok(entries) = fs::read_dir(dir) {
         for entry in entries.flatten() {
             let p = entry.path();
-            if p.is_file() {
+            if p.is_dir() {
+                collect_all_exes_recursive(&p, results);
+            } else if p.is_file() {
                 if let Some(ext) = p.extension() {
-                    if ext.to_ascii_lowercase() == "exe" {
-                        return Ok(p);
+                    if ext.to_ascii_lowercase() == "exe" && is_pe_exe_file(&p) {
+                        results.push(p);
                     }
                 }
             }
         }
     }
+}
 
-    Err("未在解压结果中找到有效的修改器 .exe 文件".to_string())
+pub fn is_pe_exe_file(path: &Path) -> bool {
+    if let Ok(mut f) = fs::File::open(path) {
+        let mut magic = [0u8; 2];
+        if f.read_exact(&mut magic).is_ok() {
+            return magic == [b'M', b'Z'];
+        }
+    }
+    false
 }
 
 fn is_zip_file(path: &Path) -> bool {

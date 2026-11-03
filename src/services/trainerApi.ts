@@ -42,6 +42,12 @@ export interface DownloadProgressPayload {
   error: string | null;
 }
 
+export interface BatchEnrichResult {
+  attempted: number;
+  succeeded: number;
+  failed: number;
+}
+
 export interface InstalledTrainerRecord {
   id: string;
   name: string;
@@ -140,8 +146,8 @@ export const trainerApi = {
     return await invoke<InstalledTrainerRecord>("enrich_installed_trainer", { id });
   },
 
-  enrichAllInstalledTrainers: async (): Promise<number> => {
-    return await invoke<number>("enrich_all_installed_trainers");
+  enrichAllInstalledTrainers: async (): Promise<BatchEnrichResult> => {
+    return await invoke<BatchEnrichResult>("enrich_all_installed_trainers");
   },
 
   onDownloadProgress: async (

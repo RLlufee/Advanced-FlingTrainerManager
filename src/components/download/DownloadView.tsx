@@ -20,8 +20,9 @@ export const DownloadView: React.FC = () => {
   const [installedMap, setInstalledMap] = useState<Record<string, InstalledTrainerRecord>>({});
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // 内存级秒开详情缓存
+  // 内存级秒开详情缓存与异步请求防竞态序列
   const detailCache = useRef<Map<string, Trainer>>(new Map());
+  const selectRequestIdRef = useRef<number>(0);
 
   // 1. 加载本地已安装列表
   const refreshInstalled = async () => {
@@ -63,8 +64,10 @@ export const DownloadView: React.FC = () => {
     }
   };
 
-  // 3. 选中某个修改器，拉取完整详情
+  // 3. 选中某个修改器，拉取完整详情（带请求序列号防御异步竞态 P1-03）
   const handleSelectTrainer = async (t: Trainer, forceRefresh: boolean = false) => {
+    const reqId = ++selectRequestIdRef.current;
+
     if (!forceRefresh && detailCache.current.has(t.id)) {
       const cached = detailCache.current.get(t.id)!;
       if ((cached.option_items && cached.option_items.length > 0) || cached.download_url) {
@@ -77,6 +80,10 @@ export const DownloadView: React.FC = () => {
     try {
       setDetailLoading(true);
       const detail = await trainerApi.getTrainerDetail(t.id, forceRefresh);
+
+      // 若当前用户已选中其他项，丢弃较慢的陈旧响应
+      if (selectRequestIdRef.current !== reqId) return;
+
       const isBadThumb =
         !detail.thumbnail ||
         detail.thumbnail.includes("gravatar") ||
@@ -88,9 +95,13 @@ export const DownloadView: React.FC = () => {
       detailCache.current.set(t.id, enriched);
       setSelectedTrainer(enriched);
     } catch (e) {
-      console.warn("获取详情失败，使用基本信息", e);
+      if (selectRequestIdRef.current === reqId) {
+        console.warn("获取详情失败，使用基本信息", e);
+      }
     } finally {
-      setDetailLoading(false);
+      if (selectRequestIdRef.current === reqId) {
+        setDetailLoading(false);
+      }
     }
   };
 

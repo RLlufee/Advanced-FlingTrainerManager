@@ -380,7 +380,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const patchToFlush = pendingPatchRef.current;
       pendingPatchRef.current = {};
       try {
-        const latest = configRef.current || (await configApi.getConfig());
+        // 绝不复用挂载时的陈旧 configRef，强制拉取后端最新配置以防覆盖其他页面的设置 (P1-04)
+        const latest = await configApi.getConfig();
         const merged: AppConfig = {
           ...latest,
           theme: {

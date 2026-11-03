@@ -93,3 +93,10 @@ pub struct TrainerUpdateInfo {
     pub latest_game_version: String,
     pub latest_trainer: Option<Trainer>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BatchEnrichResult {
+    pub attempted: usize,
+    pub succeeded: usize,
+    pub failed: usize,
+}

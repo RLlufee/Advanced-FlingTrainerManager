@@ -453,8 +453,8 @@ pub async fn enrich_installed_trainer(id: &str) -> Result<InstalledTrainerRecord
     Ok(target)
 }
 
-/// 一键并发补全所有缺失选项、热键看板或封面数据的修改器
-pub async fn enrich_all_installed_trainers() -> Result<usize, String> {
+/// 一键并发补全所有缺失选项、热键看板或封面数据的修改器（精确统计成功与失败项数 P1-09）
+pub async fn enrich_all_installed_trainers() -> Result<crate::models::BatchEnrichResult, String> {
     let records = storage::load_installed_records();
     let need_enrich: Vec<String> = records
         .into_iter()
@@ -463,19 +463,29 @@ pub async fn enrich_all_installed_trainers() -> Result<usize, String> {
         .collect();
 
     if need_enrich.is_empty() {
-        return Ok(0);
+        return Ok(crate::models::BatchEnrichResult {
+            attempted: 0,
+            succeeded: 0,
+            failed: 0,
+        });
     }
 
-    let count = need_enrich.len();
-    let _results = stream::iter(need_enrich)
+    let results = stream::iter(need_enrich)
         .map(|id| async move {
-            let _ = enrich_installed_trainer(&id).await;
+            enrich_installed_trainer(&id).await.is_ok()
         })
         .buffer_unordered(4)
-        .collect::<Vec<()>>()
+        .collect::<Vec<bool>>()
         .await;
 
-    Ok(count)
+    let succeeded = results.iter().filter(|&&ok| ok).count();
+    let failed = results.len().saturating_sub(succeeded);
+
+    Ok(crate::models::BatchEnrichResult {
+        attempted: results.len(),
+        succeeded,
+        failed,
+    })
 }
 
 /// 递归收集候选文件
