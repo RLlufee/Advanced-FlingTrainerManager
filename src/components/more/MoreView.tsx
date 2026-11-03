@@ -20,8 +20,15 @@ interface MoreViewProps {
   isActive?: boolean;
 }
 
+// 模块级跨切页缓存，保持选中的更多子项
+let cachedMoreTab: MoreTab = "memory";
+
 export const MoreView: React.FC<MoreViewProps> = ({ isActive = true }) => {
-  const [activeTab, setActiveTab] = useState<MoreTab>("memory");
+  const [activeTab, setActiveTabState] = useState<MoreTab>(() => cachedMoreTab);
+  const setActiveTab = (tab: MoreTab) => {
+    cachedMoreTab = tab;
+    setActiveTabState(tab);
+  };
   const [memInfo, setMemInfo] = useState<SystemMemoryInfo | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isOptimizing, setIsOptimizing] = useState<boolean>(false);

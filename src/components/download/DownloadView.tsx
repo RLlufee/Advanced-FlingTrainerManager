@@ -9,14 +9,21 @@ import { DownloadHeader } from "./DownloadHeader";
 import { DownloadSidebar } from "./DownloadSidebar";
 import { TrainerDetailView } from "./TrainerDetailView";
 
+// 模块级跨切页内存缓存，确保切页时不闪骨架屏、不丢失官网列表与下载进度
+let cachedTrainers: Trainer[] = [];
+let cachedPage: number = 1;
+let cachedSearchQuery: string = "";
+let cachedSelectedTrainer: Trainer | null = null;
+let cachedDownloads: Record<string, DownloadProgressPayload> = {};
+
 export const DownloadView: React.FC = () => {
-  const [trainers, setTrainers] = useState<Trainer[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [page, setPage] = useState<number>(1);
-  const [selectedTrainer, setSelectedTrainer] = useState<Trainer | null>(null);
+  const [trainers, setTrainers] = useState<Trainer[]>(() => cachedTrainers);
+  const [loading, setLoading] = useState<boolean>(() => cachedTrainers.length === 0);
+  const [searchQuery, setSearchQuery] = useState<string>(() => cachedSearchQuery);
+  const [page, setPage] = useState<number>(() => cachedPage);
+  const [selectedTrainer, setSelectedTrainer] = useState<Trainer | null>(() => cachedSelectedTrainer);
   const [detailLoading, setDetailLoading] = useState<boolean>(false);
-  const [downloads, setDownloads] = useState<Record<string, DownloadProgressPayload>>({});
+  const [downloads, setDownloads] = useState<Record<string, DownloadProgressPayload>>(() => cachedDownloads);
   const [installedMap, setInstalledMap] = useState<Record<string, InstalledTrainerRecord>>({});
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -49,6 +56,9 @@ export const DownloadView: React.FC = () => {
       } else {
         result = await trainerApi.fetchTrainers(targetPage, forceRefresh);
       }
+      cachedTrainers = result.trainers;
+      cachedPage = targetPage;
+      cachedSearchQuery = query;
       setTrainers(result.trainers);
       setPage(targetPage);
 
@@ -66,6 +76,7 @@ export const DownloadView: React.FC = () => {
 
   // 3. 选中某个修改器，拉取完整详情（带请求序列号防御异步竞态 P1-03）
   const handleSelectTrainer = async (t: Trainer, forceRefresh: boolean = false) => {
+    cachedSelectedTrainer = t;
     const reqId = ++selectRequestIdRef.current;
 
     if (!forceRefresh && detailCache.current.has(t.id)) {
@@ -161,12 +172,15 @@ export const DownloadView: React.FC = () => {
 
   useEffect(() => {
     refreshInstalled();
-    loadTrainers(1);
+    if (cachedTrainers.length === 0) {
+      loadTrainers(1);
+    }
 
     // 监听实时下载进度广播
     let unlisten: (() => void) | undefined;
     trainerApi
       .onDownloadProgress((payload) => {
+        cachedDownloads[payload.trainer_id] = payload;
         setDownloads((prev) => ({
           ...prev,
           [payload.trainer_id]: payload,

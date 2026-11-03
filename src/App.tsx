@@ -1,63 +1,65 @@
 import React, { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { TitleBar, NavTab } from "./components/TitleBar";
 import { DownloadView } from "./components/DownloadView";
 import { LaunchView } from "./components/LaunchView";
 import { SettingsView } from "./components/SettingsView";
 import { MoreView } from "./components/MoreView";
-import { AnimationProvider } from "./components/ui/motion";
+import { AnimationProvider, useAnimationConfig } from "./components/ui/motion";
 import { ThemeProvider } from "./components/ui/theme";
 import { WallpaperBackdrop } from "./components/WallpaperBackdrop";
 
-export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<NavTab>("launch"); // 默认首发展示启动管理页（已安装修改器与一键启动）
+const MainWorkspace: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<NavTab>("launch"); // 默认首发展示启动管理页
+  const { isAnimEnabled, effectiveSpeed } = useAnimationConfig();
 
+  const transitionDuration = isAnimEnabled ? 0.18 / effectiveSpeed : 0;
+
+  return (
+    <div className="app-canvas relative h-screen w-screen flex flex-col overflow-hidden border border-slate-300 dark:border-slate-800 shadow-2xl font-sans transition-colors duration-300">
+      <WallpaperBackdrop />
+      {/* 顶部现代化无边框标题栏（PCL II 风格） */}
+      <TitleBar
+        title="PCL II  |  Fling Trainer"
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
+
+      {/* 主体工作区（支持跨页面丝滑过渡与纸片飘落入场） */}
+      <div className="relative z-10 flex-1 flex overflow-hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 8, scale: 0.996 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.996 }}
+            transition={{
+              duration: transitionDuration,
+              ease: [0.22, 1, 0.36, 1],
+            }}
+            className="flex-1 flex overflow-hidden w-full h-full"
+          >
+            {activeTab === "launch" && (
+              <LaunchView
+                isActive={true}
+                onNavigateToDownload={() => setActiveTab("download")}
+              />
+            )}
+            {activeTab === "download" && <DownloadView />}
+            {activeTab === "settings" && <SettingsView isActive={true} />}
+            {activeTab === "more" && <MoreView isActive={true} />}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
+export const App: React.FC = () => {
   return (
     <ThemeProvider>
       <AnimationProvider>
-        <div className="app-canvas relative h-screen w-screen flex flex-col overflow-hidden border border-slate-300 dark:border-slate-800 shadow-2xl font-sans transition-colors duration-300">
-          <WallpaperBackdrop />
-          {/* 顶部现代化无边框标题栏（PCL II 风格） */}
-          <TitleBar
-            title="PCL II  |  Fling Trainer"
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-          />
-
-          {/* 主体工作区（Tab 保活机制：切换页面不销毁组件，保持状态与滚动位置，0ms 瞬间切换） */}
-          <div className="relative z-10 flex-1 flex overflow-hidden">
-            <div
-              className={`flex-1 flex overflow-hidden ${
-                activeTab === "download" ? "flex" : "hidden"
-              }`}
-            >
-              <DownloadView />
-            </div>
-            <div
-              className={`flex-1 flex overflow-hidden ${
-                activeTab === "launch" ? "flex" : "hidden"
-              }`}
-            >
-              <LaunchView
-                isActive={activeTab === "launch"}
-                onNavigateToDownload={() => setActiveTab("download")}
-              />
-            </div>
-            <div
-              className={`flex-1 flex overflow-hidden ${
-                activeTab === "settings" ? "flex" : "hidden"
-              }`}
-            >
-              <SettingsView isActive={activeTab === "settings"} />
-            </div>
-            <div
-              className={`flex-1 flex overflow-hidden ${
-                activeTab === "more" ? "flex" : "hidden"
-              }`}
-            >
-              <MoreView isActive={activeTab === "more"} />
-            </div>
-          </div>
-        </div>
+        <MainWorkspace />
       </AnimationProvider>
     </ThemeProvider>
   );

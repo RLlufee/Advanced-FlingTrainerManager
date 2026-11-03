@@ -25,15 +25,30 @@ export interface LaunchViewProps {
   isActive?: boolean;
 }
 
+// 模块级跨切页缓存，保证切换页面 0ms 秒开不白屏
+let cachedInstalledTrainers: InstalledTrainerRecord[] = [];
+let cachedSelectedId: string | null = null;
+
 export const LaunchView: React.FC<LaunchViewProps> = ({
   onNavigateToDownload,
   isActive,
 }) => {
-  const [trainers, setTrainers] = useState<InstalledTrainerRecord[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [trainers, setTrainersState] = useState<InstalledTrainerRecord[]>(() => cachedInstalledTrainers);
+  const setTrainers = (updater: InstalledTrainerRecord[] | ((prev: InstalledTrainerRecord[]) => InstalledTrainerRecord[])) => {
+    setTrainersState((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      cachedInstalledTrainers = next;
+      return next;
+    });
+  };
+  const [selectedId, setSelectedIdState] = useState<string | null>(() => cachedSelectedId);
+  const setSelectedId = (id: string | null) => {
+    cachedSelectedId = id;
+    setSelectedIdState(id);
+  };
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [hotkeyQuery, setHotkeyQuery] = useState<string>("");
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(() => cachedInstalledTrainers.length === 0);
   const [isLaunching, setIsLaunching] = useState<boolean>(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
@@ -85,14 +100,17 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
 
   // 加载已安装列表
   const loadTrainers = async (keepSelectedId?: string) => {
-    setIsLoading(true);
+    if (cachedInstalledTrainers.length === 0) {
+      setIsLoading(true);
+    }
     try {
       const records = await trainerApi.getInstalledTrainers();
       setTrainers(records);
+      const targetId = keepSelectedId || cachedSelectedId || selectedId;
       if (records.length > 0) {
-        if (keepSelectedId && records.some((r) => r.id === keepSelectedId)) {
-          setSelectedId(keepSelectedId);
-        } else if (!selectedId || !records.some((r) => r.id === selectedId)) {
+        if (targetId && records.some((r) => r.id === targetId)) {
+          setSelectedId(targetId);
+        } else {
           setSelectedId(records[0].id);
         }
       } else {

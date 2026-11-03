@@ -29,10 +29,25 @@ export interface SettingsViewProps {
   isActive?: boolean;
 }
 
+// 模块级跨切页缓存，确保切页时 0ms 瞬间恢复选中子项与配置
+let cachedSettingsTab: SettingsTab = "appearance";
+let cachedConfig: AppConfig | null = null;
+
 export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) => {
-  const [activeTab, setActiveTab] = useState<SettingsTab>("appearance");
-  const [config, setConfig] = useState<AppConfig | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [activeTab, setActiveTabState] = useState<SettingsTab>(() => cachedSettingsTab);
+  const setActiveTab = (tab: SettingsTab) => {
+    cachedSettingsTab = tab;
+    setActiveTabState(tab);
+  };
+  const [config, setConfigState] = useState<AppConfig | null>(() => cachedConfig);
+  const setConfig = (cfg: AppConfig | null | ((prev: AppConfig | null) => AppConfig | null)) => {
+    setConfigState((prev) => {
+      const next = typeof cfg === "function" ? cfg(prev) : cfg;
+      cachedConfig = next;
+      return next;
+    });
+  };
+  const [isLoading, setIsLoading] = useState<boolean>(() => cachedConfig === null);
   const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
 
   // 备份与还原弹窗状态
@@ -85,7 +100,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
 
   // 读取全局配置
   const loadConfig = async () => {
-    setIsLoading(true);
+    if (!cachedConfig) {
+      setIsLoading(true);
+    }
     try {
       const cfg = await configApi.getConfig();
       setConfig(cfg);
