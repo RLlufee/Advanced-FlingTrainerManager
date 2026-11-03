@@ -33,8 +33,7 @@ export const PaperContainer: React.FC<PaperContainerProps> = ({
           },
         },
       }}
-      data-paper-card="true"
-      className={`wallpaper-card-target ${className}`}
+      className={className}
       {...props}
     >
       {children}

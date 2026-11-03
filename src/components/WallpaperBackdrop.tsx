@@ -13,7 +13,14 @@ export const WallpaperBackdrop: React.FC = () => {
     wallpaperLayers,
     markWallpaperLoadFailed,
   } = useTheme();
-  const [source, setSource] = useState("");
+  const [source, setSource] = useState<string>(() => {
+    if (!wallpaperEnabled || !activeWallpaper) return "";
+    try {
+      return convertFileSrc(activeWallpaper.image_path);
+    } catch {
+      return activeWallpaper.image_path;
+    }
+  });
   const [fallbackTried, setFallbackTried] = useState(false);
 
   useEffect(() => {

@@ -21,9 +21,9 @@ export const AppearanceTab: React.FC = () => {
   const { currentAccent, setAccentColor } = useTheme();
 
   return (
-    <PaperContainer staggerDelay={0.05} className="space-y-6">
+    <PaperContainer staggerDelay={0.05} className="max-w-4xl mx-auto space-y-4">
       {/* 头部标题与引导 */}
-      <div className="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-slate-800">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-slate-800 px-1">
         <div>
           <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <JellyIcon intensity="gentle">

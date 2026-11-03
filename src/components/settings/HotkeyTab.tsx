@@ -34,7 +34,7 @@ export const HotkeyTab: React.FC<HotkeyTabProps> = ({
   return (
     <PaperContainer className="max-w-4xl mx-auto space-y-4">
       {/* 卡片 1：🛡️ 管理员提权策略 */}
-      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 transition-all">
+      <PaperCard className="bg-white dark:bg-[#131c31] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3.5">
             <JellyIcon intensity="bouncy">

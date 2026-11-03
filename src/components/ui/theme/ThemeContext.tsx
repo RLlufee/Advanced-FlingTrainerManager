@@ -181,28 +181,95 @@ export const DEFAULT_WALLPAPER_LAYERS: WallpaperLayersConfig = {
 const clampNumber = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
 
+export const THEME_CACHE_KEY = "fling_theme_cache_v1";
+
+export const getCachedThemeSnapshot = (): Partial<ThemeSettings> | null => {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) return null;
+    const raw = localStorage.getItem(THEME_CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+export const saveCachedThemeSnapshot = (theme: Partial<ThemeSettings>) => {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) return;
+    const existing = getCachedThemeSnapshot() || {};
+    const merged = { ...existing, ...theme };
+    localStorage.setItem(THEME_CACHE_KEY, JSON.stringify(merged));
+  } catch {
+    // 忽略异常
+  }
+};
+
+// 预先同步 DOM 样式，0ms 彻底消除启动闪烁 (Anti-FOUC)
+if (typeof document !== "undefined") {
+  try {
+    const cached = getCachedThemeSnapshot();
+    if (cached) {
+      const root = document.documentElement;
+      const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
+      const isDark = cached.color_mode === "dark" || (cached.color_mode !== "light" && prefersDark);
+      root.classList.toggle("dark", isDark);
+      root.setAttribute("data-theme", isDark ? "dark" : "light");
+      root.setAttribute("data-color-mode", cached.color_mode || "system");
+      root.style.colorScheme = isDark ? "dark" : "light";
+
+      const accent = getActiveAccentConfig(cached.accent_color || "cyan", cached.custom_accent_hex || null);
+      applyAccentToDom(accent);
+      applyAtmosphereToDom(accent, isDark, cached.gradient_background ?? true);
+
+      if (cached.wallpaper_enabled && cached.active_wallpaper_id) {
+        root.dataset.wallpaperActive = "true";
+      }
+      if (cached.wallpaper_layers) {
+        root.dataset.wpSidebar = String(cached.wallpaper_layers.sidebar ?? true);
+        root.dataset.wpContent = String(cached.wallpaper_layers.content ?? true);
+        root.dataset.wpCards = String(cached.wallpaper_layers.cards ?? false);
+        root.dataset.wpTitlebar = String(cached.wallpaper_layers.titlebar ?? false);
+        root.dataset.wpModals = String(cached.wallpaper_layers.modals ?? false);
+        root.style.setProperty("--app-wp-card-opacity", `${cached.wallpaper_layers.card_opacity ?? 80}%`);
+        root.style.setProperty("--app-wp-sidebar-opacity", `${cached.wallpaper_layers.sidebar_opacity ?? 75}%`);
+        root.style.setProperty("--app-wp-blur", `${cached.wallpaper_layers.backdrop_blur ?? 12}px`);
+      }
+      if (typeof cached.wallpaper_surface_transparency === "number") {
+        root.style.setProperty("--app-wallpaper-surface-transparency", `${cached.wallpaper_surface_transparency}%`);
+      }
+    }
+  } catch {
+    // 静默降级
+  }
+}
+
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const initialCache = useMemo(() => getCachedThemeSnapshot(), []);
+
   // 界面深浅模式（默认 "system" 跟随 Windows 系统）
-  const [colorMode, setColorModeState] = useState<ColorMode>("system");
-  const [gradientBackground, setGradientBackgroundState] = useState(true);
-  const [wallpaperEnabled, setWallpaperEnabledState] = useState<boolean>(true);
-  const [wallpaperImages, setWallpaperImages] = useState<WallpaperSavedImage[]>([]);
-  const [wallpaperLayers, setWallpaperLayersState] = useState<WallpaperLayersConfig>(DEFAULT_WALLPAPER_LAYERS);
-  const wallpaperImagesRef = useRef<WallpaperSavedImage[]>([]);
-  const [activeWallpaperId, setActiveWallpaperId] = useState<string | null>(null);
-  const [wallpaperOpacity, setWallpaperOpacityState] = useState(65);
-  const [wallpaperBlur, setWallpaperBlurState] = useState(0);
-  const [wallpaperFit, setWallpaperFitState] = useState<WallpaperFit>("cover");
+  const [colorMode, setColorModeState] = useState<ColorMode>(() => (initialCache?.color_mode as ColorMode) || "system");
+  const [gradientBackground, setGradientBackgroundState] = useState<boolean>(() => initialCache?.gradient_background ?? true);
+  const [wallpaperEnabled, setWallpaperEnabledState] = useState<boolean>(() => initialCache?.wallpaper_enabled ?? true);
+  const [wallpaperImages, setWallpaperImages] = useState<WallpaperSavedImage[]>(() => initialCache?.wallpaper_images || []);
+  const [wallpaperLayers, setWallpaperLayersState] = useState<WallpaperLayersConfig>(() => ({
+    ...DEFAULT_WALLPAPER_LAYERS,
+    ...(initialCache?.wallpaper_layers || {}),
+  }));
+  const wallpaperImagesRef = useRef<WallpaperSavedImage[]>(initialCache?.wallpaper_images || []);
+  const [activeWallpaperId, setActiveWallpaperId] = useState<string | null>(() => initialCache?.active_wallpaper_id ?? null);
+  const [wallpaperOpacity, setWallpaperOpacityState] = useState(() => initialCache?.wallpaper_opacity ?? 65);
+  const [wallpaperBlur, setWallpaperBlurState] = useState(() => initialCache?.wallpaper_blur ?? 0);
+  const [wallpaperFit, setWallpaperFitState] = useState<WallpaperFit>(() => (initialCache?.wallpaper_fit as WallpaperFit) || "cover");
   const [wallpaperSurfaceTransparency, setWallpaperSurfaceTransparencyState] =
-    useState(20);
+    useState(() => initialCache?.wallpaper_surface_transparency ?? 20);
   const [isWallpaperLoadFailed, setIsWallpaperLoadFailed] = useState(false);
   const [systemPrefersDark, setSystemPrefersDark] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
   });
 
-  const [accentColor, setAccentColorState] = useState<string>("cyan");
-  const [customHex, setCustomHexState] = useState<string>("#06b6d4");
+  const [accentColor, setAccentColorState] = useState<string>(() => initialCache?.accent_color || "cyan");
+  const [customHex, setCustomHexState] = useState<string>(() => initialCache?.custom_accent_hex || "#06b6d4");
 
   // 监听系统深色模式偏好实时变化
   useEffect(() => {
@@ -242,12 +309,22 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [isDark, colorMode]);
 
   // 莫奈三级动态取色状态
-  const [dynamicSource, setDynamicSourceState] = useState<DynamicColorSource>("windows");
+  const [dynamicSource, setDynamicSourceState] = useState<DynamicColorSource>(
+    () => (initialCache?.dynamic_source as DynamicColorSource) || "windows"
+  );
   const [windowsAccentHex, setWindowsAccentHex] = useState<string>("#0078d4");
-  const [dynamicSeedHex, setDynamicSeedHex] = useState<string | null>(null);
-  const [monetSavedImages, setMonetSavedImages] = useState<MonetSavedImage[]>([]);
-  const [activeMonetImageId, setActiveMonetImageId] = useState<string | null>(null);
-  const [gameAdaptiveAccent, setGameAdaptiveAccentState] = useState<boolean>(false);
+  const [dynamicSeedHex, setDynamicSeedHex] = useState<string | null>(
+    () => initialCache?.dynamic_seed_hex || null
+  );
+  const [monetSavedImages, setMonetSavedImages] = useState<MonetSavedImage[]>(
+    () => initialCache?.monet_saved_images || []
+  );
+  const [activeMonetImageId, setActiveMonetImageId] = useState<string | null>(
+    () => initialCache?.active_monet_image_id || null
+  );
+  const [gameAdaptiveAccent, setGameAdaptiveAccentState] = useState<boolean>(
+    () => initialCache?.game_adaptive_accent ?? false
+  );
   const [ephemeralGameAccent, setEphemeralGameAccent] =
     useState<EphemeralGameAccentInfo | null>(null);
   const [isExtractingMonet, setIsExtractingMonet] = useState<boolean>(false);
@@ -356,6 +433,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // 2. 防丢失合并式防抖持久化落盘（支持同一帧内连续多次局部字段更新而不互相覆盖）
   const persistTheme = useCallback((patch: Partial<ThemeSettings>) => {
+    saveCachedThemeSnapshot(patch);
     pendingPatchRef.current = {
       ...pendingPatchRef.current,
       ...patch,
@@ -421,6 +499,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         configRef.current = cfg;
         const t = cfg.theme;
         if (t) {
+          saveCachedThemeSnapshot(t);
           if (t.color_mode === "light" || t.color_mode === "dark" || t.color_mode === "system") {
             setColorModeState(t.color_mode);
           }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+
 import {
   configApi,
   AppConfig,
@@ -8,6 +9,7 @@ import {
   NetworkTestResult,
   StorageStats,
 } from "../../services/configApi";
+
 import { trainerApi } from "../../services/trainerApi";
 import { SettingsSidebar, SettingsTab } from "./SettingsSidebar";
 import { AppearanceTab } from "./AppearanceTab";
@@ -15,6 +17,7 @@ import { HotkeyTab } from "./HotkeyTab";
 import { ManagementTab } from "./ManagementTab";
 import { NetworkTab } from "./NetworkTab";
 import { AnimationTab } from "./AnimationTab";
+
 import {
   ExportPresetModal,
   ImportPresetModal,
@@ -27,7 +30,7 @@ export interface SettingsViewProps {
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) => {
-  const [activeTab, setActiveTab] = useState<SettingsTab>("hotkey");
+  const [activeTab, setActiveTab] = useState<SettingsTab>("appearance");
   const [config, setConfig] = useState<AppConfig | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [toast, setToast] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
