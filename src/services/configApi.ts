@@ -44,6 +44,7 @@ export interface AnimationSettings {
   paper_flutter: boolean; // 3D 纸片轻盈悬浮飘落入场动效 (默认 true)
   magnetic_tabs: boolean; // 磁吸跟手与流体滑动药丸 (默认 true)
   typewriter_speed: number; // 打字机提示打字间隔毫秒数 (0 = 瞬间完成，默认 18ms)
+  tab_transition_duration: number; // 顶层主标签页切换过渡时长毫秒数 (0 = 瞬间完成，默认 180ms)
 }
 
 export type AccentColorKey =

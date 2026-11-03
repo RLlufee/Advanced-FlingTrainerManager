@@ -123,6 +123,8 @@ pub struct AnimationSettings {
     pub magnetic_tabs: bool,
     #[serde(default = "default_anim_typewriter_speed")]
     pub typewriter_speed: u64,
+    #[serde(default = "default_anim_tab_transition_duration")]
+    pub tab_transition_duration: u64,
 }
 
 pub fn default_anim_enabled() -> bool {
@@ -143,6 +145,9 @@ pub fn default_anim_magnetic_tabs() -> bool {
 pub fn default_anim_typewriter_speed() -> u64 {
     18
 }
+pub fn default_anim_tab_transition_duration() -> u64 {
+    180
+}
 
 impl Default for AnimationSettings {
     fn default() -> Self {
@@ -153,6 +158,7 @@ impl Default for AnimationSettings {
             paper_flutter: default_anim_paper_flutter(),
             magnetic_tabs: default_anim_magnetic_tabs(),
             typewriter_speed: default_anim_typewriter_speed(),
+            tab_transition_duration: default_anim_tab_transition_duration(),
         }
     }
 }

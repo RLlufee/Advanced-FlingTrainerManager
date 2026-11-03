@@ -8,6 +8,7 @@ export const DEFAULT_ANIMATION_SETTINGS: AnimationSettings = {
   paper_flutter: true,
   magnetic_tabs: true,
   typewriter_speed: 18,
+  tab_transition_duration: 180,
 };
 
 export interface AnimationContextValue {
@@ -21,6 +22,7 @@ export interface AnimationContextValue {
   isPaperFlutterEnabled: boolean;
   isMagneticEnabled: boolean;
   effectiveTypewriterSpeed: number;
+  effectiveTabTransitionDuration: number;
 }
 
 const AnimationContext = createContext<AnimationContextValue>({
@@ -33,6 +35,7 @@ const AnimationContext = createContext<AnimationContextValue>({
   isPaperFlutterEnabled: true,
   isMagneticEnabled: true,
   effectiveTypewriterSpeed: 18,
+  effectiveTabTransitionDuration: 0.18,
 });
 
 export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -86,6 +89,11 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const isPaperFlutterEnabled = isAnimEnabled && settings.paper_flutter;
   const isMagneticEnabled = isAnimEnabled && settings.magnetic_tabs;
   const effectiveTypewriterSpeed = isAnimEnabled ? settings.typewriter_speed : 0;
+  const rawTabDuration = settings.tab_transition_duration ?? 180;
+  const effectiveTabTransitionDuration =
+    !isAnimEnabled || rawTabDuration <= 0
+      ? 0
+      : (rawTabDuration / 1000) / effectiveSpeed;
 
   return (
     <AnimationContext.Provider
@@ -99,6 +107,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         isPaperFlutterEnabled,
         isMagneticEnabled,
         effectiveTypewriterSpeed,
+        effectiveTabTransitionDuration,
       }}
     >
       {children}

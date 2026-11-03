@@ -11,9 +11,7 @@ import { WallpaperBackdrop } from "./components/WallpaperBackdrop";
 
 const MainWorkspace: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>("launch"); // 默认首发展示启动管理页
-  const { isAnimEnabled, effectiveSpeed } = useAnimationConfig();
-
-  const transitionDuration = isAnimEnabled ? 0.18 / effectiveSpeed : 0;
+  const { effectiveTabTransitionDuration } = useAnimationConfig();
 
   return (
     <div className="app-canvas relative h-screen w-screen flex flex-col overflow-hidden border border-slate-300 dark:border-slate-800 shadow-2xl font-sans transition-colors duration-300">
@@ -34,7 +32,7 @@ const MainWorkspace: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.996 }}
             transition={{
-              duration: transitionDuration,
+              duration: effectiveTabTransitionDuration,
               ease: [0.22, 1, 0.36, 1],
             }}
             className="flex-1 flex overflow-hidden w-full h-full"
