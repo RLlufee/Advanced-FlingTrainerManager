@@ -19,7 +19,7 @@ export const DownloadHeader: React.FC<DownloadHeaderProps> = ({
   onRefresh,
 }) => {
   return (
-    <div className="h-14 px-6 bg-white dark:bg-[#0f172a] border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between shrink-0 shadow-xs select-none transition-colors duration-200">
+    <div className="wallpaper-shell h-14 px-6 bg-white dark:bg-[#0f172a] border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between shrink-0 shadow-xs select-none transition-colors duration-200">
       <div className="flex items-center gap-3 flex-1 max-w-md">
         <div className="relative w-full">
           <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-3" />

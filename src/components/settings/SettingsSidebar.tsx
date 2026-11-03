@@ -74,7 +74,7 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   onTabChange,
 }) => {
   return (
-    <aside className="w-52 bg-white dark:bg-[#0f172a] border-r border-slate-200/90 dark:border-slate-800 flex flex-col shrink-0 select-none shadow-[2px_0_8px_rgba(0,0,0,0.02)] p-3 transition-colors duration-200">
+    <aside className="wallpaper-shell w-52 bg-white dark:bg-[#0f172a] border-r border-slate-200/90 dark:border-slate-800 flex flex-col shrink-0 select-none shadow-[2px_0_8px_rgba(0,0,0,0.02)] p-3 transition-colors duration-200">
       <div className="space-y-1 relative">
         {SETTINGS_TABS.map((tab) => {
           const IconComponent = tab.icon;

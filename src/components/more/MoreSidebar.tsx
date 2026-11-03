@@ -74,7 +74,7 @@ export const MoreSidebar: React.FC<MoreSidebarProps> = ({
   onTabChange,
 }) => {
   return (
-    <aside className="w-56 bg-white dark:bg-[#0f172a] border-r border-slate-200/90 dark:border-slate-800 flex flex-col shrink-0 p-4 space-y-1.5 shadow-[2px_0_8px_rgba(0,0,0,0.02)] select-none transition-colors duration-200">
+    <aside className="wallpaper-shell w-56 bg-white dark:bg-[#0f172a] border-r border-slate-200/90 dark:border-slate-800 flex flex-col shrink-0 p-4 space-y-1.5 shadow-[2px_0_8px_rgba(0,0,0,0.02)] select-none transition-colors duration-200">
       <div className="px-3 py-2 mb-1 flex items-center gap-2 text-slate-800 dark:text-slate-100 font-bold text-sm">
         <JellyIcon intensity="medium">
           <Boxes className="w-4 h-4 text-primary" />

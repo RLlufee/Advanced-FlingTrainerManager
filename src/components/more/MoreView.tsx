@@ -153,7 +153,7 @@ export const MoreView: React.FC<MoreViewProps> = ({ isActive = true }) => {
       <MoreSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* 右侧工作区视口 */}
-      <main className="flex-1 overflow-y-auto p-6 space-y-4">
+      <main className="wallpaper-shell flex-1 overflow-y-auto p-6 space-y-4">
         {activeTab === "memory" && (
           <MemoryTab
             memInfo={memInfo}

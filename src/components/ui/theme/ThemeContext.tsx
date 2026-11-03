@@ -19,6 +19,8 @@ import {
   DynamicColorSource,
   MonetSavedImage,
   ColorMode,
+  WallpaperSavedImage,
+  WallpaperFit,
 } from "../../../services/configApi";
 import {
   ACCENT_PRESETS,
@@ -53,6 +55,15 @@ export interface ThemeContextValue {
   isDark: boolean; // 是否处于深色模式
   gradientBackground: boolean;
 
+  // --- 自定义壁纸 ---
+  wallpaperImages: WallpaperSavedImage[];
+  activeWallpaper: WallpaperSavedImage | null;
+  wallpaperOpacity: number;
+  wallpaperBlur: number;
+  wallpaperFit: WallpaperFit;
+  wallpaperSurfaceTransparency: number;
+  isWallpaperLoadFailed: boolean;
+
   // --- 莫奈三级动态取色状态 ---
   dynamicSource: DynamicColorSource;
   windowsAccentHex: string;
@@ -66,6 +77,16 @@ export interface ThemeContextValue {
   setColorMode: (mode: ColorMode) => Promise<void>;
   toggleColorMode: () => Promise<void>;
   setGradientBackground: (enabled: boolean) => Promise<void>;
+  addWallpaperFromFiles: (files: File[]) => Promise<number>;
+  addWallpaperFromPaths: (paths: string[]) => Promise<number>;
+  selectWallpaper: (id: string) => Promise<void>;
+  removeWallpaper: (id: string) => Promise<void>;
+  clearActiveWallpaper: () => Promise<void>;
+  setWallpaperOpacity: (value: number) => Promise<void>;
+  setWallpaperBlur: (value: number) => Promise<void>;
+  setWallpaperFit: (value: WallpaperFit) => Promise<void>;
+  setWallpaperSurfaceTransparency: (value: number) => Promise<void>;
+  markWallpaperLoadFailed: () => void;
   setAccentColor: (colorId: string) => Promise<void>;
   setCustomHex: (hex: string) => Promise<void>;
   enableDynamicColor: () => Promise<void>;
@@ -138,11 +159,24 @@ function applyAtmosphereToDom(
 }
 
 const SUPPORTED_IMAGE_EXT = /\.(png|jpe?g|webp|bmp)$/i;
+const MAX_WALLPAPER_BYTES = 20 * 1024 * 1024;
+
+const clampNumber = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // 界面深浅模式（默认 "system" 跟随 Windows 系统）
   const [colorMode, setColorModeState] = useState<ColorMode>("system");
   const [gradientBackground, setGradientBackgroundState] = useState(true);
+  const [wallpaperImages, setWallpaperImages] = useState<WallpaperSavedImage[]>([]);
+  const wallpaperImagesRef = useRef<WallpaperSavedImage[]>([]);
+  const [activeWallpaperId, setActiveWallpaperId] = useState<string | null>(null);
+  const [wallpaperOpacity, setWallpaperOpacityState] = useState(65);
+  const [wallpaperBlur, setWallpaperBlurState] = useState(0);
+  const [wallpaperFit, setWallpaperFitState] = useState<WallpaperFit>("cover");
+  const [wallpaperSurfaceTransparency, setWallpaperSurfaceTransparencyState] =
+    useState(20);
+  const [isWallpaperLoadFailed, setIsWallpaperLoadFailed] = useState(false);
   const [systemPrefersDark, setSystemPrefersDark] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -251,6 +285,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     ephemeralGameAccent,
   ]);
 
+  const activeWallpaper = useMemo(
+    () => wallpaperImages.find((image) => image.id === activeWallpaperId) || null,
+    [activeWallpaperId, wallpaperImages]
+  );
+
   // 1. 颜色变化时 0ms 写入 DOM CSS 变量
   useEffect(() => {
     applyAccentToDom(currentAccent);
@@ -259,6 +298,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     applyAtmosphereToDom(currentAccent, isDark, gradientBackground);
   }, [currentAccent, isDark, gradientBackground]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const wallpaperIsActive = Boolean(activeWallpaper && !isWallpaperLoadFailed);
+    root.dataset.wallpaperActive = String(wallpaperIsActive);
+    root.style.setProperty(
+      "--app-wallpaper-surface-transparency",
+      `${wallpaperSurfaceTransparency}%`
+    );
+  }, [activeWallpaper, isWallpaperLoadFailed, wallpaperSurfaceTransparency]);
 
   // 2. 防丢失合并式防抖持久化落盘（支持同一帧内连续多次局部字段更新而不互相覆盖）
   const persistTheme = useCallback((patch: Partial<ThemeSettings>) => {
@@ -332,6 +381,27 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (typeof t.gradient_background === "boolean") {
             setGradientBackgroundState(t.gradient_background);
           }
+          if (Array.isArray(t.wallpaper_images)) {
+            wallpaperImagesRef.current = t.wallpaper_images;
+            setWallpaperImages(t.wallpaper_images);
+          }
+          if (t.active_wallpaper_id !== undefined) {
+            setActiveWallpaperId(t.active_wallpaper_id ?? null);
+          }
+          if (typeof t.wallpaper_opacity === "number") {
+            setWallpaperOpacityState(clampNumber(t.wallpaper_opacity, 0, 100));
+          }
+          if (typeof t.wallpaper_blur === "number") {
+            setWallpaperBlurState(clampNumber(t.wallpaper_blur, 0, 20));
+          }
+          if (t.wallpaper_fit === "cover" || t.wallpaper_fit === "contain") {
+            setWallpaperFitState(t.wallpaper_fit);
+          }
+          if (typeof t.wallpaper_surface_transparency === "number") {
+            setWallpaperSurfaceTransparencyState(
+              clampNumber(t.wallpaper_surface_transparency, 0, 50)
+            );
+          }
           if (t.accent_color) setAccentColorState(t.accent_color);
           if (t.custom_accent_hex) setCustomHexState(t.custom_accent_hex);
           if (t.dynamic_source === "windows" || t.dynamic_source === "image") {
@@ -383,6 +453,150 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     },
     [persistTheme]
   );
+
+  const setWallpaperOpacity = useCallback(
+    async (value: number) => {
+      const next = Math.round(clampNumber(value, 0, 100));
+      setWallpaperOpacityState(next);
+      persistTheme({ wallpaper_opacity: next });
+    },
+    [persistTheme]
+  );
+
+  const setWallpaperBlur = useCallback(
+    async (value: number) => {
+      const next = Math.round(clampNumber(value, 0, 20));
+      setWallpaperBlurState(next);
+      persistTheme({ wallpaper_blur: next });
+    },
+    [persistTheme]
+  );
+
+  const setWallpaperFit = useCallback(
+    async (value: WallpaperFit) => {
+      setWallpaperFitState(value);
+      persistTheme({ wallpaper_fit: value });
+    },
+    [persistTheme]
+  );
+
+  const setWallpaperSurfaceTransparency = useCallback(
+    async (value: number) => {
+      const next = Math.round(clampNumber(value, 0, 50));
+      setWallpaperSurfaceTransparencyState(next);
+      persistTheme({ wallpaper_surface_transparency: next });
+    },
+    [persistTheme]
+  );
+
+  const saveNewWallpapers = useCallback(
+    (newImages: WallpaperSavedImage[]) => {
+      if (newImages.length === 0) return;
+      const combined = [...newImages, ...wallpaperImagesRef.current];
+      wallpaperImagesRef.current = combined;
+      setWallpaperImages(combined);
+      setActiveWallpaperId(newImages[0].id);
+      setIsWallpaperLoadFailed(false);
+      persistTheme({ wallpaper_images: combined, active_wallpaper_id: newImages[0].id });
+    },
+    [persistTheme]
+  );
+
+  const addWallpaperFromFiles = useCallback(
+    async (files: File[]): Promise<number> => {
+      const candidates = files.filter(
+        (file) => file.size <= MAX_WALLPAPER_BYTES && SUPPORTED_IMAGE_EXT.test(file.name)
+      );
+      const saved: WallpaperSavedImage[] = [];
+
+      for (const file of candidates) {
+        try {
+          const id = `wallpaper_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+          const dataUrl = await readFileToDataUrl(file);
+          const imagePath = await configApi.saveWallpaperFromDataUrl(id, dataUrl);
+          saved.push({
+            id,
+            name: file.name.replace(/\.[^.]+$/, "") || "自定义壁纸",
+            image_path: imagePath,
+            added_at: new Date().toLocaleDateString("zh-CN"),
+          });
+        } catch (err) {
+          console.warn(`导入壁纸 ${file.name} 失败:`, err);
+        }
+      }
+
+      saveNewWallpapers(saved);
+      return saved.length;
+    },
+    [saveNewWallpapers]
+  );
+
+  const addWallpaperFromPaths = useCallback(
+    async (paths: string[]): Promise<number> => {
+      const candidates = paths.filter((path) => SUPPORTED_IMAGE_EXT.test(path));
+      const saved: WallpaperSavedImage[] = [];
+
+      for (const sourcePath of candidates) {
+        try {
+          const id = `wallpaper_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+          const imagePath = await configApi.importWallpaperFromPath(id, sourcePath);
+          const name =
+            sourcePath
+              .split(/[\\/]/)
+              .pop()
+              ?.replace(/\.[^.]+$/, "") || "自定义壁纸";
+          saved.push({
+            id,
+            name,
+            image_path: imagePath,
+            added_at: new Date().toLocaleDateString("zh-CN"),
+          });
+        } catch (err) {
+          console.warn(`导入壁纸路径 ${sourcePath} 失败:`, err);
+        }
+      }
+
+      saveNewWallpapers(saved);
+      return saved.length;
+    },
+    [saveNewWallpapers]
+  );
+
+  const selectWallpaper = useCallback(
+    async (id: string) => {
+      if (!wallpaperImagesRef.current.some((image) => image.id === id)) return;
+      setActiveWallpaperId(id);
+      setIsWallpaperLoadFailed(false);
+      persistTheme({ active_wallpaper_id: id });
+    },
+    [persistTheme]
+  );
+
+  const clearActiveWallpaper = useCallback(async () => {
+    setActiveWallpaperId(null);
+    setIsWallpaperLoadFailed(false);
+    persistTheme({ active_wallpaper_id: null });
+  }, [persistTheme]);
+
+  const removeWallpaper = useCallback(
+    async (id: string) => {
+      const image = wallpaperImagesRef.current.find((candidate) => candidate.id === id);
+      if (!image) return;
+      await configApi.deleteWallpaperFile(image.image_path);
+      const remaining = wallpaperImagesRef.current.filter((candidate) => candidate.id !== id);
+      wallpaperImagesRef.current = remaining;
+      const nextActiveId = activeWallpaperId === id ? null : activeWallpaperId;
+      setWallpaperImages(remaining);
+      setActiveWallpaperId(nextActiveId);
+      setIsWallpaperLoadFailed(false);
+      persistTheme({ wallpaper_images: remaining, active_wallpaper_id: nextActiveId });
+    },
+    [activeWallpaperId, persistTheme]
+  );
+
+  const markWallpaperLoadFailed = useCallback(() => {
+    setIsWallpaperLoadFailed(true);
+  }, []);
 
   // 4. 切换固定预设主题色
   const setAccentColor = useCallback(
@@ -730,10 +944,27 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     colorMode,
     resolvedColorMode,
     isDark,
+    wallpaperImages,
+    activeWallpaper,
+    wallpaperOpacity,
+    wallpaperBlur,
+    wallpaperFit,
+    wallpaperSurfaceTransparency,
+    isWallpaperLoadFailed,
     setColorMode,
     toggleColorMode,
     gradientBackground,
     setGradientBackground,
+    addWallpaperFromFiles,
+    addWallpaperFromPaths,
+    selectWallpaper,
+    removeWallpaper,
+    clearActiveWallpaper,
+    setWallpaperOpacity,
+    setWallpaperBlur,
+    setWallpaperFit,
+    setWallpaperSurfaceTransparency,
+    markWallpaperLoadFailed,
     dynamicSource,
     windowsAccentHex,
     monetSavedImages,

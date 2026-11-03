@@ -32,7 +32,7 @@ export const DownloadSidebar: React.FC<DownloadSidebarProps> = ({
   onPageChange,
 }) => {
   return (
-    <div className="w-[360px] border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] flex flex-col shrink-0 select-none transition-colors duration-200">
+    <div className="wallpaper-shell w-[360px] border-r border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#0f172a] flex flex-col shrink-0 select-none transition-colors duration-200">
       <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
         <span>{searchQuery ? `搜索结果: "${searchQuery}"` : "官网最新修改器"}</span>
         <span>共 {trainers.length} 个条目</span>

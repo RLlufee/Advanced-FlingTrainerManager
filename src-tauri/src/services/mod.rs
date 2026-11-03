@@ -10,3 +10,4 @@ pub mod memory_optimizer;
 pub mod hardware_inspector;
 pub mod system_cleaner;
 pub mod monet;
+pub mod wallpaper;

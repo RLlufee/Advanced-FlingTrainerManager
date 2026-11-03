@@ -56,7 +56,7 @@ export const LaunchSidebar: React.FC<LaunchSidebarProps> = ({
   onNavigateToDownload,
 }) => {
   return (
-    <aside className="w-72 bg-white dark:bg-[#0f172a] border-r border-slate-200/90 dark:border-slate-800 flex flex-col shrink-0 select-none shadow-[2px_0_8px_rgba(0,0,0,0.02)] transition-colors duration-200">
+    <aside className="wallpaper-shell w-72 bg-white dark:bg-[#0f172a] border-r border-slate-200/90 dark:border-slate-800 flex flex-col shrink-0 select-none shadow-[2px_0_8px_rgba(0,0,0,0.02)] transition-colors duration-200">
       {/* 顶部搜索过滤与工具栏 */}
       <div className="p-3 border-b border-slate-100 dark:border-slate-800 space-y-2">
         <div className="relative">

@@ -354,7 +354,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
       <SettingsSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* 主体设置面板 */}
-      <main className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
+      <main className="wallpaper-shell flex-1 overflow-y-auto px-8 py-6 space-y-6">
         {activeTab === "appearance" && <AppearanceTab />}
 
         {activeTab === "hotkey" && hotkey && (

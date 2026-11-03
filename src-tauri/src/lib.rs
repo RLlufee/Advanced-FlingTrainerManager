@@ -237,6 +237,21 @@ async fn read_image_as_data_url(source: String) -> Result<String, String> {
     services::monet::read_image_as_data_url(&source).await
 }
 
+#[tauri::command]
+fn save_custom_wallpaper(id: String, data_url: String) -> Result<String, String> {
+    services::wallpaper::save_custom_wallpaper(&id, &data_url)
+}
+
+#[tauri::command]
+fn import_custom_wallpaper(id: String, source_path: String) -> Result<String, String> {
+    services::wallpaper::import_custom_wallpaper(&id, &source_path)
+}
+
+#[tauri::command]
+fn delete_custom_wallpaper(image_path: String) -> Result<(), String> {
+    services::wallpaper::delete_custom_wallpaper(&image_path)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -282,7 +297,10 @@ pub fn run() {
             get_windows_accent_color,
             save_monet_wallpaper_thumbnail,
             delete_monet_wallpaper_file,
-            read_image_as_data_url
+            read_image_as_data_url,
+            save_custom_wallpaper,
+            import_custom_wallpaper,
+            delete_custom_wallpaper
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -175,6 +175,22 @@ html[data-gradient-background="true"] .app-canvas {
     linear-gradient(138deg, var(--app-gradient-start) 0%, var(--app-gradient-mid) 48%, var(--app-gradient-end) 100%);
 }
 
+html[data-wallpaper-active="true"] .app-canvas {
+  background-image: none;
+}
+
+html[data-wallpaper-active="true"] .wallpaper-shell {
+  background-color: color-mix(
+    in srgb,
+    var(--app-surface-card) calc(100% - var(--app-wallpaper-surface-transparency, 20%)),
+    transparent
+  ) !important;
+}
+
+.app-wallpaper-layer img {
+  transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
 /* 强调色实用工具类 */
 .bg-primary {
   background-color: var(--color-primary);

@@ -157,6 +157,18 @@ fn default_color_mode() -> String {
 fn default_gradient_background() -> bool {
     true
 }
+fn default_wallpaper_opacity() -> u16 {
+    65
+}
+fn default_wallpaper_blur() -> u16 {
+    0
+}
+fn default_wallpaper_fit() -> String {
+    "cover".to_string()
+}
+fn default_wallpaper_surface_transparency() -> u16 {
+    20
+}
 fn default_dynamic_source() -> String {
     "windows".to_string()
 }
@@ -172,6 +184,15 @@ pub struct MonetSavedImage {
     pub palette: Vec<String>,
     /// 用户在该图片下当前选定的色号
     pub selected_hex: String,
+    pub added_at: String,
+}
+
+/// 用户导入并保存在应用数据目录中的自定义界面壁纸
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WallpaperSavedImage {
+    pub id: String,
+    pub name: String,
+    pub image_path: String,
     pub added_at: String,
 }
 
@@ -201,6 +222,18 @@ pub struct ThemeSettings {
     /// 高级选项：启动页选中修改器时跟随游戏封面动态变色
     #[serde(default)]
     pub game_adaptive_accent: bool,
+    #[serde(default)]
+    pub wallpaper_images: Vec<WallpaperSavedImage>,
+    #[serde(default)]
+    pub active_wallpaper_id: Option<String>,
+    #[serde(default = "default_wallpaper_opacity")]
+    pub wallpaper_opacity: u16,
+    #[serde(default = "default_wallpaper_blur")]
+    pub wallpaper_blur: u16,
+    #[serde(default = "default_wallpaper_fit")]
+    pub wallpaper_fit: String,
+    #[serde(default = "default_wallpaper_surface_transparency")]
+    pub wallpaper_surface_transparency: u16,
 }
 
 impl Default for ThemeSettings {
@@ -215,6 +248,12 @@ impl Default for ThemeSettings {
             active_monet_image_id: None,
             dynamic_seed_hex: None,
             game_adaptive_accent: false,
+            wallpaper_images: Vec::new(),
+            active_wallpaper_id: None,
+            wallpaper_opacity: default_wallpaper_opacity(),
+            wallpaper_blur: default_wallpaper_blur(),
+            wallpaper_fit: default_wallpaper_fit(),
+            wallpaper_surface_transparency: default_wallpaper_surface_transparency(),
         }
     }
 }
@@ -663,6 +702,26 @@ pub fn apply_github_mirror(github_url: &str) -> String {
             format!("https://mirror.ghproxy.com/{}", github_url)
         }
         _ => github_url.to_string(),
+    }
+}
+
+#[cfg(test)]
+mod wallpaper_config_tests {
+    use super::ThemeSettings;
+
+    #[test]
+    fn older_theme_config_gets_wallpaper_defaults() {
+        let theme: ThemeSettings = serde_json::from_str(
+            r#"{"accent_color":"cyan","color_mode":"system","gradient_background":true}"#,
+        )
+        .expect("旧版主题配置应能继续读取");
+
+        assert!(theme.wallpaper_images.is_empty());
+        assert_eq!(theme.active_wallpaper_id, None);
+        assert_eq!(theme.wallpaper_opacity, 65);
+        assert_eq!(theme.wallpaper_blur, 0);
+        assert_eq!(theme.wallpaper_fit, "cover");
+        assert_eq!(theme.wallpaper_surface_transparency, 20);
     }
 }
 

@@ -72,6 +72,15 @@ export interface MonetSavedImage {
   added_at: string;
 }
 
+export interface WallpaperSavedImage {
+  id: string;
+  name: string;
+  image_path: string;
+  added_at: string;
+}
+
+export type WallpaperFit = "cover" | "contain";
+
 export type ColorMode = "system" | "light" | "dark";
 
 export interface ThemeSettings {
@@ -90,6 +99,18 @@ export interface ThemeSettings {
   dynamic_seed_hex?: string | null;
   /** 高级选项：启动页选中修改器时跟随游戏封面动态变色 */
   game_adaptive_accent?: boolean;
+  /** 管理器自定义壁纸图库 */
+  wallpaper_images?: WallpaperSavedImage[];
+  /** 当前应用的自定义壁纸 ID */
+  active_wallpaper_id?: string | null;
+  /** 壁纸显现度，0-100 */
+  wallpaper_opacity?: number;
+  /** 壁纸模糊半径，0-20px */
+  wallpaper_blur?: number;
+  /** 壁纸填充/适应方式 */
+  wallpaper_fit?: WallpaperFit;
+  /** 侧栏与页面底层透光度，0-50 */
+  wallpaper_surface_transparency?: number;
 }
 
 export interface AppConfig {
@@ -183,6 +204,18 @@ export const configApi = {
   // 删除本地持久化的莫奈取色缩略图文件
   async deleteMonetWallpaperFile(imagePath: string): Promise<void> {
     return await invoke<void>("delete_monet_wallpaper_file", { imagePath });
+  },
+
+  async saveWallpaperFromDataUrl(id: string, dataUrl: string): Promise<string> {
+    return await invoke<string>("save_custom_wallpaper", { id, dataUrl });
+  },
+
+  async importWallpaperFromPath(id: string, sourcePath: string): Promise<string> {
+    return await invoke<string>("import_custom_wallpaper", { id, sourcePath });
+  },
+
+  async deleteWallpaperFile(imagePath: string): Promise<void> {
+    return await invoke<void>("delete_custom_wallpaper", { imagePath });
   },
 
   // 通过后端读取本地或远程图片为 Data URL（规避 Canvas 跨域污染并复用代理配置）

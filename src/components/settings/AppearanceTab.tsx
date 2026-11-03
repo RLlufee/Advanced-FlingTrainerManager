@@ -37,6 +37,19 @@ import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
 import { FluidSlider } from "../ui/motion/FluidSlider";
 import { normalizeHex } from "../ui/theme/themePresets";
 import { configApi } from "../../services/configApi";
+import { WallpaperSection } from "./WallpaperSection";
+
+const isPhysicalPointInside = (
+  element: HTMLElement | null,
+  position: { x: number; y: number }
+) => {
+  if (!element || element.offsetParent === null) return false;
+  const rect = element.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  const x = position.x / ratio;
+  const y = position.y / ratio;
+  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+};
 
 /**
  * 莫奈画廊持久化缩略图组件（优先走 Tauri asset 协议，失败时回退后端 DataURL 读取）
@@ -136,7 +149,7 @@ export const AppearanceTab: React.FC = () => {
     }
   }, [isDynamic]);
 
-  // 接入 Tauri v2 原生系统文件拖放监听（仅当本面板处于可见激活态且动态抽屉展开时接管）
+  // 将 Tauri 原生拖放精确路由到当前指针所在的莫奈投放区，避免和壁纸库重复导入。
   useEffect(() => {
     if (!isDynamic || advancedCollapsed) return;
 
@@ -146,18 +159,16 @@ export const AppearanceTab: React.FC = () => {
     const setupTauriDrop = async () => {
       try {
         const fn = await getCurrentWebview().onDragDropEvent(async (event) => {
-          // Keep-alive 保护：如果当前 Tab 被 display: none 隐藏，则不响应拖放
-          if (!dropzoneRef.current || dropzoneRef.current.offsetParent === null) {
+          const payload = event.payload;
+          if (payload.type === "leave") {
+            setIsDraggingOver(false);
             return;
           }
-          const payload = event.payload;
-          if (payload.type === "enter" || payload.type === "over") {
-            setIsDraggingOver(true);
-          } else if (payload.type === "leave") {
+          const isTargeted = isPhysicalPointInside(dropzoneRef.current, payload.position);
+          setIsDraggingOver(isTargeted && payload.type !== "drop");
+          if (payload.type === "drop") {
             setIsDraggingOver(false);
-          } else if (payload.type === "drop") {
-            setIsDraggingOver(false);
-            if (payload.paths && payload.paths.length > 0) {
+            if (isTargeted && payload.paths.length > 0) {
               await addMonetImagesFromPaths(payload.paths);
             }
           }
@@ -350,7 +361,7 @@ export const AppearanceTab: React.FC = () => {
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
               随 Windows 系统夜间/深浅主题自动无缝切换，当前检测为{" "}
-              <strong className="text-slate-700 dark:text-slate-300">
+            <strong className="text-slate-700 dark:text-slate-300">
                 {resolvedColorMode === "dark" ? "深色夜空" : "明亮浅色"}
               </strong>
             </p>
@@ -504,6 +515,8 @@ export const AppearanceTab: React.FC = () => {
           </button>
         </div>
       </PaperCard>
+
+      <WallpaperSection />
 
       {/* 卡片 1：主题强调色矩阵调色盘 + 莫奈动态取色 */}
       <PaperCard className="bg-white dark:bg-[#131c31] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs p-5 space-y-4">
@@ -1131,12 +1144,12 @@ export const AppearanceTab: React.FC = () => {
         </div>
       </PaperCard>
 
-      {/* 卡片 3：个性化进阶规划路线 */}
+      {/* 已上线的个性化外观能力 */}
       <PaperCard className="bg-white dark:bg-[#131c31] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs p-5 space-y-3">
         <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-          <span>个性化皮肤未来蓝图</span>
-          <span className="text-[10px] font-mono text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/80 border border-purple-200 dark:border-purple-800 px-2 py-0.5 rounded-full font-medium">
-            后续规划
+          <span>个性化外观能力</span>
+          <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 rounded-full font-medium">
+            已上线
           </span>
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -1149,7 +1162,7 @@ export const AppearanceTab: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className="font-bold text-slate-800 dark:text-slate-200">深浅外观模式切换</span>
                 <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-mono">
-                  已上线实装
+                  已上线
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1157,23 +1170,19 @@ export const AppearanceTab: React.FC = () => {
               </p>
             </div>
           </div>
-
-          {/* 自定义全局背景壁纸与毛玻璃 */}
-          <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 flex items-start gap-3 opacity-80">
+          <div className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 flex items-start gap-3">
             <div className="p-2 rounded-lg bg-cyan-50 dark:bg-cyan-950/80 text-cyan-600 dark:text-cyan-400 shrink-0 border border-cyan-200/60 dark:border-cyan-800">
               <ImageIcon className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-800 dark:text-slate-200">
-                  全局背景壁纸铺底与毛玻璃 (Mica)
-                </span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-mono">
-                  规划中
+                <span className="font-bold text-slate-800 dark:text-slate-200">自定义壁纸图库与界面透光</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-mono">
+                  已上线
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                支持将画廊壁纸直接铺设为主界面半透明底图，并调节磨砂毛玻璃虚化模糊深度。
+                可在多张壁纸间切换，并调节图片显现度、模糊和界面背景透光度。
               </p>
             </div>
           </div>
