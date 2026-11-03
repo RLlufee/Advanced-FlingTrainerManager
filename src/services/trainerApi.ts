@@ -174,4 +174,6 @@ export interface TrainerUpdateInfo {
   current_game_version: string;
   latest_game_version: string;
   latest_trainer?: Trainer | null;
+  check_status?: string | null;
+  error_message?: string | null;
 }

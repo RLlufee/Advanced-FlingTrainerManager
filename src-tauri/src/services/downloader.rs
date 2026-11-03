@@ -37,8 +37,23 @@ pub async fn download_and_install_trainer<R: Runtime>(
 
     let download_dir = storage::get_download_dir();
     let display_name = trainer.chinese_name.as_deref().unwrap_or(&trainer.name);
-    let safe_folder_name = sanitize_game_folder_name(display_name);
-    let target_dir = download_dir.join(&safe_folder_name);
+    let mut safe_folder_name = sanitize_game_folder_name(display_name);
+    let mut target_dir = download_dir.join(&safe_folder_name);
+
+    if target_dir.exists() {
+        let existing_json = target_dir.join("trainer.json");
+        if existing_json.exists() {
+            if let Ok(content) = fs::read_to_string(&existing_json) {
+                if let Ok(rec) = serde_json::from_str::<InstalledTrainerRecord>(&content) {
+                    if rec.id != trainer.id && rec.name != trainer.name {
+                        // 发生目录碰撞，使用带 ID 的安全后缀
+                        safe_folder_name = format!("{}_{}", safe_folder_name, &trainer.id);
+                        target_dir = download_dir.join(&safe_folder_name);
+                    }
+                }
+            }
+        }
+    }
     let _ = fs::create_dir_all(&target_dir);
 
     let temp_file_path = target_dir.join("download.tmp");
@@ -405,36 +420,41 @@ pub async fn check_trainers_update() -> Result<Vec<TrainerUpdateInfo>, String> {
     let mut results = Vec::new();
 
     for item in installed {
-        // 请求风灵月影官网该修改器的最新详情
-        let latest_opt = scraper::get_trainer_detail_ext(&item.id, true).await.ok();
+        // 请求风灵月影官网该修改器的最新详情，明确区分网络/解析失败与版本状态
+        match scraper::get_trainer_detail_ext(&item.id, true).await {
+            Ok(latest) => {
+                let version_changed = item.version.trim() != latest.version.trim();
+                let game_ver_changed = !latest.game_version.trim().is_empty()
+                    && item.game_version.trim() != latest.game_version.trim();
+                let options_added = latest.options.len() > item.options.len();
 
-        if let Some(latest) = latest_opt {
-            let version_changed = item.version.trim() != latest.version.trim();
-            let game_ver_changed = !latest.game_version.trim().is_empty()
-                && item.game_version.trim() != latest.game_version.trim();
-            let options_added = latest.options.len() > item.options.len();
+                let has_update = version_changed || game_ver_changed || options_added;
 
-            let has_update = version_changed || game_ver_changed || options_added;
-
-            results.push(TrainerUpdateInfo {
-                id: item.id.clone(),
-                has_update,
-                current_version: item.version.clone(),
-                latest_version: latest.version.clone(),
-                current_game_version: item.game_version.clone(),
-                latest_game_version: latest.game_version.clone(),
-                latest_trainer: if has_update { Some(latest) } else { None },
-            });
-        } else {
-            results.push(TrainerUpdateInfo {
-                id: item.id.clone(),
-                has_update: false,
-                current_version: item.version.clone(),
-                latest_version: item.version.clone(),
-                current_game_version: item.game_version.clone(),
-                latest_game_version: item.game_version.clone(),
-                latest_trainer: None,
-            });
+                results.push(TrainerUpdateInfo {
+                    id: item.id.clone(),
+                    has_update,
+                    current_version: item.version.clone(),
+                    latest_version: latest.version.clone(),
+                    current_game_version: item.game_version.clone(),
+                    latest_game_version: latest.game_version.clone(),
+                    latest_trainer: if has_update { Some(latest) } else { None },
+                    check_status: Some("ok".to_string()),
+                    error_message: None,
+                });
+            }
+            Err(e) => {
+                results.push(TrainerUpdateInfo {
+                    id: item.id.clone(),
+                    has_update: false,
+                    current_version: item.version.clone(),
+                    latest_version: "未知 (检查失败)".to_string(),
+                    current_game_version: item.game_version.clone(),
+                    latest_game_version: String::new(),
+                    latest_trainer: None,
+                    check_status: Some("failed".to_string()),
+                    error_message: Some(e),
+                });
+            }
         }
 
         tokio::time::sleep(tokio::time::Duration::from_millis(60)).await;

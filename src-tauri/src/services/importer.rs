@@ -1,5 +1,5 @@
 use crate::models::InstalledTrainerRecord;
-use crate::services::{game_meta, scraper, storage};
+use crate::services::{config, game_meta, scraper, storage};
 use chrono::Local;
 use futures_util::stream::{self, StreamExt};
 use regex::Regex;
@@ -162,9 +162,10 @@ async fn process_and_import_single_file(
     }
 
     // 处理 .exe 或 .zip
+    let is_extracted_zip = lower_name.ends_with(".zip");
     let target_exe: Option<PathBuf> = if lower_name.ends_with(".exe") {
         Some(file_path.clone())
-    } else if lower_name.ends_with(".zip") {
+    } else if is_extracted_zip {
         extract_single_exe_from_zip(&file_path)
     } else {
         None
@@ -201,9 +202,25 @@ async fn process_and_import_single_file(
         .or(local_chinese.clone())
         .unwrap_or_else(|| raw_game_name.clone());
 
-    // 4. 规范化目标子目录名称（清洗 Windows 非法字符）
-    let safe_folder_name = sanitize_folder_name(&display_name);
-    let game_install_dir = trainers_root.join(&safe_folder_name);
+    // 4. 规范化目标子目录名称（清洗 Windows 非法字符，并防范同名碰撞）
+    let mut safe_folder_name = sanitize_folder_name(&display_name);
+    let mut game_install_dir = trainers_root.join(&safe_folder_name);
+
+    if game_install_dir.exists() {
+        let existing_json = game_install_dir.join("trainer.json");
+        if existing_json.exists() {
+            if let Ok(content) = fs::read_to_string(&existing_json) {
+                if let Ok(rec) = serde_json::from_str::<InstalledTrainerRecord>(&content) {
+                    if rec.name != raw_game_name && rec.chinese_name.as_deref() != Some(&display_name) {
+                        // 发生目录名碰撞（例如 A:B 和 A?B 都转义成了 A B）
+                        let disambiguated = format!("{}_{}", safe_folder_name, &raw_slug);
+                        safe_folder_name = sanitize_folder_name(&disambiguated);
+                        game_install_dir = trainers_root.join(&safe_folder_name);
+                    }
+                }
+            }
+        }
+    }
 
     if !game_install_dir.exists() {
         let _ = fs::create_dir_all(&game_install_dir);
@@ -220,7 +237,18 @@ async fn process_and_import_single_file(
     if exe_to_import != target_exe_path {
         if let Err(e) = fs::copy(&exe_to_import, &target_exe_path) {
             eprintln!("复制修改器可执行程序失败: {}", e);
+            if is_extracted_zip {
+                if let Some(parent) = exe_to_import.parent() {
+                    let _ = fs::remove_dir_all(parent);
+                }
+            }
             return Ok(None);
+        }
+    }
+
+    if is_extracted_zip {
+        if let Some(parent) = exe_to_import.parent() {
+            let _ = fs::remove_dir_all(parent);
         }
     }
 
@@ -313,10 +341,13 @@ pub async fn scan_and_import_trainers(folder_path: &str) -> Result<ImportSummary
     }
 
     let trainers_root = storage::get_trainers_dir();
+    let config = config::load_config();
+    let max_depth = (config.management.scan_depth as usize).clamp(1, 10);
+    let auto_extract_zip = config.management.auto_extract_zip;
 
-    // 递归查找候选文件 (最大深度为 3 层)
+    // 递归查找候选文件 (根据设置的扫描深度与是否解压 ZIP)
     let mut candidate_files = Vec::new();
-    collect_candidate_files(&source_dir, 0, 3, &mut candidate_files);
+    collect_candidate_files(&source_dir, 0, max_depth, auto_extract_zip, &mut candidate_files);
 
     let total_scanned = candidate_files.len();
     let existing_records = storage::load_installed_records();
@@ -489,7 +520,13 @@ pub async fn enrich_all_installed_trainers() -> Result<crate::models::BatchEnric
 }
 
 /// 递归收集候选文件
-fn collect_candidate_files(dir: &Path, depth: usize, max_depth: usize, results: &mut Vec<PathBuf>) {
+fn collect_candidate_files(
+    dir: &Path,
+    depth: usize,
+    max_depth: usize,
+    include_zip: bool,
+    results: &mut Vec<PathBuf>,
+) {
     if depth > max_depth {
         return;
     }
@@ -499,7 +536,8 @@ fn collect_candidate_files(dir: &Path, depth: usize, max_depth: usize, results: 
             if path.is_file() {
                 if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
                     let ext_lower = ext.to_lowercase();
-                    if ext_lower == "exe" || ext_lower == "zip" {
+                    let matches = ext_lower == "exe" || (include_zip && ext_lower == "zip");
+                    if matches {
                         // 大小检查：50KB ~ 500MB
                         if let Ok(m) = entry.metadata() {
                             let size = m.len();
@@ -513,14 +551,14 @@ fn collect_candidate_files(dir: &Path, depth: usize, max_depth: usize, results: 
                 let folder_name = path.file_name().unwrap_or_default().to_string_lossy();
                 // 排除常见的非修改器系统文件夹
                 if !folder_name.starts_with('.') && folder_name != "node_modules" && folder_name != "target" {
-                    collect_candidate_files(&path, depth + 1, max_depth, results);
+                    collect_candidate_files(&path, depth + 1, max_depth, include_zip, results);
                 }
             }
         }
     }
 }
 
-/// 尝试从 ZIP 文件中提取第一个有效的可执行文件
+/// 尝试从 ZIP 文件中提取第一个有效的可执行文件（使用独立临时目录避免并发冲突）
 fn extract_single_exe_from_zip(zip_path: &Path) -> Option<PathBuf> {
     let file = fs::File::open(zip_path).ok()?;
     let mut archive = zip::ZipArchive::new(file).ok()?;
@@ -537,7 +575,15 @@ fn extract_single_exe_from_zip(zip_path: &Path) -> Option<PathBuf> {
 
     let idx = target_index?;
     let mut exe_file = archive.by_index(idx).ok()?;
-    let temp_dir = std::env::temp_dir().join("fling_import_tmp");
+
+    static COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+    let seq = COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let pid = std::process::id();
+    let now_nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let temp_dir = std::env::temp_dir().join(format!("fling_import_tmp_{}_{}_{}", pid, now_nanos, seq));
     let _ = fs::create_dir_all(&temp_dir);
 
     let sanitized_name = Path::new(exe_file.name())

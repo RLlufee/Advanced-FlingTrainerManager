@@ -34,10 +34,13 @@ export const CleanupTab: React.FC = () => {
     return `${(bytes / Math.pow(k, i)).toFixed(1)} ${sizes[i]}`;
   };
 
-  const handleScan = async () => {
+  const handleScan = async (preserveResult?: boolean | unknown) => {
+    const shouldPreserve = preserveResult === true;
     setIsScanning(true);
     setErrorMsg(null);
-    setRunResult(null);
+    if (!shouldPreserve) {
+      setRunResult(null);
+    }
     try {
       const res = await cleanupApi.scan();
       setScanResult(res);
@@ -77,8 +80,8 @@ export const CleanupTab: React.FC = () => {
     try {
       const res = await cleanupApi.run(selectedIds);
       setRunResult(res);
-      // 清理完毕后重新扫描刷新状态
-      await handleScan();
+      // 清理完毕后重新扫描刷新状态（保留刚完成的清理摘要横幅）
+      await handleScan(true);
     } catch (e) {
       setErrorMsg(String(e));
     } finally {
@@ -146,7 +149,7 @@ export const CleanupTab: React.FC = () => {
         <div className="flex items-center gap-2 w-full md:w-auto">
           <TypewriterTooltip text="全面重新扫描游戏着色器、DirectX 缓存及系统碎片" position="top">
             <button
-              onClick={handleScan}
+              onClick={() => handleScan()}
               disabled={isScanning || isCleaning}
               className="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-all cursor-pointer disabled:opacity-50"
             >

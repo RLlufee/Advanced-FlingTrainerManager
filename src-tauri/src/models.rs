@@ -92,6 +92,10 @@ pub struct TrainerUpdateInfo {
     pub current_game_version: String,
     pub latest_game_version: String,
     pub latest_trainer: Option<Trainer>,
+    #[serde(default)]
+    pub check_status: Option<String>,
+    #[serde(default)]
+    pub error_message: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

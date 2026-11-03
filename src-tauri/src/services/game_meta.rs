@@ -92,27 +92,69 @@ fn find_translations_db_path() -> Option<PathBuf> {
 pub fn clean_game_name(raw_name: &str) -> String {
     let mut cleaned = raw_name.trim().to_string();
 
-    // 剔除常见的 Trainer / Cheat 等后缀
-    for suffix in &[
-        "Trainer/Cheat",
-        "Trainer / Cheat",
-        "Trainer",
-        "Cheats",
-        "Cheat",
-        "Mod",
-        "v1.0",
-        "Plus",
-    ] {
-        if let Some(idx) = cleaned.rfind(suffix) {
-            if idx > 0 {
-                cleaned = cleaned[..idx].trim().to_string();
+    let suffixes = [
+        "trainer / cheat",
+        "trainer/cheat",
+        "trainer",
+        "cheats",
+        "cheat",
+        "plus",
+        "mod",
+        "fling",
+    ];
+
+    loop {
+        let trimmed = cleaned.trim_end_matches(&['-', '—', '–', ' ', '_', '/', '\\', '|', '+', ':', '.'][..]).trim();
+        if trimmed.len() != cleaned.len() {
+            cleaned = trimmed.to_string();
+            continue;
+        }
+
+        let lower = cleaned.to_lowercase();
+        let mut matched = false;
+
+        for suffix in &suffixes {
+            if lower.ends_with(suffix) {
+                let suffix_len = suffix.len();
+                let prefix_len = cleaned.len() - suffix_len;
+                if prefix_len == 0 {
+                    break;
+                }
+                let prev_char = cleaned[..prefix_len].chars().last();
+                if let Some(c) = prev_char {
+                    if c.is_whitespace() || c == '-' || c == '—' || c == '–' || c == '_' || c == '/' || c == '(' || c == '[' {
+                        cleaned = cleaned[..prefix_len].trim().to_string();
+                        matched = true;
+                        break;
+                    }
+                }
             }
+        }
+
+        if !matched {
+            static VER_RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+            let re = VER_RE.get_or_init(|| {
+                regex::Regex::new(r"(?i)[\s\-_]+(v\d+(\.\d+)*[a-z]?|\+\d+|\bplus\s+\d+)$").unwrap()
+            });
+
+            if let Some(m) = re.find(&cleaned) {
+                if m.start() > 0 {
+                    cleaned = cleaned[..m.start()].trim().to_string();
+                    matched = true;
+                }
+            }
+        }
+
+        if !matched {
+            break;
         }
     }
 
-    // 去除尾部可能残留的连字符或空格
-    cleaned = cleaned.trim_end_matches(&['-', '—', '–', ' '][..]).trim().to_string();
-    cleaned
+    if cleaned.is_empty() {
+        raw_name.trim().to_string()
+    } else {
+        cleaned
+    }
 }
 
 /// 包含游戏中文名、英文名、官网链接及 slug 的综合信息
@@ -348,14 +390,18 @@ fn urlencoding(input: &str) -> String {
 pub async fn enrich_trainer(trainer: &mut Trainer) {
     let cleaned_name = clean_game_name(&trainer.name);
 
-    // 1. 先检查内存/磁盘持久化缓存
+    // 1. 先检查内存/磁盘持久化缓存（仅当已完整获取到 Steam 元数据时才直接短路返回，避免把网络偶发失败持久化为终态）
     if let Ok(cache) = META_CACHE.lock() {
         if let Some(cached) = cache.get(&trainer.id) {
-            trainer.chinese_name = cached.chinese_name.clone();
-            trainer.steam_app_id = cached.steam_app_id;
-            trainer.hero_image = cached.hero_image.clone();
-            trainer.capsule_image = cached.capsule_image.clone();
-            return;
+            if cached.steam_app_id.is_some() && (cached.hero_image.is_some() || cached.capsule_image.is_some()) {
+                trainer.chinese_name = cached.chinese_name.clone();
+                trainer.steam_app_id = cached.steam_app_id;
+                trainer.hero_image = cached.hero_image.clone();
+                trainer.capsule_image = cached.capsule_image.clone();
+                return;
+            } else if trainer.chinese_name.is_none() {
+                trainer.chinese_name = cached.chinese_name.clone();
+            }
         }
     }
 
@@ -365,7 +411,9 @@ pub async fn enrich_trainer(trainer: &mut Trainer) {
         local_chinese = query_local_chinese_name(&trainer.name);
     }
 
-    trainer.chinese_name = local_chinese.clone();
+    if trainer.chinese_name.is_none() {
+        trainer.chinese_name = local_chinese.clone();
+    }
 
     // 3. 异步请求 Steam StoreSearch API
     if let Some((app_id, steam_name, hero, capsule)) = fetch_steam_meta(&cleaned_name).await {
@@ -378,7 +426,7 @@ pub async fn enrich_trainer(trainer: &mut Trainer) {
             trainer.chinese_name = Some(steam_name.clone());
         }
 
-        // 保存进本地持久化缓存
+        // 仅在成功获取到完整 Steam 元数据时才写回持久化缓存
         let item = GameMetaCacheItem {
             chinese_name: trainer.chinese_name.clone(),
             steam_app_id: Some(app_id),
@@ -391,18 +439,10 @@ pub async fn enrich_trainer(trainer: &mut Trainer) {
         }
         save_cache_to_disk();
     } else if let Some(zh) = local_chinese {
-        // 仅命中了本地中文
-        let item = GameMetaCacheItem {
-            chinese_name: Some(zh),
-            steam_app_id: None,
-            hero_image: None,
-            capsule_image: None,
-        };
-
-        if let Ok(mut cache) = META_CACHE.lock() {
-            cache.insert(trainer.id.clone(), item);
+        // 仅命中本地离线中文名，不持久化为完整的缓存项，以便在网络通畅时仍可重试补齐 Steam 海报
+        if trainer.chinese_name.is_none() {
+            trainer.chinese_name = Some(zh);
         }
-        save_cache_to_disk();
     }
 }
 

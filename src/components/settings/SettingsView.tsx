@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   configApi,
   AppConfig,
@@ -52,12 +52,25 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
   const [testResult, setTestResult] = useState<NetworkTestResult | null>(null);
   const [testTarget, setTestTarget] = useState<string>("https://flingtrainer.com");
 
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showToast = (type: "success" | "error" | "info", message: string) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
     setToast({ type, message });
-    setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
       setToast(null);
+      toastTimerRef.current = null;
     }, 3200);
   };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   const formatBytes = (bytes: number): string => {
     if (!bytes || bytes <= 0) return "0 B";

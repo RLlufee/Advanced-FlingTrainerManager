@@ -202,7 +202,13 @@ fn urlencoding(input: &str) -> String {
 fn clean_html_entities(s: &str) -> String {
     s.replace("&#8211;", "-")
         .replace("&#8212;", "-")
+        .replace("&#8216;", "'")
         .replace("&#8217;", "'")
+        .replace("&#8220;", "\"")
+        .replace("&#8221;", "\"")
+        .replace("&#039;", "'")
+        .replace("&#39;", "'")
+        .replace("&apos;", "'")
         .replace("&#046;", ".")
         .replace("&amp;", "&")
         .replace("&nbsp;", " ")
@@ -256,7 +262,9 @@ pub fn parse_trainer_list(html: &str) -> Result<Vec<Trainer>, String> {
                 .unwrap_or_default()
                 .to_string();
 
-            if thumbnail.starts_with('/') {
+            if thumbnail.starts_with("//") {
+                thumbnail = format!("https:{}", thumbnail);
+            } else if thumbnail.starts_with('/') {
                 thumbnail = format!("https://flingtrainer.com{}", thumbnail);
             }
 
@@ -320,11 +328,11 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
 
     let title_sel = Selector::parse("h1.post-title")
         .map_err(|e| format!("选择器错误: {:?}", e))?;
-    let name = document
+    let name_opt = document
         .select(&title_sel)
         .next()
         .map(|e| e.text().collect::<String>().trim().to_string())
-        .unwrap_or_else(|| slug.replace('-', " ").to_uppercase());
+        .filter(|s| !s.is_empty());
 
     // 优先从 OpenGraph meta 提取官方游戏大封面图 (og:image / twitter:image)
     let og_image_sel = Selector::parse("meta[property='og:image'], meta[name='twitter:image']").ok();
@@ -357,7 +365,9 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
         }
     }
 
-    if thumbnail.starts_with('/') {
+    if thumbnail.starts_with("//") {
+        thumbnail = format!("https:{}", thumbnail);
+    } else if thumbnail.starts_with('/') {
         thumbnail = format!("https://flingtrainer.com{}", thumbnail);
     }
 
@@ -518,6 +528,19 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
             }
         }
     }
+
+    if download_url.starts_with("//") {
+        download_url = format!("https:{}", download_url);
+    } else if download_url.starts_with('/') {
+        download_url = format!("https://flingtrainer.com{}", download_url);
+    }
+
+    // 校验页面有效性：如果既没有页面标题，又没有提取到任何修改功能选项与下载直链，说明是非法页面或反爬拦截
+    if name_opt.is_none() && options.is_empty() && download_url.is_empty() {
+        return Err("页面结构不匹配或缺少修改器核心数据（疑似反爬拦截或空白页）".to_string());
+    }
+
+    let name = name_opt.unwrap_or_else(|| slug.replace('-', " ").to_uppercase());
 
     // 5. 提取下载次数
     let download_count = if let Ok(cnt_sel) = Selector::parse(".attachment-downloads") {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Check, AlertCircle, Sparkles } from "lucide-react";
 import {
   trainerApi,
@@ -62,13 +62,26 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
   // 莫奈动态主题引擎（用于第三级「游戏取色」：选中修改器实时提取封面代表色）
   const { isDynamic, gameAdaptiveAccent, applyEphemeralGameAccent } = useTheme();
 
-  // 显示临时通知
+  // 显示临时通知（防抖取消上一个定时器，杜绝新消息被旧定时器提前清除）
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showToast = (type: "success" | "error" | "info", message: string) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
     setToast({ type, message });
-    setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
       setToast(null);
+      toastTimerRef.current = null;
     }, 3500);
   };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   // 加载已安装列表
   const loadTrainers = async (keepSelectedId?: string) => {
@@ -316,13 +329,20 @@ export const LaunchView: React.FC<LaunchViewProps> = ({
       const results = await trainerApi.checkTrainersUpdate();
       const map: Record<string, TrainerUpdateInfo> = {};
       let updateCount = 0;
+      let failedCount = 0;
       for (const r of results) {
         map[r.id] = r;
         if (r.has_update) updateCount++;
+        if (r.check_status === "failed") failedCount++;
       }
       setUpdateMap(map);
-      if (updateCount > 0) {
-        showToast("success", `🎉 检测完毕！发现 ${updateCount} 款修改器有新版本可用喵~`);
+      if (failedCount === results.length && results.length > 0) {
+        showToast("error", "检测更新失败：无法连接官网获取最新版本信息喵...");
+      } else if (updateCount > 0) {
+        const failNotice = failedCount > 0 ? ` (另有 ${failedCount} 款检测失败)` : "";
+        showToast("success", `🎉 检测完毕！发现 ${updateCount} 款修改器有新版本可用喵~${failNotice}`);
+      } else if (failedCount > 0) {
+        showToast("info", `检测完成，已知修改器为最新版，但有 ${failedCount} 款由于网络未能成功核对喵~`);
       } else {
         showToast("success", "检测完毕！您安装的所有修改器均已是官网最新版本喵~");
       }

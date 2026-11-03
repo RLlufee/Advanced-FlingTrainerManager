@@ -551,20 +551,40 @@ pub fn clean_orphan_cache() -> Result<CleanSummary, String> {
     let mut cleaned_files_count = 0usize;
     let mut freed_bytes = 0u64;
 
-    // 1. 清理临时解压目录 fling_import_tmp
-    let temp_import_dir = std::env::temp_dir().join("fling_import_tmp");
-    if temp_import_dir.exists() {
-        if let Ok(entries) = fs::read_dir(&temp_import_dir) {
-            for entry in entries.flatten() {
-                let p = entry.path();
-                if let Ok(meta) = p.metadata() {
-                    freed_bytes += meta.len();
-                    let _ = fs::remove_file(&p);
-                    cleaned_files_count += 1;
+    // 清理以 fling_import_tmp 开头的临时解压目录与文件
+    let temp_dir = std::env::temp_dir();
+    if let Ok(entries) = fs::read_dir(&temp_dir) {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            let file_name = p.file_name().unwrap_or_default().to_string_lossy();
+            if file_name.starts_with("fling_import_tmp") {
+                if p.is_dir() {
+                    if let Ok(sub_entries) = fs::read_dir(&p) {
+                        for sub in sub_entries.flatten() {
+                            let sp = sub.path();
+                            if sp.is_file() {
+                                if let Ok(meta) = sp.metadata() {
+                                    let len = meta.len();
+                                    if fs::remove_file(&sp).is_ok() {
+                                        freed_bytes += len;
+                                        cleaned_files_count += 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    let _ = fs::remove_dir_all(&p);
+                } else if p.is_file() {
+                    if let Ok(meta) = p.metadata() {
+                        let len = meta.len();
+                        if fs::remove_file(&p).is_ok() {
+                            freed_bytes += len;
+                            cleaned_files_count += 1;
+                        }
+                    }
                 }
             }
         }
-        let _ = fs::remove_dir(&temp_import_dir);
     }
 
     Ok(CleanSummary {
@@ -764,27 +784,26 @@ fn copy_dir_all(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result
 pub fn set_launch_at_startup(enable: bool) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
-        use std::process::Command;
-        let exe = std::env::current_exe().map_err(|e| format!("获取当前可执行文件路径失败: {}", e))?;
-        let exe_str = exe.to_string_lossy();
+        use winreg::enums::*;
+        use winreg::RegKey;
 
+        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+        let (key, _) = hkcu
+            .create_subkey(r"Software\Microsoft\Windows\CurrentVersion\Run")
+            .map_err(|e| format!("打开开机自启注册表项失败: {}", e))?;
+
+        let app_name = "AdvancedFlingTrainerManager";
         if enable {
-            let cmd = format!(
-                r#"Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "AdvancedFlingTrainerManager" -Value '"{}"' -Force"#,
-                exe_str
-            );
-            let output = Command::new("powershell")
-                .args(["-NoProfile", "-NonInteractive", "-Command", &cmd])
-                .output()
-                .map_err(|e| format!("配置开机自启失败: {}", e))?;
-            if !output.status.success() {
-                return Err("设置开机自启注册表失败".to_string());
-            }
+            let exe = std::env::current_exe().map_err(|e| format!("获取当前可执行文件路径失败: {}", e))?;
+            let val = format!("\"{}\"", exe.to_string_lossy());
+            key.set_value(app_name, &val)
+                .map_err(|e| format!("写入开机自启注册表失败: {}", e))?;
         } else {
-            let cmd = r#"Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "AdvancedFlingTrainerManager" -ErrorAction SilentlyContinue"#;
-            let _ = Command::new("powershell")
-                .args(["-NoProfile", "-NonInteractive", "-Command", cmd])
-                .output();
+            match key.delete_value(app_name) {
+                Ok(_) => {}
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                Err(e) => return Err(format!("删除开机自启注册表项失败: {}", e)),
+            }
         }
     }
 
