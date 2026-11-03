@@ -73,6 +73,21 @@
   inherits: true;
   initial-value: rgba(6, 182, 212, 0.35);
 }
+@property --app-gradient-start {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #dceaf8;
+}
+@property --app-gradient-mid {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #e8edf7;
+}
+@property --app-gradient-end {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #e1edf4;
+}
 
 :root {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -89,6 +104,12 @@
   --color-primary-border: rgba(6, 182, 212, 0.35);
   --color-primary-glow: rgba(6, 182, 212, 0.35);
   --color-primary-gradient: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
+  --app-surface-base: #edf0f5;
+  --app-surface-card: #ffffff;
+  --app-surface-inset: #f8fafc;
+  --app-gradient-start: #dceaf8;
+  --app-gradient-mid: #e8edf7;
+  --app-gradient-end: #e1edf4;
 
   transition:
     --color-primary 0.36s cubic-bezier(0.22, 1, 0.36, 1),
@@ -97,16 +118,61 @@
     --color-primary-text 0.36s cubic-bezier(0.22, 1, 0.36, 1),
     --color-primary-soft 0.36s cubic-bezier(0.22, 1, 0.36, 1),
     --color-primary-border 0.36s cubic-bezier(0.22, 1, 0.36, 1),
-    --color-primary-glow 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+    --color-primary-glow 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+    --app-gradient-start 0.48s cubic-bezier(0.22, 1, 0.36, 1),
+    --app-gradient-mid 0.48s cubic-bezier(0.22, 1, 0.36, 1),
+    --app-gradient-end 0.48s cubic-bezier(0.22, 1, 0.36, 1),
+    --app-surface-base 0.36s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* 深色模式全局对比度增强与色彩变量自适应 */
 html.dark {
   color-scheme: dark;
+  --app-surface-base: #0b101b;
+  --app-surface-card: #131c31;
+  --app-surface-inset: #182238;
   --color-primary-text: color-mix(in oklab, var(--color-primary) 88%, white);
   --color-primary-soft: rgba(var(--color-primary-rgb), 0.22);
   --color-primary-border: rgba(var(--color-primary-rgb), 0.48);
   --color-primary-glow: rgba(var(--color-primary-rgb), 0.55);
+}
+
+/* 暗色面板色轻微混入当前强调色，保留层次并避免整套界面固定成单一蓝灰。 */
+html.dark [class~="dark:bg-[#131c31]"] {
+  background-color: var(--app-surface-card);
+}
+
+html.dark [class~="dark:bg-[#0f172a]"] {
+  background-color: color-mix(in oklab, #0f172a 93%, var(--color-primary) 7%);
+}
+
+html.dark [class~="dark:bg-[#0b101b]"],
+html.dark [class~="dark:bg-slate-950"] {
+  background-color: var(--app-surface-base);
+}
+
+/* PCL-CE 风格的主题氛围背景：相邻色相构成柔和三段渐变，主内容保持清晰可读。 */
+.app-canvas {
+  background-color: var(--app-surface-base);
+  background-image: none;
+  transition:
+    background-color 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+    background-image 0.36s ease;
+}
+
+html[data-gradient-background="true"] .app-canvas {
+  background-image:
+    radial-gradient(
+      ellipse at 8% 0%,
+      color-mix(in oklab, var(--app-gradient-start) 50%, transparent),
+      transparent 44%
+    ),
+    radial-gradient(
+      ellipse at 96% 100%,
+      color-mix(in oklab, var(--app-gradient-end) 42%, transparent),
+      transparent 40%
+    ),
+    linear-gradient(138deg, var(--app-gradient-start) 0%, var(--app-gradient-mid) 48%, var(--app-gradient-end) 100%);
 }
 
 /* 强调色实用工具类 */
@@ -272,7 +338,7 @@ html.dark {
 
   /* 基础白底与浅色卡片浸润暗色 */
   .bg-white:not([class*="dark:bg-"]):not(.bg-primary):not([class*="bg-primary"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]) {
-    background-color: #131c31;
+    background-color: var(--app-surface-card);
   }
 
   /* 浅灰嵌层底色浸润 */
@@ -282,7 +348,7 @@ html.dark {
   .bg-slate-50\/70:not([class*="dark:bg-"]),
   .bg-slate-50\/80:not([class*="dark:bg-"]),
   .bg-slate-50\/90:not([class*="dark:bg-"]) {
-    background-color: #182238;
+    background-color: var(--app-surface-inset);
   }
 
   .bg-slate-100:not([class*="dark:bg-"]) {

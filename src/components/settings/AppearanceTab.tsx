@@ -9,6 +9,7 @@ import {
   Check,
   Pipette,
   Sparkles,
+  Waves,
   Download,
   ShieldCheck,
   Layers,
@@ -89,6 +90,8 @@ export const AppearanceTab: React.FC = () => {
     colorMode,
     resolvedColorMode,
     setColorMode,
+    gradientBackground,
+    setGradientBackground,
     accentColor,
     customHex,
     currentAccent,
@@ -464,6 +467,41 @@ export const AppearanceTab: React.FC = () => {
               深邃深空黑灰层次，柔和护眼，大幅降低暗光眩光，尽显游戏极客质感
             </p>
           </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200/70 dark:border-slate-700/70 bg-slate-50/70 dark:bg-slate-900/40 px-3.5 py-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <span
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-xs shrink-0"
+              style={{ background: currentAccent.gradient }}
+            >
+              <Waves className="w-4 h-4" />
+            </span>
+            <div className="min-w-0">
+              <div className="text-xs font-semibold text-slate-800 dark:text-slate-100">
+                主题渐变背景
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                根据强调色生成相邻色相渐变，并随深浅模式调整明度
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={gradientBackground}
+            aria-label="启用主题渐变背景"
+            onClick={() => setGradientBackground(!gradientBackground)}
+            className={`relative w-11 h-6 rounded-full shrink-0 transition-colors duration-200 cursor-pointer ${
+              gradientBackground ? "bg-primary" : "bg-slate-300 dark:bg-slate-700"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                gradientBackground ? "translate-x-[22px]" : "translate-x-0.5"
+              }`}
+            />
+          </button>
         </div>
       </PaperCard>
 

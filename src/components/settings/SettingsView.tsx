@@ -334,7 +334,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
   const network = config?.network;
 
   return (
-    <div className="flex h-full w-full bg-[#edf0f5] dark:bg-[#0b101b] text-slate-800 dark:text-slate-100 select-none overflow-hidden relative transition-colors duration-200">
+    <div className="flex h-full w-full text-slate-800 dark:text-slate-100 select-none overflow-hidden relative transition-colors duration-300">
       {/* 顶部轻量浮动 Toast */}
       {toast && (
         <div

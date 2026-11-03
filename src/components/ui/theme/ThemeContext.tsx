@@ -31,6 +31,7 @@ import {
   extractMonetFromDataUrl,
   readFileToDataUrl,
 } from "./monetEngine";
+import { Hct, argbFromHex, hexFromArgb } from "@material/material-color-utilities";
 
 export interface EphemeralGameAccentInfo {
   trainerId: string;
@@ -50,6 +51,7 @@ export interface ThemeContextValue {
   colorMode: ColorMode; // "system" | "light" | "dark"
   resolvedColorMode: "light" | "dark"; // 最终解析生效的模式
   isDark: boolean; // 是否处于深色模式
+  gradientBackground: boolean;
 
   // --- 莫奈三级动态取色状态 ---
   dynamicSource: DynamicColorSource;
@@ -63,6 +65,7 @@ export interface ThemeContextValue {
   // --- 操作方法 ---
   setColorMode: (mode: ColorMode) => Promise<void>;
   toggleColorMode: () => Promise<void>;
+  setGradientBackground: (enabled: boolean) => Promise<void>;
   setAccentColor: (colorId: string) => Promise<void>;
   setCustomHex: (hex: string) => Promise<void>;
   enableDynamicColor: () => Promise<void>;
@@ -96,11 +99,50 @@ function applyAccentToDom(accent: AccentColorConfig) {
   root.setAttribute("data-accent", accent.id);
 }
 
+/** 按 PCL-CE 的主题色相邻渐变思路，生成深浅模式各自舒适的三段背景色。 */
+function applyAtmosphereToDom(
+  accent: AccentColorConfig,
+  isDark: boolean,
+  gradientEnabled: boolean
+) {
+  if (typeof document === "undefined") return;
+
+  const root = document.documentElement;
+  const seed = Hct.fromInt(argbFromHex(accent.primary));
+  const chroma = isDark
+    ? Math.min(18, Math.max(7, seed.chroma * 0.38))
+    : Math.min(14, Math.max(5, seed.chroma * 0.2));
+  const tones = isDark ? [16, 20, 15] : [90, 96, 89];
+  const hues = [seed.hue - 15, seed.hue, seed.hue + 17];
+  const stops = hues.map((hue, index) =>
+    hexFromArgb(Hct.from((hue + 360) % 360, chroma, tones[index]).toInt())
+  );
+
+  root.style.setProperty("--app-surface-base", isDark ? "#0b101b" : "#edf0f5");
+  root.style.setProperty("--app-gradient-start", stops[0]);
+  root.style.setProperty("--app-gradient-mid", stops[1]);
+  root.style.setProperty("--app-gradient-end", stops[2]);
+  root.style.setProperty(
+    "--app-surface-card",
+    isDark
+      ? `color-mix(in oklab, #131c31 88%, ${accent.primary} 12%)`
+      : "#ffffff"
+  );
+  root.style.setProperty(
+    "--app-surface-inset",
+    isDark
+      ? `color-mix(in oklab, #182238 90%, ${accent.primary} 10%)`
+      : "#f8fafc"
+  );
+  root.dataset.gradientBackground = String(gradientEnabled);
+}
+
 const SUPPORTED_IMAGE_EXT = /\.(png|jpe?g|webp|bmp)$/i;
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // 界面深浅模式（默认 "system" 跟随 Windows 系统）
   const [colorMode, setColorModeState] = useState<ColorMode>("system");
+  const [gradientBackground, setGradientBackgroundState] = useState(true);
   const [systemPrefersDark, setSystemPrefersDark] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -214,6 +256,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     applyAccentToDom(currentAccent);
   }, [currentAccent]);
 
+  useEffect(() => {
+    applyAtmosphereToDom(currentAccent, isDark, gradientBackground);
+  }, [currentAccent, isDark, gradientBackground]);
+
   // 2. 防丢失合并式防抖持久化落盘（支持同一帧内连续多次局部字段更新而不互相覆盖）
   const persistTheme = useCallback((patch: Partial<ThemeSettings>) => {
     pendingPatchRef.current = {
@@ -283,6 +329,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (t.color_mode === "light" || t.color_mode === "dark" || t.color_mode === "system") {
             setColorModeState(t.color_mode);
           }
+          if (typeof t.gradient_background === "boolean") {
+            setGradientBackgroundState(t.gradient_background);
+          }
           if (t.accent_color) setAccentColorState(t.accent_color);
           if (t.custom_accent_hex) setCustomHexState(t.custom_accent_hex);
           if (t.dynamic_source === "windows" || t.dynamic_source === "image") {
@@ -326,6 +375,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       colorMode === "system" ? "light" : colorMode === "light" ? "dark" : "system";
     await setColorMode(nextMode);
   }, [colorMode, setColorMode]);
+
+  const setGradientBackground = useCallback(
+    async (enabled: boolean) => {
+      setGradientBackgroundState(enabled);
+      persistTheme({ gradient_background: enabled });
+    },
+    [persistTheme]
+  );
 
   // 4. 切换固定预设主题色
   const setAccentColor = useCallback(
@@ -675,6 +732,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     isDark,
     setColorMode,
     toggleColorMode,
+    gradientBackground,
+    setGradientBackground,
     dynamicSource,
     windowsAccentHex,
     monetSavedImages,

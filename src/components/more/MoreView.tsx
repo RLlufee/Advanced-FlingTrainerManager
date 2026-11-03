@@ -130,7 +130,7 @@ export const MoreView: React.FC<MoreViewProps> = ({ isActive = true }) => {
   };
 
   return (
-    <div className="flex-1 flex overflow-hidden bg-[#edf0f5] dark:bg-[#0b101b] select-none font-sans transition-colors duration-200">
+    <div className="flex-1 flex overflow-hidden select-none font-sans transition-colors duration-300">
       {/* 浮动 Toast 提示 */}
       {toast && (
         <div

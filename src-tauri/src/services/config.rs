@@ -154,6 +154,9 @@ fn default_theme_accent() -> String {
 fn default_color_mode() -> String {
     "system".to_string()
 }
+fn default_gradient_background() -> bool {
+    true
+}
 fn default_dynamic_source() -> String {
     "windows".to_string()
 }
@@ -180,6 +183,9 @@ pub struct ThemeSettings {
     pub custom_accent_hex: Option<String>,
     #[serde(default = "default_color_mode")]
     pub color_mode: String,
+    /// 是否启用随主题强调色变化的主界面渐变背景
+    #[serde(default = "default_gradient_background")]
+    pub gradient_background: bool,
     /// 动态取色模式下的激活源: "windows" | "image"
     #[serde(default = "default_dynamic_source")]
     pub dynamic_source: String,
@@ -203,6 +209,7 @@ impl Default for ThemeSettings {
             accent_color: default_theme_accent(),
             custom_accent_hex: None,
             color_mode: default_color_mode(),
+            gradient_background: default_gradient_background(),
             dynamic_source: default_dynamic_source(),
             monet_saved_images: Vec::new(),
             active_monet_image_id: None,
