@@ -3,6 +3,18 @@ use directories::ProjectDirs;
 use std::fs;
 use std::path::PathBuf;
 
+/// 剥离 Windows 下 canonicalize 产生的 \\?\ 或 \\?\UNC\ 扩展长路径前缀
+pub fn strip_verbatim_prefix(path: &std::path::Path) -> PathBuf {
+    let s = path.to_string_lossy();
+    if let Some(rest) = s.strip_prefix(r"\\?\UNC\") {
+        PathBuf::from(format!(r"\\{}", rest))
+    } else if let Some(rest) = s.strip_prefix(r"\\?\") {
+        PathBuf::from(rest)
+    } else {
+        path.to_path_buf()
+    }
+}
+
 pub fn get_app_data_dir() -> PathBuf {
     if let Some(proj_dirs) = ProjectDirs::from("com", "flingtrainer", "manager") {
         let path = proj_dirs.data_local_dir().to_path_buf();
@@ -70,21 +82,36 @@ pub fn load_installed_records() -> Vec<InstalledTrainerRecord> {
                 if info_file.exists() {
                     if let Ok(content) = fs::read_to_string(&info_file) {
                         if let Ok(mut record) = serde_json::from_str::<InstalledTrainerRecord>(&content) {
-                            // 校验 exe 文件路径是否真实存在，若失效（例如移动了目录）则自动校正
-                            let current_exe = PathBuf::from(&record.exe_path);
-                            if !current_exe.exists() {
-                                if let Ok(sub_entries) = fs::read_dir(&path) {
-                                    for sub in sub_entries.flatten() {
-                                        let sp = sub.path();
-                                        if sp.is_file() && sp.extension().map(|e| e.to_ascii_lowercase() == "exe").unwrap_or(false) {
-                                            record.exe_path = sp.to_string_lossy().to_string();
-                                            record.exe_name = sp.file_name().unwrap_or_default().to_string_lossy().to_string();
-                                            record.install_dir = path.to_string_lossy().to_string();
-                                            let _ = save_installed_record(record.clone());
-                                            break;
-                                        }
+                            // 自动校准真实的 install_dir 与 exe_path（防止因手动复制/多库迁移导致路径陈旧指向原路径）
+                            let real_dir = strip_verbatim_prefix(&path).to_string_lossy().to_string();
+                            let mut record_changed = false;
+
+                            if record.install_dir != real_dir {
+                                record.install_dir = real_dir;
+                                record_changed = true;
+                            }
+
+                            let expected_exe = path.join(&record.exe_name);
+                            if expected_exe.exists() {
+                                let clean_exe = strip_verbatim_prefix(&expected_exe).to_string_lossy().to_string();
+                                if record.exe_path != clean_exe {
+                                    record.exe_path = clean_exe;
+                                    record_changed = true;
+                                }
+                            } else if let Ok(sub_entries) = fs::read_dir(&path) {
+                                for sub in sub_entries.flatten() {
+                                    let sp = sub.path();
+                                    if sp.is_file() && sp.extension().map(|e| e.to_ascii_lowercase() == "exe").unwrap_or(false) {
+                                        record.exe_path = strip_verbatim_prefix(&sp).to_string_lossy().to_string();
+                                        record.exe_name = sp.file_name().unwrap_or_default().to_string_lossy().to_string();
+                                        record_changed = true;
+                                        break;
                                     }
                                 }
+                            }
+
+                            if record_changed {
+                                let _ = save_installed_record(record.clone());
                             }
 
                             // 1. 优先检测子目录下是否存在本地封面图片 (零网络秒开)
@@ -200,18 +227,85 @@ pub fn update_trainer_toggles(id: &str, toggles: std::collections::HashMap<Strin
     save_installed_record(record)
 }
 
-/// 删除指定修改器目录及其全部内容
-pub fn delete_installed_trainer(id: &str) -> Result<(), String> {
-    let records = load_installed_records();
-    if let Some(target) = records.iter().find(|r| r.id == id) {
-        let dir = PathBuf::from(&target.install_dir);
-        if dir.exists() {
-            fs::remove_dir_all(&dir)
-                .map_err(|e| format!("删除修改器文件夹失败: {}", e))?;
-        }
-        return Ok(());
+/// 删除指定目录下的修改器（带根目录边界、直接子项校验与防越界拦截）
+pub fn delete_installed_trainer_in_dir(id: &str, trainers_dir: &std::path::Path) -> Result<(), String> {
+    let trimmed_id = id.trim();
+    if trimmed_id.is_empty() {
+        return Err("修改器 ID 不能为空".to_string());
     }
-    Err("未找到要删除的修改器目录".to_string())
+
+    if !trainers_dir.exists() {
+        return Err("修改器存储目录不存在".to_string());
+    }
+
+    let canonical_root = fs::canonicalize(trainers_dir)
+        .map_err(|e| format!("解析修改器存储目录失败: {}", e))?;
+
+    // 扫描当前修改器根目录下与 id 匹配的子目录（拒绝直接信任外部记录中的 install_dir）
+    let mut target_dir_to_delete: Option<PathBuf> = None;
+
+    if let Ok(entries) = fs::read_dir(trainers_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+
+            // 1. 如果子文件夹名称与 id 相同
+            if path.file_name().and_then(|n| n.to_str()) == Some(trimmed_id) {
+                target_dir_to_delete = Some(path);
+                break;
+            }
+
+            // 2. 检查子目录内的 trainer.json，看其中记录的 id 是否匹配
+            let info_file = path.join("trainer.json");
+            if info_file.exists() {
+                if let Ok(content) = fs::read_to_string(&info_file) {
+                    if let Ok(record) = serde_json::from_str::<InstalledTrainerRecord>(&content) {
+                        if record.id == trimmed_id {
+                            target_dir_to_delete = Some(path);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let target_dir = match target_dir_to_delete {
+        Some(d) => d,
+        None => return Err(format!("在当前修改器库中未找到 ID 为 '{}' 的修改器目录", id)),
+    };
+
+    // 核心安全校验：规范化路径并严格校验目录边界
+    let canonical_target = fs::canonicalize(&target_dir)
+        .map_err(|e| format!("解析待删除目录路径失败: {}", e))?;
+
+    // 1. 严禁删除根目录本身
+    if canonical_target == canonical_root {
+        return Err("安全拦截：禁止删除修改器根目录".to_string());
+    }
+
+    // 2. 待删除目录必须以根目录为前缀
+    if !canonical_target.starts_with(&canonical_root) {
+        return Err("安全拦截：待删除目录位于修改器库外部，拒绝越界删除".to_string());
+    }
+
+    // 3. 待删除目录必须是修改器根目录的直接子项，拒绝深层嵌套或非直接子目录
+    if canonical_target.parent() != Some(canonical_root.as_path()) {
+        return Err("安全拦截：待删除目录并非修改器根目录的直接子目录，拒绝删除".to_string());
+    }
+
+    fs::remove_dir_all(&canonical_target)
+        .map_err(|e| format!("删除修改器文件夹失败: {}", e))?;
+
+    Ok(())
+}
+
+/// 删除指定修改器目录及其全部内容（带根目录边界、直接子项校验与防越界拦截）
+pub fn delete_installed_trainer(id: &str) -> Result<(), String> {
+    let trainers_dir = get_trainers_dir();
+    delete_installed_trainer_in_dir(id, &trainers_dir)
 }
 
 use crate::models::Trainer;
