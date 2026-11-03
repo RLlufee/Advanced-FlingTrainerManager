@@ -9,46 +9,43 @@ use std::time::Duration;
 pub const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 const BASE_URL: &str = "https://flingtrainer.com";
 
-static SCRIPT_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?is)<script[^>]*>.*?</script>").unwrap()
-});
-static STYLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?is)<style[^>]*>.*?</style>").unwrap()
-});
-static HTML_TAG_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"<[^>]+>").unwrap()
-});
+static SCRIPT_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?is)<script[^>]*>.*?</script>").unwrap());
+static STYLE_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?is)<style[^>]*>.*?</style>").unwrap());
+static HTML_TAG_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"<[^>]+>").unwrap());
 static TOOLTIP_BLOCK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?is)(?:<span[^>]*tooltipsall[^>]*>.*?</span>\s*)?<script[^>]*>[^<]*?toolTips\([^,]+,\s*'((?:[^'\\]|\\.)*)'\s*\);?.*?</script>").unwrap()
 });
-static TOOLTIP_EXTRACT_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"@@TOOLTIP_START@@(.*?)@@TOOLTIP_END@@").unwrap()
-});
-static JQUERY_CLEAN_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)jQuery\s*\(.*?\)\s*;?").unwrap()
-});
+static TOOLTIP_EXTRACT_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"@@TOOLTIP_START@@(.*?)@@TOOLTIP_END@@").unwrap());
+static JQUERY_CLEAN_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)jQuery\s*\(.*?\)\s*;?").unwrap());
 
 pub fn create_client() -> Result<reqwest::Client, String> {
     crate::services::config::build_custom_http_client()
 }
 
-static HOME_LIST_CACHE: LazyLock<std::sync::Mutex<Option<(std::time::Instant, PaginatedTrainers)>>> =
-    LazyLock::new(|| std::sync::Mutex::new(None));
+static HOME_LIST_CACHE: LazyLock<
+    std::sync::Mutex<Option<(std::time::Instant, PaginatedTrainers)>>,
+> = LazyLock::new(|| std::sync::Mutex::new(None));
 
 pub async fn fetch_trainers(page: u32) -> Result<PaginatedTrainers, String> {
     fetch_trainers_ext(page, false).await
 }
 
-pub async fn fetch_trainers_ext(page: u32, force_refresh: bool) -> Result<PaginatedTrainers, String> {
+pub async fn fetch_trainers_ext(
+    page: u32,
+    force_refresh: bool,
+) -> Result<PaginatedTrainers, String> {
     // 首页 15 个条目默认内存缓存 15 分钟，避免频繁切换页面重复请求官网
-    if page <= 1 && !force_refresh {
-        if let Ok(cache) = HOME_LIST_CACHE.lock() {
-            if let Some((instant, data)) = &*cache {
-                if instant.elapsed() < Duration::from_secs(900) {
-                    return Ok(data.clone());
-                }
-            }
-        }
+    if page <= 1
+        && !force_refresh
+        && let Ok(cache) = HOME_LIST_CACHE.lock()
+        && let Some((instant, data)) = &*cache
+        && instant.elapsed() < Duration::from_secs(900)
+    {
+        return Ok(data.clone());
     }
 
     let client = create_client()?;
@@ -87,10 +84,10 @@ pub async fn fetch_trainers_ext(page: u32, force_refresh: bool) -> Result<Pagina
     };
 
     // 缓存第一页数据
-    if page <= 1 {
-        if let Ok(mut cache) = HOME_LIST_CACHE.lock() {
-            *cache = Some((std::time::Instant::now(), result.clone()));
-        }
+    if page <= 1
+        && let Ok(mut cache) = HOME_LIST_CACHE.lock()
+    {
+        *cache = Some((std::time::Instant::now(), result.clone()));
     }
 
     Ok(result)
@@ -99,7 +96,10 @@ pub async fn fetch_trainers_ext(page: u32, force_refresh: bool) -> Result<Pagina
 pub async fn search_trainers(query: &str, page: u32) -> Result<PaginatedTrainers, String> {
     let client = create_client()?;
     // 若输入中文，尝试从本地字典逆向映射为官网英文名
-    let actual_query = if query.chars().any(|c| ('\u{4e00}'..='\u{9fa5}').contains(&c)) {
+    let actual_query = if query
+        .chars()
+        .any(|c| ('\u{4e00}'..='\u{9fa5}').contains(&c))
+    {
         crate::services::game_meta::reverse_lookup_english_by_chinese(query)
             .unwrap_or_else(|| query.to_string())
     } else {
@@ -109,7 +109,12 @@ pub async fn search_trainers(query: &str, page: u32) -> Result<PaginatedTrainers
     let url = if page <= 1 {
         format!("{}/?s={}", BASE_URL, urlencoding(&actual_query))
     } else {
-        format!("{}/page/{}/?s={}", BASE_URL, page, urlencoding(&actual_query))
+        format!(
+            "{}/page/{}/?s={}",
+            BASE_URL,
+            page,
+            urlencoding(&actual_query)
+        )
     };
 
     let response = client
@@ -146,15 +151,14 @@ pub async fn get_trainer_detail(id: &str) -> Result<Trainer, String> {
 }
 
 pub async fn get_trainer_detail_ext(id: &str, force_refresh: bool) -> Result<Trainer, String> {
-    let slug = id.trim_matches('/').split('/').last().unwrap_or(id);
+    let slug = id.trim_matches('/').split('/').next_back().unwrap_or(id);
 
     // 1. 若非强制刷新，优先检查磁盘持久化缓存 (有效期 7 天)
-    if !force_refresh {
-        if let Some(cached) = storage::load_cached_trainer(slug, 7 * 86400) {
-            if !cached.options.is_empty() || !cached.option_items.is_empty() {
-                return Ok(cached);
-            }
-        }
+    if !force_refresh
+        && let Some(cached) = storage::load_cached_trainer(slug, 7 * 86400)
+        && (!cached.options.is_empty() || !cached.option_items.is_empty())
+    {
+        return Ok(cached);
     }
 
     let client = create_client()?;
@@ -186,11 +190,15 @@ pub async fn get_trainer_detail_ext(id: &str, force_refresh: bool) -> Result<Tra
     Ok(trainer)
 }
 
-
 fn urlencoding(input: &str) -> String {
     let mut encoded = String::new();
     for byte in input.bytes() {
-        if byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_' || byte == b'.' || byte == b'~' {
+        if byte.is_ascii_alphanumeric()
+            || byte == b'-'
+            || byte == b'_'
+            || byte == b'.'
+            || byte == b'~'
+        {
             encoded.push(byte as char);
         } else {
             encoded.push_str(&format!("%{:02X}", byte));
@@ -215,20 +223,18 @@ fn clean_html_entities(s: &str) -> String {
         .replace("&quot;", "\"")
         .replace("&lt;", "<")
         .replace("&gt;", ">")
-        .replace('–', "-")
-        .replace('—', "-")
+        .replace(['–', '—'], "-")
 }
 
 pub fn parse_trainer_list(html: &str) -> Result<Vec<Trainer>, String> {
     let document = Html::parse_document(html);
-    let article_sel = Selector::parse("article.post-standard")
-        .map_err(|e| format!("选择器错误: {:?}", e))?;
-    let title_sel = Selector::parse("h2.post-title a")
-        .map_err(|e| format!("选择器错误: {:?}", e))?;
-    let thumb_sel = Selector::parse(".post-details-thumb img")
-        .map_err(|e| format!("选择器错误: {:?}", e))?;
-    let entry_sel = Selector::parse(".entry")
-        .map_err(|e| format!("选择器错误: {:?}", e))?;
+    let article_sel =
+        Selector::parse("article.post-standard").map_err(|e| format!("选择器错误: {:?}", e))?;
+    let title_sel =
+        Selector::parse("h2.post-title a").map_err(|e| format!("选择器错误: {:?}", e))?;
+    let thumb_sel =
+        Selector::parse(".post-details-thumb img").map_err(|e| format!("选择器错误: {:?}", e))?;
+    let entry_sel = Selector::parse(".entry").map_err(|e| format!("选择器错误: {:?}", e))?;
     let day_sel = Selector::parse(".post-details-day").ok();
     let month_sel = Selector::parse(".post-details-month").ok();
     let year_sel = Selector::parse(".post-details-year").ok();
@@ -242,7 +248,7 @@ pub fn parse_trainer_list(html: &str) -> Result<Vec<Trainer>, String> {
             let id = href
                 .trim_end_matches('/')
                 .split('/')
-                .last()
+                .next_back()
                 .unwrap_or_default()
                 .to_string();
 
@@ -268,7 +274,6 @@ pub fn parse_trainer_list(html: &str) -> Result<Vec<Trainer>, String> {
                 thumbnail = format!("https://flingtrainer.com{}", thumbnail);
             }
 
-
             let entry_html = article
                 .select(&entry_sel)
                 .next()
@@ -293,10 +298,24 @@ pub fn parse_trainer_list(html: &str) -> Result<Vec<Trainer>, String> {
                 }
             }
 
-            let day = day_sel.as_ref().and_then(|s| article.select(s).next()).map(|e| e.text().collect::<String>()).unwrap_or_default();
-            let month = month_sel.as_ref().and_then(|s| article.select(s).next()).map(|e| e.text().collect::<String>()).unwrap_or_default();
-            let year = year_sel.as_ref().and_then(|s| article.select(s).next()).map(|e| e.text().collect::<String>()).unwrap_or_default();
-            let last_update = format!("{} {} {}", day.trim(), month.trim(), year.trim()).trim().to_string();
+            let day = day_sel
+                .as_ref()
+                .and_then(|s| article.select(s).next())
+                .map(|e| e.text().collect::<String>())
+                .unwrap_or_default();
+            let month = month_sel
+                .as_ref()
+                .and_then(|s| article.select(s).next())
+                .map(|e| e.text().collect::<String>())
+                .unwrap_or_default();
+            let year = year_sel
+                .as_ref()
+                .and_then(|s| article.select(s).next())
+                .map(|e| e.text().collect::<String>())
+                .unwrap_or_default();
+            let last_update = format!("{} {} {}", day.trim(), month.trim(), year.trim())
+                .trim()
+                .to_string();
 
             list.push(Trainer {
                 id,
@@ -326,8 +345,7 @@ pub fn parse_trainer_list(html: &str) -> Result<Vec<Trainer>, String> {
 pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
     let document = Html::parse_document(html);
 
-    let title_sel = Selector::parse("h1.post-title")
-        .map_err(|e| format!("选择器错误: {:?}", e))?;
+    let title_sel = Selector::parse("h1.post-title").map_err(|e| format!("选择器错误: {:?}", e))?;
     let name_opt = document
         .select(&title_sel)
         .next()
@@ -335,7 +353,8 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
         .filter(|s| !s.is_empty());
 
     // 优先从 OpenGraph meta 提取官方游戏大封面图 (og:image / twitter:image)
-    let og_image_sel = Selector::parse("meta[property='og:image'], meta[name='twitter:image']").ok();
+    let og_image_sel =
+        Selector::parse("meta[property='og:image'], meta[name='twitter:image']").ok();
     let mut thumbnail = og_image_sel
         .as_ref()
         .and_then(|sel| {
@@ -348,19 +367,22 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
         .unwrap_or_default();
 
     // 如果未从 meta 标签获取到有效图片，则在正文中挑选真实游戏封面（严格排除作者 Gravatar 头像与插件图标）
-    if thumbnail.is_empty() || thumbnail.contains("gravatar.com") || thumbnail.contains("avatar") {
-        if let Ok(entry_img_sel) = Selector::parse(".entry img.aligncenter, .entry img, .post-details-thumb img") {
-            for img in document.select(&entry_img_sel) {
-                if let Some(src) = img.value().attr("src").or_else(|| img.value().attr("data-src")) {
-                    if !src.contains("gravatar.com")
-                        && !src.contains("avatar")
-                        && !src.contains("tooltip-icon")
-                        && !src.ends_with(".gif")
-                    {
-                        thumbnail = src.to_string();
-                        break;
-                    }
-                }
+    if (thumbnail.is_empty() || thumbnail.contains("gravatar.com") || thumbnail.contains("avatar"))
+        && let Ok(entry_img_sel) =
+            Selector::parse(".entry img.aligncenter, .entry img, .post-details-thumb img")
+    {
+        for img in document.select(&entry_img_sel) {
+            if let Some(src) = img
+                .value()
+                .attr("src")
+                .or_else(|| img.value().attr("data-src"))
+                && !src.contains("gravatar.com")
+                && !src.contains("avatar")
+                && !src.contains("tooltip-icon")
+                && !src.ends_with(".gif")
+            {
+                thumbnail = src.to_string();
+                break;
             }
         }
     }
@@ -371,9 +393,7 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
         thumbnail = format!("https://flingtrainer.com{}", thumbnail);
     }
 
-
-    let entry_sel = Selector::parse(".entry")
-        .map_err(|e| format!("选择器错误: {:?}", e))?;
+    let entry_sel = Selector::parse(".entry").map_err(|e| format!("选择器错误: {:?}", e))?;
 
     let raw_entry_html = document
         .select(&entry_sel)
@@ -382,16 +402,16 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
         .unwrap_or_default();
 
     // 1. 全局提取内联 ToolTip 提示内容，并在全文本级别原子替换为单行占位符，防止内部 <br/> 导致拆行破坏脚本标签闭合
-    let with_tooltips_extracted = TOOLTIP_BLOCK_REGEX.replace_all(&raw_entry_html, |caps: &regex::Captures| {
-        let note_content = &caps[1];
-        let safe_note = note_content
-            .replace('\r', " ")
-            .replace('\n', " ")
-            .replace("<br />", "__BR__")
-            .replace("<br/>", "__BR__")
-            .replace("<br>", "__BR__");
-        format!(" @@TOOLTIP_START@@{}@@TOOLTIP_END@@ ", safe_note)
-    });
+    let with_tooltips_extracted =
+        TOOLTIP_BLOCK_REGEX.replace_all(&raw_entry_html, |caps: &regex::Captures| {
+            let note_content = &caps[1];
+            let safe_note = note_content
+                .replace(['\r', '\n'], " ")
+                .replace("<br />", "__BR__")
+                .replace("<br/>", "__BR__")
+                .replace("<br>", "__BR__");
+            format!(" @@TOOLTIP_START@@{}@@TOOLTIP_END@@ ", safe_note)
+        });
 
     // 2. 彻底清除全文本中所有剩余的 <script>...</script> 和 <style>...</style>
     let no_script = SCRIPT_REGEX.replace_all(&with_tooltips_extracted, "");
@@ -416,16 +436,19 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
         }
 
         // 识别 OPTIONS 区块
-        if trimmed_line.contains("OPTIONS") || trimmed_line.contains("Options</h6>") || (trimmed_line.contains("Options") && !trimmed_line.contains("Game Version:")) {
+        if trimmed_line.contains("OPTIONS")
+            || trimmed_line.contains("Options</h6>")
+            || (trimmed_line.contains("Options") && !trimmed_line.contains("Game Version:"))
+        {
             in_options_section = true;
             continue;
         }
 
         if in_options_section {
             // 遇到后续非修改项区块则结束
-            if trimmed_line.contains("DOWNLOAD") 
-                || trimmed_line.contains("Download") 
-                || trimmed_line.contains("NOTES") 
+            if trimmed_line.contains("DOWNLOAD")
+                || trimmed_line.contains("Download")
+                || trimmed_line.contains("NOTES")
                 || trimmed_line.contains("Notes</h6>")
                 || trimmed_line.contains("SPECIAL NOTES")
             {
@@ -455,7 +478,8 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
             let mut cleaned_title = cleaned_entities.trim().to_string();
 
             // 双重保险：彻底截除任何潜在的 JS 脚本碎片关键字
-            if let Some(idx) = cleaned_title.find(".ready")
+            if let Some(idx) = cleaned_title
+                .find(".ready")
                 .or_else(|| cleaned_title.find("function("))
                 .or_else(|| cleaned_title.find("jQuery("))
                 .or_else(|| cleaned_title.find("toolTips("))
@@ -465,14 +489,18 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
             }
 
             // 校验是否为有效的功能项 (例如 "Num 1 - Infinite Health", "Ctrl+Num 1", "Alt+Num 1" 等)
-            if !cleaned_title.is_empty() 
-                && (cleaned_title.starts_with("Num") 
-                    || cleaned_title.starts_with("Ctrl") 
-                    || cleaned_title.starts_with("Alt") 
-                    || cleaned_title.starts_with("Shift") 
-                    || (cleaned_title.starts_with('F') && cleaned_title.chars().nth(1).map_or(false, |c| c.is_ascii_digit()))
-                    || cleaned_title.contains(" - ") 
-                    || cleaned_title.contains(" – ")) 
+            if !cleaned_title.is_empty()
+                && (cleaned_title.starts_with("Num")
+                    || cleaned_title.starts_with("Ctrl")
+                    || cleaned_title.starts_with("Alt")
+                    || cleaned_title.starts_with("Shift")
+                    || (cleaned_title.starts_with('F')
+                        && cleaned_title
+                            .chars()
+                            .nth(1)
+                            .is_some_and(|c| c.is_ascii_digit()))
+                    || cleaned_title.contains(" - ")
+                    || cleaned_title.contains(" – "))
             {
                 options.push(cleaned_title.clone());
                 option_items.push(TrainerOptionItem {
@@ -501,7 +529,9 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
     let mut last_update = String::new();
 
     for line in clean_description.lines() {
-        if line.contains("Options") && (line.contains("Game Version:") || line.contains("Last Updated:")) {
+        if line.contains("Options")
+            && (line.contains("Game Version:") || line.contains("Last Updated:"))
+        {
             for part in line.split('·') {
                 let p = part.trim();
                 if p.contains("Options") || p.contains("Option") {
@@ -520,11 +550,14 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
     let mut download_url = String::new();
     if let Ok(attach_sel) = Selector::parse("a.attachment-link, .da-attachments-table a") {
         for a in document.select(&attach_sel) {
-            if let Some(href) = a.value().attr("href") {
-                if href.contains("download") || href.contains("attachment") || href.ends_with(".zip") || href.ends_with(".exe") {
-                    download_url = href.to_string();
-                    break;
-                }
+            if let Some(href) = a.value().attr("href")
+                && (href.contains("download")
+                    || href.contains("attachment")
+                    || href.ends_with(".zip")
+                    || href.ends_with(".exe"))
+            {
+                download_url = href.to_string();
+                break;
             }
         }
     }
@@ -589,27 +622,62 @@ mod tests {
         <h6>NOTES</h6>
         </div>
         "#;
-        
-        let trainer = parse_trainer_detail(sample, "test-slug").unwrap();
-        
-        assert_eq!(trainer.option_items.len(), 3);
-        assert_eq!(trainer.option_items[0].title, "Alt+Num 1 - Battle: God Mode");
-        assert!(trainer.option_items[0].note.as_ref().unwrap().contains("When activated, player units will ignore most damages"));
-        assert!(trainer.option_items[0].note.as_ref().unwrap().contains("Only works in land battles"));
 
-        assert_eq!(trainer.option_items[1].title, "Ctrl+Num / - Edit Mouse Hover Item Amount");
-        assert!(trainer.option_items[1].note.as_ref().unwrap().contains("Open the inventory, then activate this option"));
+        let trainer = parse_trainer_detail(sample, "test-slug").unwrap();
+
+        assert_eq!(trainer.option_items.len(), 3);
+        assert_eq!(
+            trainer.option_items[0].title,
+            "Alt+Num 1 - Battle: God Mode"
+        );
+        assert!(
+            trainer.option_items[0]
+                .note
+                .as_ref()
+                .unwrap()
+                .contains("When activated, player units will ignore most damages")
+        );
+        assert!(
+            trainer.option_items[0]
+                .note
+                .as_ref()
+                .unwrap()
+                .contains("Only works in land battles")
+        );
+
+        assert_eq!(
+            trainer.option_items[1].title,
+            "Ctrl+Num / - Edit Mouse Hover Item Amount"
+        );
+        assert!(
+            trainer.option_items[1]
+                .note
+                .as_ref()
+                .unwrap()
+                .contains("Open the inventory, then activate this option")
+        );
 
         assert_eq!(trainer.option_items[2].title, "Alt+Num 1 - Loyalty");
-        assert_eq!(trainer.option_items[2].note.as_ref().unwrap(), "Takes effect when you open the character details menu of the character you want to edit.");
+        assert_eq!(
+            trainer.option_items[2].note.as_ref().unwrap(),
+            "Takes effect when you open the character details menu of the character you want to edit."
+        );
     }
 
     #[test]
     fn test_real_game_pages() {
         let pages = [
             ("scratch_beast.html", "beast-of-reincarnation-trainer", 30),
-            ("scratch_shogun.html", "total-war-shogun-2-complete-edition-trainer", 15),
-            ("scratch_3k.html", "legend-of-heroes-three-kingdoms-trainer", 30),
+            (
+                "scratch_shogun.html",
+                "total-war-shogun-2-complete-edition-trainer",
+                15,
+            ),
+            (
+                "scratch_3k.html",
+                "legend-of-heroes-three-kingdoms-trainer",
+                30,
+            ),
         ];
 
         for (filename, slug, expected_min) in pages {
@@ -630,11 +698,18 @@ mod tests {
                 );
                 // 确保没有任何一项包含 .ready 或 toolTips 脚本残留
                 for item in &trainer.option_items {
-                    assert!(!item.title.contains("ready"), "Title contains ready: {}", item.title);
-                    assert!(!item.title.contains("toolTips"), "Title contains toolTips: {}", item.title);
+                    assert!(
+                        !item.title.contains("ready"),
+                        "Title contains ready: {}",
+                        item.title
+                    );
+                    assert!(
+                        !item.title.contains("toolTips"),
+                        "Title contains toolTips: {}",
+                        item.title
+                    );
                 }
             }
         }
     }
 }
-

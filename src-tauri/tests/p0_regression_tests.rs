@@ -57,14 +57,24 @@ fn test_p0_01_copied_library_delete_isolation() {
 
     // 在 library_b 中触发删除
     let result = storage::delete_installed_trainer_in_dir("elden_ring", &library_b);
-    assert!(result.is_ok(), "在 library_b 中删除条目应成功: {:?}", result);
+    assert!(
+        result.is_ok(),
+        "在 library_b 中删除条目应成功: {:?}",
+        result
+    );
 
     // 验证：library_b 的副本被删除
     assert!(!game_b.exists(), "library_b 中的副本应该被彻底删除");
 
     // 核心安全验证：library_a 中的原版目录与文件必须完好无损，绝对不允许被越界删除！
-    assert!(game_a.exists(), "P0-01 防御失败：原库中的文件夹居然被越界删除了！");
-    assert!(game_a.join("trainer.exe").exists(), "P0-01 防御失败：原库中的 exe 被删除了！");
+    assert!(
+        game_a.exists(),
+        "P0-01 防御失败：原库中的文件夹居然被越界删除了！"
+    );
+    assert!(
+        game_a.join("trainer.exe").exists(),
+        "P0-01 防御失败：原库中的 exe 被删除了！"
+    );
 
     let _ = fs::remove_dir_all(&root);
 }
@@ -101,13 +111,21 @@ fn test_p0_02_migration_topology_checks() {
     let nested = source.join("nested_target");
     let res_nested = config::migrate_trainers_dir_from_to(&source, nested.to_str().unwrap(), false);
     assert!(res_nested.is_err());
-    assert!(res_nested.unwrap_err().contains("目标路径不能位于当前存储路径内部"));
+    assert!(
+        res_nested
+            .unwrap_err()
+            .contains("目标路径不能位于当前存储路径内部")
+    );
 
     // 3. 源是目标的子目录
     let parent = root.clone();
     let res_parent = config::migrate_trainers_dir_from_to(&source, parent.to_str().unwrap(), false);
     assert!(res_parent.is_err());
-    assert!(res_parent.unwrap_err().contains("当前存储路径不能位于目标路径内部"));
+    assert!(
+        res_parent
+            .unwrap_err()
+            .contains("当前存储路径不能位于目标路径内部")
+    );
 
     let _ = fs::remove_dir_all(&root);
 }
@@ -140,13 +158,15 @@ fn test_p0_02_migration_precheck_conflict_prevents_overwrite() {
     // 验证：目标文件绝对没有被静默覆盖！
     let target_content = fs::read(&target_file).unwrap();
     assert_eq!(
-        target_content,
-        b"EXISTING_TARGET_EXE_DO_NOT_OVERWRITE",
+        target_content, b"EXISTING_TARGET_EXE_DO_NOT_OVERWRITE",
         "P0-02 防御失败：目标文件被静默覆盖了！"
     );
 
     // 验证：源目录文件完好无损，未被误删
-    assert!(game_src.join("trainer.exe").exists(), "源目录文件应该保持原样");
+    assert!(
+        game_src.join("trainer.exe").exists(),
+        "源目录文件应该保持原样"
+    );
 
     let _ = fs::remove_dir_all(&root);
 }

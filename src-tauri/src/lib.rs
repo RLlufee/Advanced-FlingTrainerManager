@@ -6,7 +6,10 @@ use services::{downloader, launcher, scraper, storage};
 use tauri::AppHandle;
 
 #[tauri::command]
-async fn fetch_trainers(page: Option<u32>, force_refresh: Option<bool>) -> Result<PaginatedTrainers, String> {
+async fn fetch_trainers(
+    page: Option<u32>,
+    force_refresh: Option<bool>,
+) -> Result<PaginatedTrainers, String> {
     let p = page.unwrap_or(1);
     scraper::fetch_trainers_ext(p, force_refresh.unwrap_or(false)).await
 }
@@ -22,9 +25,11 @@ async fn get_trainer_detail(id: String, force_refresh: Option<bool>) -> Result<T
     scraper::get_trainer_detail_ext(&id, force_refresh.unwrap_or(false)).await
 }
 
-
 #[tauri::command]
-async fn download_trainer(app: AppHandle, trainer: Trainer) -> Result<InstalledTrainerRecord, String> {
+async fn download_trainer(
+    app: AppHandle,
+    trainer: Trainer,
+) -> Result<InstalledTrainerRecord, String> {
     downloader::download_and_install_trainer(app, trainer).await
 }
 
@@ -109,7 +114,10 @@ async fn launch_game_and_trainer(id: String, app_id: Option<u32>) -> Result<Stri
 }
 
 #[tauri::command]
-fn save_trainer_toggles(id: String, toggles: std::collections::HashMap<String, bool>) -> Result<(), String> {
+fn save_trainer_toggles(
+    id: String,
+    toggles: std::collections::HashMap<String, bool>,
+) -> Result<(), String> {
     storage::update_trainer_toggles(&id, toggles)
 }
 
@@ -142,7 +150,10 @@ async fn check_trainers_update() -> Result<Vec<models::TrainerUpdateInfo>, Strin
 }
 
 #[tauri::command]
-async fn update_trainer_to_latest(app: AppHandle, id: String) -> Result<InstalledTrainerRecord, String> {
+async fn update_trainer_to_latest(
+    app: AppHandle,
+    id: String,
+) -> Result<InstalledTrainerRecord, String> {
     downloader::update_trainer_to_latest(app, &id).await
 }
 
@@ -152,7 +163,9 @@ fn pick_external_folder() -> Result<Option<String>, String> {
 }
 
 #[tauri::command]
-async fn scan_and_import_trainers(folder_path: String) -> Result<services::importer::ImportSummary, String> {
+async fn scan_and_import_trainers(
+    folder_path: String,
+) -> Result<services::importer::ImportSummary, String> {
     services::importer::scan_and_import_trainers(&folder_path).await
 }
 
@@ -212,7 +225,9 @@ fn set_launch_at_startup(enable: bool) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn test_network_connectivity(target: Option<String>) -> Result<services::config::NetworkTestResult, String> {
+async fn test_network_connectivity(
+    target: Option<String>,
+) -> Result<services::config::NetworkTestResult, String> {
     services::config::test_network_connectivity(target).await
 }
 
@@ -222,10 +237,12 @@ fn get_system_memory_info() -> Result<services::memory_optimizer::SystemMemoryIn
 }
 
 #[tauri::command]
-async fn optimize_memory(options: Option<services::memory_optimizer::MemoryOptimizeOptions>) -> Result<services::memory_optimizer::MemoryOptimizeResult, String> {
-    tokio::task::spawn_blocking(move || {
-        services::memory_optimizer::optimize_memory(options)
-    }).await.map_err(|e| e.to_string())?
+async fn optimize_memory(
+    options: Option<services::memory_optimizer::MemoryOptimizeOptions>,
+) -> Result<services::memory_optimizer::MemoryOptimizeResult, String> {
+    tokio::task::spawn_blocking(move || services::memory_optimizer::optimize_memory(options))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -253,12 +270,12 @@ async fn system_cleanup_scan() -> Result<services::system_cleaner::CleanupScanRe
 }
 
 #[tauri::command]
-async fn system_cleanup_run(categories: Vec<String>) -> Result<services::system_cleaner::CleanupRunResult, String> {
-    tokio::task::spawn_blocking(move || {
-        services::system_cleaner::run_system_cleanup(categories)
-    })
-    .await
-    .map_err(|e| e.to_string())?
+async fn system_cleanup_run(
+    categories: Vec<String>,
+) -> Result<services::system_cleaner::CleanupRunResult, String> {
+    tokio::task::spawn_blocking(move || services::system_cleaner::run_system_cleanup(categories))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]

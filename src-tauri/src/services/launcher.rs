@@ -1,18 +1,16 @@
 use crate::services::storage;
 use chrono::Local;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[cfg(target_os = "windows")]
-fn launch_process_elevated(exe_path: &PathBuf, work_dir: &PathBuf) -> Result<(), String> {
+fn launch_process_elevated(exe_path: &Path, work_dir: &Path) -> Result<(), String> {
     use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
     use windows_sys::Win32::UI::Shell::ShellExecuteW;
     use windows_sys::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
 
-    let to_wide = |s: &OsStr| -> Vec<u16> {
-        s.encode_wide().chain(std::iter::once(0)).collect()
-    };
+    let to_wide = |s: &OsStr| -> Vec<u16> { s.encode_wide().chain(std::iter::once(0)).collect() };
 
     let op = to_wide(OsStr::new("runas"));
     let file = to_wide(exe_path.as_os_str());
@@ -25,7 +23,7 @@ fn launch_process_elevated(exe_path: &PathBuf, work_dir: &PathBuf) -> Result<(),
             file.as_ptr(),
             std::ptr::null(),
             dir.as_ptr(),
-            SW_SHOWNORMAL as i32,
+            SW_SHOWNORMAL,
         )
     };
 
@@ -35,7 +33,10 @@ fn launch_process_elevated(exe_path: &PathBuf, work_dir: &PathBuf) -> Result<(),
         match res as isize {
             5 => Err("启动修改器被拒绝，请确认允许管理员(UAC)提权授权喵~".to_string()),
             2 => Err("呃啊~系统找不到指定的修改器可执行程序".to_string()),
-            code => Err(format!("调用管理员权限启动失败 (ShellExecuteW 代码: {})", code)),
+            code => Err(format!(
+                "调用管理员权限启动失败 (ShellExecuteW 代码: {})",
+                code
+            )),
         }
     }
 }

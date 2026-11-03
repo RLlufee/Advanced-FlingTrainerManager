@@ -13,19 +13,19 @@ pub async fn download_and_install_trainer<R: Runtime>(
     mut trainer: Trainer,
 ) -> Result<InstalledTrainerRecord, String> {
     // 1. 如果没有下载链接或详情，先抓取详情获取
-    if trainer.download_url.is_empty() || trainer.options.is_empty() {
-        if let Ok(detail) = scraper::get_trainer_detail(&trainer.id).await {
-            trainer.download_url = detail.download_url;
-            if trainer.options.is_empty() {
-                trainer.options = detail.options;
-                trainer.option_items = detail.option_items;
-            }
-            if trainer.description.is_empty() {
-                trainer.description = detail.description;
-            }
-            if trainer.game_version.is_empty() {
-                trainer.game_version = detail.game_version;
-            }
+    if (trainer.download_url.is_empty() || trainer.options.is_empty())
+        && let Ok(detail) = scraper::get_trainer_detail(&trainer.id).await
+    {
+        trainer.download_url = detail.download_url;
+        if trainer.options.is_empty() {
+            trainer.options = detail.options;
+            trainer.option_items = detail.option_items;
+        }
+        if trainer.description.is_empty() {
+            trainer.description = detail.description;
+        }
+        if trainer.game_version.is_empty() {
+            trainer.game_version = detail.game_version;
         }
     }
     // 确保补齐 Steam 官方高清原画与胶囊元数据
@@ -42,16 +42,15 @@ pub async fn download_and_install_trainer<R: Runtime>(
 
     if target_dir.exists() {
         let existing_json = target_dir.join("trainer.json");
-        if existing_json.exists() {
-            if let Ok(content) = fs::read_to_string(&existing_json) {
-                if let Ok(rec) = serde_json::from_str::<InstalledTrainerRecord>(&content) {
-                    if rec.id != trainer.id && rec.name != trainer.name {
-                        // 发生目录碰撞，使用带 ID 的安全后缀
-                        safe_folder_name = format!("{}_{}", safe_folder_name, &trainer.id);
-                        target_dir = download_dir.join(&safe_folder_name);
-                    }
-                }
-            }
+        if existing_json.exists()
+            && let Ok(content) = fs::read_to_string(&existing_json)
+            && let Ok(rec) = serde_json::from_str::<InstalledTrainerRecord>(&content)
+            && rec.id != trainer.id
+            && rec.name != trainer.name
+        {
+            // 发生目录碰撞，使用带 ID 的安全后缀
+            safe_folder_name = format!("{}_{}", safe_folder_name, trainer.id);
+            target_dir = download_dir.join(&safe_folder_name);
         }
     }
     let _ = fs::create_dir_all(&target_dir);
@@ -85,6 +84,47 @@ pub async fn download_and_install_trainer<R: Runtime>(
     }
 
     let total_size = res.content_length();
+    const MAX_ALLOWED_BYTES: u64 = 500 * 1024 * 1024; // 500MB 安全硬配额
+
+    if let Some(total) = total_size
+        && total > MAX_ALLOWED_BYTES
+    {
+        let err = format!(
+            "安装包体积 ({} MB) 超出最大允许安全上限 (500 MB)",
+            total / (1024 * 1024)
+        );
+        return Err(err);
+    }
+
+    // 磁盘剩余空间预检：要求至少 150MB，或如果已知文件大小则要求至少 2 倍余量
+    let min_required = total_size
+        .map(|s| s.saturating_mul(2))
+        .unwrap_or(150 * 1024 * 1024)
+        .max(150 * 1024 * 1024);
+    if let Some(free_bytes) = get_free_disk_space(&target_dir)
+        && free_bytes < min_required
+    {
+        let free_mb = free_bytes / (1024 * 1024);
+        let req_mb = min_required / (1024 * 1024);
+        let err_msg = format!(
+            "目标驱动器可用空间不足 (剩余: {} MB，建议预留: {} MB)，已终止下载",
+            free_mb, req_mb
+        );
+        let _ = app.emit(
+            "download-progress",
+            DownloadProgressPayload {
+                trainer_id: trainer.id.clone(),
+                progress: 0.0,
+                downloaded_bytes: 0,
+                total_bytes: total_size,
+                speed_bytes_per_sec: 0,
+                status: "error".to_string(),
+                error: Some(err_msg.clone()),
+            },
+        );
+        return Err(err_msg);
+    }
+
     let mut downloaded: u64 = 0;
     let mut stream = res.bytes_stream();
 
@@ -99,6 +139,24 @@ pub async fn download_and_install_trainer<R: Runtime>(
         file.write_all(&chunk)
             .map_err(|e| format!("写入磁盘失败: {}", e))?;
         downloaded += chunk.len() as u64;
+
+        if downloaded > MAX_ALLOWED_BYTES {
+            let _ = fs::remove_file(&temp_file_path);
+            let err_msg = "下载数据流超出 500 MB 安全硬配额限制，已强制终止并清理".to_string();
+            let _ = app.emit(
+                "download-progress",
+                DownloadProgressPayload {
+                    trainer_id: trainer.id.clone(),
+                    progress: 0.0,
+                    downloaded_bytes: downloaded,
+                    total_bytes: total_size,
+                    speed_bytes_per_sec: 0,
+                    status: "error".to_string(),
+                    error: Some(err_msg.clone()),
+                },
+            );
+            return Err(err_msg);
+        }
 
         if last_emit.elapsed().as_millis() > 300 {
             let elapsed_sec = last_emit.elapsed().as_secs_f64().max(0.001);
@@ -149,17 +207,17 @@ pub async fn download_and_install_trainer<R: Runtime>(
     // 4. 尝试将封面图下载到本地子目录中 (cover.jpg)，确保断网/重启纯本地 0ms 秒开
     let cover_file = target_dir.join("cover.jpg");
     if !cover_file.exists() {
-        let img_url = trainer.capsule_image.as_deref().unwrap_or(&trainer.thumbnail);
-        if !img_url.is_empty() {
-            if let Ok(client) = scraper::create_client() {
-                if let Ok(resp) = client.get(img_url).send().await {
-                    if resp.status().is_success() {
-                        if let Ok(bytes) = resp.bytes().await {
-                            let _ = fs::write(&cover_file, bytes);
-                        }
-                    }
-                }
-            }
+        let img_url = trainer
+            .capsule_image
+            .as_deref()
+            .unwrap_or(&trainer.thumbnail);
+        if !img_url.is_empty()
+            && let Ok(client) = scraper::create_client()
+            && let Ok(resp) = client.get(img_url).send().await
+            && resp.status().is_success()
+            && let Ok(bytes) = resp.bytes().await
+        {
+            let _ = fs::write(&cover_file, bytes);
         }
     }
 
@@ -226,12 +284,19 @@ pub async fn download_and_install_trainer<R: Runtime>(
     Ok(record)
 }
 
-pub fn process_package(package_path: &Path, extract_to: &Path, trainer_id: &str) -> Result<PathBuf, String> {
+pub fn process_package(
+    package_path: &Path,
+    extract_to: &Path,
+    trainer_id: &str,
+) -> Result<PathBuf, String> {
     let is_zip = is_zip_file(package_path);
     let is_exe = is_pe_exe_file(package_path);
 
     if !is_zip && !is_exe {
-        return Err("下载内容非有效的 ZIP 压缩包或 Windows 可执行程序 (MZ)，可能遭遇了网络拦截或错误页".to_string());
+        return Err(
+            "下载内容非有效的 ZIP 压缩包或 Windows 可执行程序 (MZ)，可能遭遇了网络拦截或错误页"
+                .to_string(),
+        );
     }
 
     // 采用独立隔离 Staging 目录，防止解压中途失败污染或半覆盖已有版本
@@ -240,18 +305,18 @@ pub fn process_package(package_path: &Path, extract_to: &Path, trainer_id: &str)
         trainer_id,
         chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0)
     ));
-    fs::create_dir_all(&staging_dir)
-        .map_err(|e| format!("创建临时解压隔离目录失败: {}", e))?;
+    fs::create_dir_all(&staging_dir).map_err(|e| format!("创建临时解压隔离目录失败: {}", e))?;
 
     let staging_result = (|| -> Result<PathBuf, String> {
         if is_zip {
-            let file = fs::File::open(package_path)
-                .map_err(|e| format!("打开压缩包失败: {}", e))?;
-            let mut archive = zip::ZipArchive::new(file)
-                .map_err(|e| format!("解析 ZIP 压缩文件失败: {}", e))?;
+            let file =
+                fs::File::open(package_path).map_err(|e| format!("打开压缩包失败: {}", e))?;
+            let mut archive =
+                zip::ZipArchive::new(file).map_err(|e| format!("解析 ZIP 压缩文件失败: {}", e))?;
 
             for i in 0..archive.len() {
-                let mut file = archive.by_index(i)
+                let mut file = archive
+                    .by_index(i)
                     .map_err(|e| format!("读取压缩项失败: {}", e))?;
                 let outpath = match file.enclosed_name() {
                     Some(path) => staging_dir.join(path),
@@ -264,8 +329,8 @@ pub fn process_package(package_path: &Path, extract_to: &Path, trainer_id: &str)
                     if let Some(p) = outpath.parent() {
                         let _ = fs::create_dir_all(p);
                     }
-                    let mut outfile = fs::File::create(&outpath)
-                        .map_err(|e| format!("解压文件失败: {}", e))?;
+                    let mut outfile =
+                        fs::File::create(&outpath).map_err(|e| format!("解压文件失败: {}", e))?;
                     std::io::copy(&mut file, &mut outfile)
                         .map_err(|e| format!("写入解压文件失败: {}", e))?;
                 }
@@ -273,8 +338,7 @@ pub fn process_package(package_path: &Path, extract_to: &Path, trainer_id: &str)
         } else {
             // 如果不是 zip 且为合法 PE，复制为单个 exe
             let direct_exe = staging_dir.join(format!("{}.exe", trainer_id));
-            fs::copy(package_path, &direct_exe)
-                .map_err(|e| format!("复制执行文件失败: {}", e))?;
+            fs::copy(package_path, &direct_exe).map_err(|e| format!("复制执行文件失败: {}", e))?;
         }
 
         // 递归扫描 staging 目录中的所有有效可执行程序
@@ -290,7 +354,11 @@ pub fn process_package(package_path: &Path, extract_to: &Path, trainer_id: &str)
             candidates[0].clone()
         } else {
             let matched = candidates.iter().find(|p| {
-                let name = p.file_name().unwrap_or_default().to_string_lossy().to_lowercase();
+                let name = p
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_lowercase();
                 name.contains("trainer") || name == format!("{}.exe", trainer_id.to_lowercase())
             });
             if let Some(m) = matched {
@@ -301,7 +369,8 @@ pub fn process_package(package_path: &Path, extract_to: &Path, trainer_id: &str)
             }
         };
 
-        let rel_exe_path = best_exe.strip_prefix(&staging_dir)
+        let rel_exe_path = best_exe
+            .strip_prefix(&staging_dir)
             .map_err(|e| format!("计算相对路径失败: {}", e))?
             .to_path_buf();
 
@@ -311,8 +380,7 @@ pub fn process_package(package_path: &Path, extract_to: &Path, trainer_id: &str)
     match staging_result {
         Ok(rel_exe_path) => {
             // 解压与校验完整成功，向目标目录提升安装
-            fs::create_dir_all(extract_to)
-                .map_err(|e| format!("创建目标目录失败: {}", e))?;
+            fs::create_dir_all(extract_to).map_err(|e| format!("创建目标目录失败: {}", e))?;
 
             if let Err(e) = copy_and_promote_staging(&staging_dir, extract_to) {
                 let _ = fs::remove_dir_all(&staging_dir);
@@ -352,12 +420,12 @@ fn collect_all_exes_recursive(dir: &Path, results: &mut Vec<PathBuf>) {
             let p = entry.path();
             if p.is_dir() {
                 collect_all_exes_recursive(&p, results);
-            } else if p.is_file() {
-                if let Some(ext) = p.extension() {
-                    if ext.to_ascii_lowercase() == "exe" && is_pe_exe_file(&p) {
-                        results.push(p);
-                    }
-                }
+            } else if p.is_file()
+                && let Some(ext) = p.extension()
+                && ext.eq_ignore_ascii_case("exe")
+                && is_pe_exe_file(&p)
+            {
+                results.push(p);
             }
         }
     }
@@ -367,7 +435,7 @@ pub fn is_pe_exe_file(path: &Path) -> bool {
     if let Ok(mut f) = fs::File::open(path) {
         let mut magic = [0u8; 2];
         if f.read_exact(&mut magic).is_ok() {
-            return magic == [b'M', b'Z'];
+            return magic == *b"MZ";
         }
     }
     false
@@ -381,6 +449,36 @@ fn is_zip_file(path: &Path) -> bool {
         }
     }
     false
+}
+
+#[cfg(target_os = "windows")]
+fn get_free_disk_space(dir: &Path) -> Option<u64> {
+    use std::os::windows::ffi::OsStrExt;
+    let mut wide_path: Vec<u16> = dir.as_os_str().encode_wide().collect();
+    wide_path.push(0);
+
+    let mut free_bytes_available: u64 = 0;
+    let mut total_number_of_bytes: u64 = 0;
+    let mut total_number_of_free_bytes: u64 = 0;
+
+    unsafe {
+        let ok = windows_sys::Win32::Storage::FileSystem::GetDiskFreeSpaceExW(
+            wide_path.as_ptr(),
+            &mut free_bytes_available,
+            &mut total_number_of_bytes,
+            &mut total_number_of_free_bytes,
+        );
+        if ok != 0 {
+            Some(free_bytes_available)
+        } else {
+            None
+        }
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn get_free_disk_space(_dir: &Path) -> Option<u64> {
+    None
 }
 
 fn sanitize_game_folder_name(name: &str) -> String {
@@ -464,7 +562,10 @@ pub async fn check_trainers_update() -> Result<Vec<TrainerUpdateInfo>, String> {
 }
 
 /// 一键无感增量升级指定修改器为最新版
-pub async fn update_trainer_to_latest(app: AppHandle, id: &str) -> Result<InstalledTrainerRecord, String> {
+pub async fn update_trainer_to_latest(
+    app: AppHandle,
+    id: &str,
+) -> Result<InstalledTrainerRecord, String> {
     let latest_trainer = scraper::get_trainer_detail_ext(id, true).await?;
     download_and_install_trainer(app, latest_trainer).await
 }

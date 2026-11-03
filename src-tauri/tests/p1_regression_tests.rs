@@ -30,15 +30,24 @@ fn create_test_zip(p: &Path, entries: &[(&str, &[u8])]) {
 fn test_p1_02_pe_header_validation_rejects_html() {
     let root = create_temp_test_dir("p1_02_html");
     let html_file = root.join("error.html");
-    fs::write(&html_file, b"<html>Access denied 403 Cloudflare Challenge</html>").unwrap();
+    fs::write(
+        &html_file,
+        b"<html>Access denied 403 Cloudflare Challenge</html>",
+    )
+    .unwrap();
 
     let target_dir = root.join("target");
     fs::create_dir_all(&target_dir).unwrap();
 
     let result = downloader::process_package(&html_file, &target_dir, "test_game");
-    assert!(result.is_err(), "HTML 响应必须被 process_package 拒绝，严禁当作 exe 写入！");
     assert!(
-        result.unwrap_err().contains("非有效的 ZIP 压缩包或 Windows 可执行程序"),
+        result.is_err(),
+        "HTML 响应必须被 process_package 拒绝，严禁当作 exe 写入！"
+    );
+    assert!(
+        result
+            .unwrap_err()
+            .contains("非有效的 ZIP 压缩包或 Windows 可执行程序"),
         "应给出明确的错误页/非可执行文件提示"
     );
 
@@ -62,14 +71,22 @@ fn test_p1_01_staging_nested_exe_and_rollback_protection() {
 
     // 1. 验证嵌套目录中的 EXE 能被递归定位并提升到目标目录
     let exe_res = downloader::process_package(&zip_file, &target_dir, "test_game");
-    assert!(exe_res.is_ok(), "嵌套 ZIP 应成功解压并提取出有效 exe: {:?}", exe_res);
+    assert!(
+        exe_res.is_ok(),
+        "嵌套 ZIP 应成功解压并提取出有效 exe: {:?}",
+        exe_res
+    );
     let exe_path = exe_res.unwrap();
     assert!(exe_path.exists(), "解压出的 exe 必须存在于目标目录");
     assert_eq!(fs::read(&exe_path).unwrap(), b"MZ-valid-nested-binary");
 
     // 2. 验证损坏的 ZIP 解压失败时触发回滚，保护已有目录不残留 staging 垃圾
     let broken_zip = root.join("broken.zip");
-    fs::write(&broken_zip, b"PK\x03\x04broken-data-not-a-valid-zip-content").unwrap();
+    fs::write(
+        &broken_zip,
+        b"PK\x03\x04broken-data-not-a-valid-zip-content",
+    )
+    .unwrap();
     let broken_target = root.join("target_broken");
     fs::create_dir_all(&broken_target).unwrap();
     fs::write(broken_target.join("existing_old.exe"), b"MZ-existing").unwrap();
@@ -77,7 +94,10 @@ fn test_p1_01_staging_nested_exe_and_rollback_protection() {
     let fail_res = downloader::process_package(&broken_zip, &broken_target, "test_game");
     assert!(fail_res.is_err(), "损坏的 ZIP 必须报错");
     // 已有文件依然完好
-    assert!(broken_target.join("existing_old.exe").exists(), "解压失败时原目录已有文件必须完好");
+    assert!(
+        broken_target.join("existing_old.exe").exists(),
+        "解压失败时原目录已有文件必须完好"
+    );
 
     let _ = fs::remove_dir_all(&root);
 }
@@ -92,7 +112,10 @@ fn test_p1_10_config_corrupt_backup_and_atomic_write() {
     let target_write = root.join("test_atomic.json");
     let write_res = config::atomic_write_file(&target_write, b"{\"test\": 123}");
     assert!(write_res.is_ok(), "原子写入应成功");
-    assert_eq!(fs::read_to_string(&target_write).unwrap(), "{\"test\": 123}");
+    assert_eq!(
+        fs::read_to_string(&target_write).unwrap(),
+        "{\"test\": 123}"
+    );
 
     let _ = fs::remove_dir_all(&root);
 }
@@ -114,7 +137,10 @@ fn test_p1_11_hotkey_parser_comprehensive_matrix() {
 
     // 2. 拒绝非法多主键组合 (RUST-10: Ctrl+A+B 严禁静默解析成 Ctrl+B)
     let multi_key = key_simulator::parse_hotkey("Ctrl+A+B");
-    assert!(multi_key.is_none(), "Ctrl+A+B 为非法多主键组合，必须返回 None 拒绝！");
+    assert!(
+        multi_key.is_none(),
+        "Ctrl+A+B 为非法多主键组合，必须返回 None 拒绝！"
+    );
 
     let multi_key2 = key_simulator::parse_hotkey("Shift+F1+F2");
     assert!(multi_key2.is_none(), "Shift+F1+F2 必须返回 None 拒绝！");

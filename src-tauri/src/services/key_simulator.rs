@@ -38,7 +38,11 @@ pub fn parse_hotkey(input: &str) -> Option<ParsedHotkey> {
 
     // 预处理小键盘加号：将 "num +" 或 "numpad +" 归一化为 "num_add"，避免 split('+') 破坏键位 (RUST-10)
     let lower_raw = trimmed.to_lowercase();
-    let normalized = if lower_raw.contains("num +") || lower_raw.contains("numpad +") || lower_raw.contains("num+") || lower_raw.contains("numpad+") {
+    let normalized = if lower_raw.contains("num +")
+        || lower_raw.contains("numpad +")
+        || lower_raw.contains("num+")
+        || lower_raw.contains("numpad+")
+    {
         lower_raw
             .replace("numpad +", "num_add")
             .replace("numpad+", "num_add")
@@ -48,7 +52,11 @@ pub fn parse_hotkey(input: &str) -> Option<ParsedHotkey> {
         lower_raw
     };
 
-    let parts: Vec<&str> = normalized.split('+').map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
+    let parts: Vec<&str> = normalized
+        .split('+')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .collect();
     if parts.is_empty() {
         return None;
     }
@@ -94,49 +102,51 @@ pub fn resolve_virtual_key(key: &str) -> Option<u16> {
         return Some(0x6B); // VK_ADD
     }
     if k.starts_with("num") {
-        let rest = k.trim_start_matches("numpad").trim_start_matches("num").trim();
+        let rest = k
+            .trim_start_matches("numpad")
+            .trim_start_matches("num")
+            .trim();
         match rest {
-            "0" => return Some(0x60), // VK_NUMPAD0
-            "1" => return Some(0x61), // VK_NUMPAD1
-            "2" => return Some(0x62), // VK_NUMPAD2
-            "3" => return Some(0x63), // VK_NUMPAD3
-            "4" => return Some(0x64), // VK_NUMPAD4
-            "5" => return Some(0x65), // VK_NUMPAD5
-            "6" => return Some(0x66), // VK_NUMPAD6
-            "7" => return Some(0x67), // VK_NUMPAD7
-            "8" => return Some(0x68), // VK_NUMPAD8
-            "9" => return Some(0x69), // VK_NUMPAD9
-            "." | "decimal" | "dot" => return Some(0x6E), // VK_DECIMAL
-            "+" | "add" => return Some(0x6B), // VK_ADD
+            "0" => return Some(0x60),                      // VK_NUMPAD0
+            "1" => return Some(0x61),                      // VK_NUMPAD1
+            "2" => return Some(0x62),                      // VK_NUMPAD2
+            "3" => return Some(0x63),                      // VK_NUMPAD3
+            "4" => return Some(0x64),                      // VK_NUMPAD4
+            "5" => return Some(0x65),                      // VK_NUMPAD5
+            "6" => return Some(0x66),                      // VK_NUMPAD6
+            "7" => return Some(0x67),                      // VK_NUMPAD7
+            "8" => return Some(0x68),                      // VK_NUMPAD8
+            "9" => return Some(0x69),                      // VK_NUMPAD9
+            "." | "decimal" | "dot" => return Some(0x6E),  // VK_DECIMAL
+            "+" | "add" => return Some(0x6B),              // VK_ADD
             "-" | "sub" | "subtract" => return Some(0x6D), // VK_SUBTRACT
             "*" | "mul" | "multiply" => return Some(0x6A), // VK_MULTIPLY
-            "/" | "div" | "divide" => return Some(0x6F), // VK_DIVIDE
+            "/" | "div" | "divide" => return Some(0x6F),   // VK_DIVIDE
             _ => {}
         }
     }
 
     // 2. 功能键 F1 ~ F24
-    if k.starts_with('f') {
-        if let Ok(num) = k[1..].parse::<u16>() {
-            if (1..=24).contains(&num) {
-                return Some(0x70 + (num - 1)); // VK_F1 is 0x70, VK_F13 is 0x7C, VK_F24 is 0x87
-            }
-        }
+    if k.starts_with('f')
+        && let Ok(num) = k[1..].parse::<u16>()
+        && (1..=24).contains(&num)
+    {
+        return Some(0x70 + (num - 1)); // VK_F1 is 0x70, VK_F13 is 0x7C, VK_F24 is 0x87
     }
 
     // 3. 特殊导航键与常用键
     match k.as_str() {
         "page up" | "pageup" | "pgup" => return Some(0x21), // VK_PRIOR
         "page down" | "pagedown" | "pgdn" => return Some(0x22), // VK_NEXT
-        "end" => return Some(0x23), // VK_END
-        "home" => return Some(0x24), // VK_HOME
-        "insert" | "ins" => return Some(0x2D), // VK_INSERT
-        "delete" | "del" => return Some(0x2E), // VK_DELETE
-        "space" | "spacebar" => return Some(0x20), // VK_SPACE
-        "tab" => return Some(0x09), // VK_TAB
-        "esc" | "escape" => return Some(0x1B), // VK_ESCAPE
-        "enter" | "return" => return Some(0x0D), // VK_RETURN
-        "backspace" | "back" => return Some(0x08), // VK_BACK
+        "end" => return Some(0x23),                         // VK_END
+        "home" => return Some(0x24),                        // VK_HOME
+        "insert" | "ins" => return Some(0x2D),              // VK_INSERT
+        "delete" | "del" => return Some(0x2E),              // VK_DELETE
+        "space" | "spacebar" => return Some(0x20),          // VK_SPACE
+        "tab" => return Some(0x09),                         // VK_TAB
+        "esc" | "escape" => return Some(0x1B),              // VK_ESCAPE
+        "enter" | "return" => return Some(0x0D),            // VK_RETURN
+        "backspace" | "back" => return Some(0x08),          // VK_BACK
         "caps lock" | "caps" | "capslock" => return Some(0x14), // VK_CAPITAL
         "up" | "arrow up" | "arrowup" => return Some(0x26), // VK_UP
         "down" | "arrow down" | "arrowdown" => return Some(0x28), // VK_DOWN
@@ -161,7 +171,10 @@ pub fn resolve_virtual_key(key: &str) -> Option<u16> {
 
 /// 执行单次热键序列模拟 (带修饰键、时序保护与 SendInput 返回值核验 P1-07)
 #[cfg(target_os = "windows")]
-pub async fn send_single_hotkey_with_hold(hotkey: &ParsedHotkey, hold_ms: u64) -> Result<(), String> {
+pub async fn send_single_hotkey_with_hold(
+    hotkey: &ParsedHotkey,
+    hold_ms: u64,
+) -> Result<(), String> {
     use windows_sys::Win32::UI::Input::KeyboardAndMouse::*;
 
     unsafe {
@@ -206,10 +219,19 @@ pub async fn send_single_hotkey_with_hold(hotkey: &ParsedHotkey, hold_ms: u64) -
         // 2. 发送主键 (KeyDown -> 延时 -> KeyUp)
         let is_extended = matches!(hotkey.vk, 0x21 | 0x22 | 0x23 | 0x24 | 0x2D | 0x2E | 0x6F);
         if !send_key(hotkey.vk, false, is_extended) {
-            if hotkey.shift { send_key(VK_SHIFT, true, false); }
-            if hotkey.alt { send_key(VK_MENU, true, false); }
-            if hotkey.ctrl { send_key(VK_CONTROL, true, false); }
-            return Err(format!("模拟发送主键 (0x{:X}) 失败，SendInput 返回 0", hotkey.vk));
+            if hotkey.shift {
+                send_key(VK_SHIFT, true, false);
+            }
+            if hotkey.alt {
+                send_key(VK_MENU, true, false);
+            }
+            if hotkey.ctrl {
+                send_key(VK_CONTROL, true, false);
+            }
+            return Err(format!(
+                "模拟发送主键 (0x{:X}) 失败，SendInput 返回 0",
+                hotkey.vk
+            ));
         }
         sleep(Duration::from_millis(hold_ms)).await;
         send_key(hotkey.vk, true, is_extended);
@@ -235,9 +257,9 @@ pub async fn send_single_hotkey_with_hold(hotkey: &ParsedHotkey, hold_ms: u64) -
 #[cfg(target_os = "windows")]
 pub fn focus_window_for_exe(exe_name: &str) -> bool {
     use windows_sys::Win32::Foundation::*;
-    use windows_sys::Win32::UI::WindowsAndMessaging::*;
     use windows_sys::Win32::System::ProcessStatus::*;
     use windows_sys::Win32::System::Threading::*;
+    use windows_sys::Win32::UI::WindowsAndMessaging::*;
 
     struct SearchCtx<'a> {
         target_exe: &'a str,
@@ -260,7 +282,8 @@ pub fn focus_window_for_exe(exe_name: &str) -> bool {
             let handle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, 0, pid);
             if !handle.is_null() {
                 let mut name_buf = [0u16; 260];
-                let len = GetModuleBaseNameW(handle, std::ptr::null_mut(), name_buf.as_mut_ptr(), 260);
+                let len =
+                    GetModuleBaseNameW(handle, std::ptr::null_mut(), name_buf.as_mut_ptr(), 260);
                 CloseHandle(handle);
                 if len > 0 {
                     let name = String::from_utf16_lossy(&name_buf[..len as usize]);
@@ -298,8 +321,14 @@ pub async fn send_single_hotkey(hotkey: &ParsedHotkey) -> Result<(), String> {
 }
 
 #[cfg(not(target_os = "windows"))]
-pub async fn send_single_hotkey_with_hold(hotkey: &ParsedHotkey, hold_ms: u64) -> Result<(), String> {
-    println!("[Non-Windows Mock] Simulating hotkey: {:?} with hold {}ms", hotkey, hold_ms);
+pub async fn send_single_hotkey_with_hold(
+    hotkey: &ParsedHotkey,
+    hold_ms: u64,
+) -> Result<(), String> {
+    println!(
+        "[Non-Windows Mock] Simulating hotkey: {:?} with hold {}ms",
+        hotkey, hold_ms
+    );
     sleep(Duration::from_millis(hold_ms)).await;
     Ok(())
 }

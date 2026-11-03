@@ -1,7 +1,7 @@
 use crate::services::config::build_custom_http_client;
 use crate::services::storage::get_app_data_dir;
-use base64::engine::general_purpose::STANDARD;
 use base64::Engine as _;
+use base64::engine::general_purpose::STANDARD;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -20,47 +20,45 @@ pub fn get_theme_wallpapers_dir() -> PathBuf {
 pub fn get_windows_accent_color() -> Result<String, String> {
     #[cfg(target_os = "windows")]
     {
-        use winreg::enums::HKEY_CURRENT_USER;
         use winreg::RegKey;
+        use winreg::enums::HKEY_CURRENT_USER;
 
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);
 
         // 1. 优先读取 DWM\AccentColor (ABGR DWORD)
-        if let Ok(dwm) = hkcu.open_subkey("Software\\Microsoft\\Windows\\DWM") {
-            if let Ok(val) = dwm.get_value::<u32, _>("AccentColor") {
-                let r = (val & 0xFF) as u8;
-                let g = ((val >> 8) & 0xFF) as u8;
-                let b = ((val >> 16) & 0xFF) as u8;
-                if r != 0 || g != 0 || b != 0 {
-                    return Ok(format!("#{:02x}{:02x}{:02x}", r, g, b));
-                }
+        if let Ok(dwm) = hkcu.open_subkey("Software\\Microsoft\\Windows\\DWM")
+            && let Ok(val) = dwm.get_value::<u32, _>("AccentColor")
+        {
+            let r = (val & 0xFF) as u8;
+            let g = ((val >> 8) & 0xFF) as u8;
+            let b = ((val >> 16) & 0xFF) as u8;
+            if r != 0 || g != 0 || b != 0 {
+                return Ok(format!("#{:02x}{:02x}{:02x}", r, g, b));
             }
         }
 
         // 2. 备选读取 Explorer\Accent\AccentColorMenu (ABGR DWORD)
         if let Ok(accent) =
             hkcu.open_subkey("Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Accent")
+            && let Ok(val) = accent.get_value::<u32, _>("AccentColorMenu")
         {
-            if let Ok(val) = accent.get_value::<u32, _>("AccentColorMenu") {
-                let r = (val & 0xFF) as u8;
-                let g = ((val >> 8) & 0xFF) as u8;
-                let b = ((val >> 16) & 0xFF) as u8;
-                if r != 0 || g != 0 || b != 0 {
-                    return Ok(format!("#{:02x}{:02x}{:02x}", r, g, b));
-                }
+            let r = (val & 0xFF) as u8;
+            let g = ((val >> 8) & 0xFF) as u8;
+            let b = ((val >> 16) & 0xFF) as u8;
+            if r != 0 || g != 0 || b != 0 {
+                return Ok(format!("#{:02x}{:02x}{:02x}", r, g, b));
             }
         }
 
         // 3. 备选读取 DWM\ColorizationColor (此项为 ARGB 字节序)
-        if let Ok(dwm) = hkcu.open_subkey("Software\\Microsoft\\Windows\\DWM") {
-            if let Ok(val) = dwm.get_value::<u32, _>("ColorizationColor") {
-                if (val & 0x00FF_FFFF) != 0 {
-                    let r = ((val >> 16) & 0xFF) as u8;
-                    let g = ((val >> 8) & 0xFF) as u8;
-                    let b = (val & 0xFF) as u8;
-                    return Ok(format!("#{:02x}{:02x}{:02x}", r, g, b));
-                }
-            }
+        if let Ok(dwm) = hkcu.open_subkey("Software\\Microsoft\\Windows\\DWM")
+            && let Ok(val) = dwm.get_value::<u32, _>("ColorizationColor")
+            && (val & 0x00FF_FFFF) != 0
+        {
+            let r = ((val >> 16) & 0xFF) as u8;
+            let g = ((val >> 8) & 0xFF) as u8;
+            let b = (val & 0xFF) as u8;
+            return Ok(format!("#{:02x}{:02x}{:02x}", r, g, b));
         }
 
         Ok("#0078d4".to_string())
@@ -116,8 +114,8 @@ pub fn delete_monet_wallpaper_file(image_path: &str) -> Result<(), String> {
     }
 
     let wallpapers_dir = get_theme_wallpapers_dir();
-    let canon_dir = fs::canonicalize(&wallpapers_dir)
-        .map_err(|e| format!("校验主题图片目录失败: {}", e))?;
+    let canon_dir =
+        fs::canonicalize(&wallpapers_dir).map_err(|e| format!("校验主题图片目录失败: {}", e))?;
     let canon_target =
         fs::canonicalize(target).map_err(|e| format!("校验待删除图片路径失败: {}", e))?;
 
@@ -129,24 +127,24 @@ pub fn delete_monet_wallpaper_file(image_path: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// 根据文件头魔数推断常见图片 MIME 类型
-fn detect_image_mime(bytes: &[u8]) -> &'static str {
+/// 根据文件头魔数推断常见图片 MIME 类型，未知二进制返回 None 杜绝伪装文件嗅探
+fn detect_image_mime(bytes: &[u8]) -> Option<&'static str> {
     if bytes.starts_with(&[0x89, 0x50, 0x4E, 0x47]) {
-        "image/png"
+        Some("image/png")
     } else if bytes.starts_with(&[0xFF, 0xD8, 0xFF]) {
-        "image/jpeg"
+        Some("image/jpeg")
     } else if bytes.len() >= 12 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
-        "image/webp"
+        Some("image/webp")
     } else if bytes.starts_with(b"GIF8") {
-        "image/gif"
+        Some("image/gif")
     } else if bytes.starts_with(b"BM") {
-        "image/bmp"
+        Some("image/bmp")
     } else {
-        "image/jpeg"
+        None
     }
 }
 
-/// 读取本地图片路径或远程 HTTP(S) 图片为 Data URL，彻底规避浏览器 Canvas 跨域污染 (CORS Taint)
+/// 读取本地图片路径或远程 HTTPS 图片为 Data URL，严格校验扩展名与文件头魔数，彻底规避任意文件嗅探与 Canvas 跨域污染
 pub async fn read_image_as_data_url(source: &str) -> Result<String, String> {
     let trimmed = source.trim();
     if trimmed.is_empty() {
@@ -158,7 +156,7 @@ pub async fn read_image_as_data_url(source: &str) -> Result<String, String> {
 
     let max_bytes: usize = 20 * 1024 * 1024; // 20MB 安全上限
 
-    let bytes = if trimmed.starts_with("http://") || trimmed.starts_with("https://") {
+    let bytes = if trimmed.starts_with("https://") {
         let client = build_custom_http_client()?;
         let resp = client
             .get(trimmed)
@@ -176,11 +174,28 @@ pub async fn read_image_as_data_url(source: &str) -> Result<String, String> {
             return Err("远程图片体积超过 20MB 安全限制".to_string());
         }
         raw.to_vec()
+    } else if trimmed.starts_with("http://") {
+        return Err("安全拦截：禁止使用未加密明文 HTTP 协议加载图片，请使用 HTTPS".to_string());
     } else {
         let p = Path::new(trimmed);
         if !p.exists() {
             return Err(format!("本地图片不存在: {}", trimmed));
         }
+
+        // 校验扩展名白名单，杜绝任意敏感文件嗅探
+        let ext = p
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or_default()
+            .to_lowercase();
+        let allowed_exts = ["png", "jpg", "jpeg", "webp", "gif", "bmp"];
+        if !allowed_exts.contains(&ext.as_str()) {
+            return Err(
+                "安全拦截：所选文件并非支持的图片扩展名 (仅限 png/jpg/jpeg/webp/gif/bmp)"
+                    .to_string(),
+            );
+        }
+
         let meta = fs::metadata(p).map_err(|e| format!("读取图片元数据失败: {}", e))?;
         if meta.len() as usize > max_bytes {
             return Err("本地图片体积超过 20MB 安全限制，请压缩后再试".to_string());
@@ -192,7 +207,8 @@ pub async fn read_image_as_data_url(source: &str) -> Result<String, String> {
         return Err("图片内容为空".to_string());
     }
 
-    let mime = detect_image_mime(&bytes);
+    let mime = detect_image_mime(&bytes)
+        .ok_or_else(|| "安全拦截：文件内容头魔数与合法图片格式不符，拒绝伪装加载".to_string())?;
     let b64 = STANDARD.encode(&bytes);
     Ok(format!("data:{};base64,{}", mime, b64))
 }

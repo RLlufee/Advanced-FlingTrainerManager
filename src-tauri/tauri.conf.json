@@ -23,7 +23,7 @@
       }
     ],
     "security": {
-      "csp": null,
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: https: data: blob:; connect-src 'self' ipc: http://ipc.localhost https://flingtrainer.com https://*.steamstatic.com https://images.unsplash.com; font-src 'self' data:;",
       "assetProtocol": {
         "enable": true,
         "scope": ["**"]

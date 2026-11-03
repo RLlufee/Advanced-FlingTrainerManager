@@ -81,7 +81,10 @@ fn test_p2_08_clean_orphan_cache_accurate_reporting() {
     let summary = res.unwrap();
 
     // 验证清理计数与字节释放量为真实成功数
-    assert!(summary.cleaned_files_count >= 2, "应清理刚才创建的 2 个临时测试文件");
+    assert!(
+        summary.cleaned_files_count >= 2,
+        "应清理刚才创建的 2 个临时测试文件"
+    );
     assert!(summary.freed_bytes > 0, "释放字节数应大于 0");
     assert!(!file_a.exists(), "临时文件 A 应被成功删除");
     assert!(!file_b.exists(), "临时文件 B 应被成功删除");

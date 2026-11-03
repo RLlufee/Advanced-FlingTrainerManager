@@ -18,12 +18,11 @@ pub struct GameMetaCacheItem {
 static META_CACHE: LazyLock<Mutex<HashMap<String, GameMetaCacheItem>>> = LazyLock::new(|| {
     let mut map = HashMap::new();
     let cache_file = get_cache_file_path();
-    if cache_file.exists() {
-        if let Ok(content) = fs::read_to_string(&cache_file) {
-            if let Ok(loaded) = serde_json::from_str::<HashMap<String, GameMetaCacheItem>>(&content) {
-                map = loaded;
-            }
-        }
+    if cache_file.exists()
+        && let Ok(content) = fs::read_to_string(&cache_file)
+        && let Ok(loaded) = serde_json::from_str::<HashMap<String, GameMetaCacheItem>>(&content)
+    {
+        map = loaded;
     }
     Mutex::new(map)
 });
@@ -53,10 +52,10 @@ pub fn get_cached_game_meta(trainer_id: &str, game_name: &str) -> Option<GameMet
             if clean_game_name(k).to_lowercase() == cleaned {
                 return Some(v.clone());
             }
-            if let Some(zh) = &v.chinese_name {
-                if zh.to_lowercase() == cleaned {
-                    return Some(v.clone());
-                }
+            if let Some(zh) = &v.chinese_name
+                && zh.to_lowercase() == cleaned
+            {
+                return Some(v.clone());
             }
         }
     }
@@ -73,11 +72,11 @@ fn find_translations_db_path() -> Option<PathBuf> {
         get_app_data_dir().join("fling_translations.db"),
     ];
 
-    if let Ok(exe_path) = std::env::current_exe() {
-        if let Some(exe_dir) = exe_path.parent() {
-            candidates.push(exe_dir.join("resources").join("fling_translations.db"));
-            candidates.push(exe_dir.join("fling_translations.db"));
-        }
+    if let Ok(exe_path) = std::env::current_exe()
+        && let Some(exe_dir) = exe_path.parent()
+    {
+        candidates.push(exe_dir.join("resources").join("fling_translations.db"));
+        candidates.push(exe_dir.join("fling_translations.db"));
     }
 
     for path in &candidates {
@@ -103,8 +102,15 @@ pub fn clean_game_name(raw_name: &str) -> String {
         "fling",
     ];
 
+    static VER_RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    let re = VER_RE.get_or_init(|| {
+        regex::Regex::new(r"(?i)[\s\-_]+(v\d+(\.\d+)*[a-z]?|\+\d+|\bplus\s+\d+)$").unwrap()
+    });
+
     loop {
-        let trimmed = cleaned.trim_end_matches(&['-', '—', '–', ' ', '_', '/', '\\', '|', '+', ':', '.'][..]).trim();
+        let trimmed = cleaned
+            .trim_end_matches(&['-', '—', '–', ' ', '_', '/', '\\', '|', '+', ':', '.'][..])
+            .trim();
         if trimmed.len() != cleaned.len() {
             cleaned = trimmed.to_string();
             continue;
@@ -121,28 +127,29 @@ pub fn clean_game_name(raw_name: &str) -> String {
                     break;
                 }
                 let prev_char = cleaned[..prefix_len].chars().last();
-                if let Some(c) = prev_char {
-                    if c.is_whitespace() || c == '-' || c == '—' || c == '–' || c == '_' || c == '/' || c == '(' || c == '[' {
-                        cleaned = cleaned[..prefix_len].trim().to_string();
-                        matched = true;
-                        break;
-                    }
+                if let Some(c) = prev_char
+                    && (c.is_whitespace()
+                        || c == '-'
+                        || c == '—'
+                        || c == '–'
+                        || c == '_'
+                        || c == '/'
+                        || c == '('
+                        || c == '[')
+                {
+                    cleaned = cleaned[..prefix_len].trim().to_string();
+                    matched = true;
+                    break;
                 }
             }
         }
 
-        if !matched {
-            static VER_RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
-            let re = VER_RE.get_or_init(|| {
-                regex::Regex::new(r"(?i)[\s\-_]+(v\d+(\.\d+)*[a-z]?|\+\d+|\bplus\s+\d+)$").unwrap()
-            });
-
-            if let Some(m) = re.find(&cleaned) {
-                if m.start() > 0 {
-                    cleaned = cleaned[..m.start()].trim().to_string();
-                    matched = true;
-                }
-            }
+        if !matched
+            && let Some(m) = re.find(&cleaned)
+            && m.start() > 0
+        {
+            cleaned = cleaned[..m.start()].trim().to_string();
+            matched = true;
         }
 
         if !matched {
@@ -205,13 +212,16 @@ pub fn query_local_game_and_trainer_info(game_name: &str) -> Option<LocalGameInf
         .prepare("SELECT chinese_simplified, english, trainer_url FROM games WHERE english LIKE ?1 OR normalized_english LIKE ?2 OR chinese_simplified LIKE ?3 LIMIT 1")
         .ok()?;
 
-    if let Ok((cn, en, url)) = stmt2.query_row([&like_query, &format!("%{}%", normalized), &like_query], |row| {
-        Ok((
-            row.get::<_, Option<String>>(0)?,
-            row.get::<_, Option<String>>(1)?,
-            row.get::<_, Option<String>>(2)?,
-        ))
-    }) {
+    if let Ok((cn, en, url)) = stmt2.query_row(
+        [&like_query, &format!("%{}%", normalized), &like_query],
+        |row| {
+            Ok((
+                row.get::<_, Option<String>>(0)?,
+                row.get::<_, Option<String>>(1)?,
+                row.get::<_, Option<String>>(2)?,
+            ))
+        },
+    ) {
         let slug = url.as_deref().and_then(extract_slug_from_url);
         return Some(LocalGameInfo {
             chinese_name: cn.filter(|s| !s.trim().is_empty()),
@@ -227,7 +237,7 @@ pub fn query_local_game_and_trainer_info(game_name: &str) -> Option<LocalGameInf
 /// 从 URL 中提取合法 slug (例如 "https://flingtrainer.com/trainer/victoria-3-trainer/" -> "victoria-3-trainer")
 pub fn extract_slug_from_url(url: &str) -> Option<String> {
     let trimmed = url.trim_end_matches('/');
-    let last_seg = trimmed.split('/').last()?.trim();
+    let last_seg = trimmed.split('/').next_back()?.trim();
     if last_seg.is_empty() || last_seg.contains('.') || last_seg == "archive.flingtrainer.com" {
         None
     } else {
@@ -237,9 +247,12 @@ pub fn extract_slug_from_url(url: &str) -> Option<String> {
 
 /// 从英文名称推测标准风灵月影 slug
 pub fn guess_slug_from_name(name: &str) -> String {
-    let clean = name
-        .to_lowercase()
-        .replace([':', '\'', '’', '.', ',', '!', '?', '(', ')', '[', ']', '—', '–', '-'], " ");
+    let clean = name.to_lowercase().replace(
+        [
+            ':', '\'', '’', '.', ',', '!', '?', '(', ')', '[', ']', '—', '–', '-',
+        ],
+        " ",
+    );
     let parts: Vec<&str> = clean.split_whitespace().collect();
     let base = parts.join("-");
     if base.ends_with("-trainer") {
@@ -265,10 +278,10 @@ pub fn query_local_chinese_name(game_name: &str) -> Option<String> {
         .prepare("SELECT chinese_simplified FROM games WHERE normalized_english = ?1 LIMIT 1")
         .ok()?;
 
-    if let Ok(res) = stmt.query_row([&normalized], |row| row.get::<_, String>(0)) {
-        if !res.trim().is_empty() {
-            return Some(res.trim().to_string());
-        }
+    if let Ok(res) = stmt.query_row([&normalized], |row| row.get::<_, String>(0))
+        && !res.trim().is_empty()
+    {
+        return Some(res.trim().to_string());
     }
 
     // 2. 若精确匹配未中，尝试忽略标点符号的模糊匹配
@@ -277,10 +290,11 @@ pub fn query_local_chinese_name(game_name: &str) -> Option<String> {
         .prepare("SELECT chinese_simplified FROM games WHERE english LIKE ?1 OR normalized_english LIKE ?2 LIMIT 1")
         .ok()?;
 
-    if let Ok(res) = stmt2.query_row([&like_query, &format!("%{}%", normalized)], |row| row.get::<_, String>(0)) {
-        if !res.trim().is_empty() {
-            return Some(res.trim().to_string());
-        }
+    if let Ok(res) = stmt2.query_row([&like_query, &format!("%{}%", normalized)], |row| {
+        row.get::<_, String>(0)
+    }) && !res.trim().is_empty()
+    {
+        return Some(res.trim().to_string());
     }
 
     None
@@ -288,15 +302,16 @@ pub fn query_local_chinese_name(game_name: &str) -> Option<String> {
 
 /// 获取本地离线翻译数据库中收录的游戏总数
 pub fn get_offline_dictionary_count() -> usize {
-    if let Some(db_path) = find_translations_db_path() {
-        if let Ok(conn) = Connection::open_with_flags(
+    if let Some(db_path) = find_translations_db_path()
+        && let Ok(conn) = Connection::open_with_flags(
             db_path,
             rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
-        ) {
-            if let Ok(count) = conn.query_row("SELECT COUNT(*) FROM games", [], |row| row.get::<_, usize>(0)) {
-                return count;
-            }
-        }
+        )
+        && let Ok(count) = conn.query_row("SELECT COUNT(*) FROM games", [], |row| {
+            row.get::<_, usize>(0)
+        })
+    {
+        return count;
     }
     1185
 }
@@ -315,10 +330,10 @@ pub fn reverse_lookup_english_by_chinese(chinese_keyword: &str) -> Option<String
         .prepare("SELECT english FROM games WHERE chinese_simplified LIKE ?1 LIMIT 1")
         .ok()?;
 
-    if let Ok(english) = stmt.query_row([&pattern], |row| row.get::<_, String>(0)) {
-        if !english.trim().is_empty() {
-            return Some(english.trim().to_string());
-        }
+    if let Ok(english) = stmt.query_row([&pattern], |row| row.get::<_, String>(0))
+        && !english.trim().is_empty()
+    {
+        return Some(english.trim().to_string());
     }
 
     None
@@ -377,7 +392,12 @@ pub async fn fetch_steam_meta(game_name: &str) -> Option<(u32, String, String, S
 fn urlencoding(input: &str) -> String {
     let mut encoded = String::new();
     for byte in input.bytes() {
-        if byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_' || byte == b'.' || byte == b'~' {
+        if byte.is_ascii_alphanumeric()
+            || byte == b'-'
+            || byte == b'_'
+            || byte == b'.'
+            || byte == b'~'
+        {
             encoded.push(byte as char);
         } else {
             encoded.push_str(&format!("%{:02X}", byte));
@@ -391,17 +411,19 @@ pub async fn enrich_trainer(trainer: &mut Trainer) {
     let cleaned_name = clean_game_name(&trainer.name);
 
     // 1. 先检查内存/磁盘持久化缓存（仅当已完整获取到 Steam 元数据时才直接短路返回，避免把网络偶发失败持久化为终态）
-    if let Ok(cache) = META_CACHE.lock() {
-        if let Some(cached) = cache.get(&trainer.id) {
-            if cached.steam_app_id.is_some() && (cached.hero_image.is_some() || cached.capsule_image.is_some()) {
-                trainer.chinese_name = cached.chinese_name.clone();
-                trainer.steam_app_id = cached.steam_app_id;
-                trainer.hero_image = cached.hero_image.clone();
-                trainer.capsule_image = cached.capsule_image.clone();
-                return;
-            } else if trainer.chinese_name.is_none() {
-                trainer.chinese_name = cached.chinese_name.clone();
-            }
+    if let Ok(cache) = META_CACHE.lock()
+        && let Some(cached) = cache.get(&trainer.id)
+    {
+        if cached.steam_app_id.is_some()
+            && (cached.hero_image.is_some() || cached.capsule_image.is_some())
+        {
+            trainer.chinese_name = cached.chinese_name.clone();
+            trainer.steam_app_id = cached.steam_app_id;
+            trainer.hero_image = cached.hero_image.clone();
+            trainer.capsule_image = cached.capsule_image.clone();
+            return;
+        } else if trainer.chinese_name.is_none() {
+            trainer.chinese_name = cached.chinese_name.clone();
         }
     }
 
@@ -422,7 +444,8 @@ pub async fn enrich_trainer(trainer: &mut Trainer) {
         trainer.capsule_image = Some(capsule.clone());
 
         // 如果本地数据库未命中中文名，使用 Steam 官方中文名
-        if trainer.chinese_name.is_none() || trainer.chinese_name.as_deref() == Some(&trainer.name) {
+        if trainer.chinese_name.is_none() || trainer.chinese_name.as_deref() == Some(&trainer.name)
+        {
             trainer.chinese_name = Some(steam_name.clone());
         }
 

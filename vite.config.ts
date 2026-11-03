@@ -17,6 +17,27 @@ export default defineConfig(() => ({
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
+            return "react-vendor";
+          }
+          if (id.includes("node_modules/motion/")) {
+            return "motion-vendor";
+          }
+          if (id.includes("node_modules/lucide-react/")) {
+            return "icons-vendor";
+          }
+          if (id.includes("node_modules/@material/material-color-utilities/")) {
+            return "color-vendor";
+          }
+        },
+      },
+    },
+  },
   // 1. prevent Vite from obscuring rust errors
   clearScreen: false,
   // 2. tauri expects a fixed port, fail if that port is not available

@@ -71,7 +71,8 @@ struct MemoryCombineInformationEx {
 #[cfg(windows)]
 struct NtFunctions {
     rtl_adjust_privilege: Option<unsafe extern "system" fn(u32, u8, u8, *mut u8) -> u32>,
-    nt_set_system_information: Option<unsafe extern "system" fn(u32, *const std::ffi::c_void, u32) -> u32>,
+    nt_set_system_information:
+        Option<unsafe extern "system" fn(u32, *const std::ffi::c_void, u32) -> u32>,
 }
 
 #[cfg(windows)]
@@ -79,7 +80,7 @@ impl NtFunctions {
     fn load() -> Self {
         use windows_sys::Win32::System::LibraryLoader::{GetModuleHandleA, GetProcAddress};
         unsafe {
-            let h_ntdll = GetModuleHandleA(b"ntdll.dll\0".as_ptr());
+            let h_ntdll = GetModuleHandleA(c"ntdll.dll".as_ptr() as *const u8);
             if h_ntdll.is_null() {
                 return Self {
                     rtl_adjust_privilege: None,
@@ -87,19 +88,21 @@ impl NtFunctions {
                 };
             }
 
-            let adj_addr = GetProcAddress(h_ntdll, b"RtlAdjustPrivilege\0".as_ptr());
-            let rtl_adjust_privilege = if !adj_addr.is_none() {
-                Some(std::mem::transmute(adj_addr))
-            } else {
-                None
-            };
+            let adj_addr = GetProcAddress(h_ntdll, c"RtlAdjustPrivilege".as_ptr() as *const u8);
+            let rtl_adjust_privilege = adj_addr.map(|addr| {
+                std::mem::transmute::<
+                    unsafe extern "system" fn() -> isize,
+                    unsafe extern "system" fn(u32, u8, u8, *mut u8) -> u32,
+                >(addr)
+            });
 
-            let set_addr = GetProcAddress(h_ntdll, b"NtSetSystemInformation\0".as_ptr());
-            let nt_set_system_information = if !set_addr.is_none() {
-                Some(std::mem::transmute(set_addr))
-            } else {
-                None
-            };
+            let set_addr = GetProcAddress(h_ntdll, c"NtSetSystemInformation".as_ptr() as *const u8);
+            let nt_set_system_information = set_addr.map(|addr| {
+                std::mem::transmute::<
+                    unsafe extern "system" fn() -> isize,
+                    unsafe extern "system" fn(u32, *const std::ffi::c_void, u32) -> u32,
+                >(addr)
+            });
 
             Self {
                 rtl_adjust_privilege,
@@ -175,7 +178,9 @@ pub fn get_system_memory_info() -> Result<SystemMemoryInfo, String> {
     }
 }
 
-pub fn optimize_memory(options: Option<MemoryOptimizeOptions>) -> Result<MemoryOptimizeResult, String> {
+pub fn optimize_memory(
+    options: Option<MemoryOptimizeOptions>,
+) -> Result<MemoryOptimizeResult, String> {
     #[cfg(windows)]
     {
         use windows_sys::Win32::System::ProcessStatus::K32EmptyWorkingSet;
@@ -192,7 +197,9 @@ pub fn optimize_memory(options: Option<MemoryOptimizeOptions>) -> Result<MemoryO
             nt.enable_privileges();
             logs.push("已成功获取内核级特权 (SeIncreaseQuota & SeProfileSingleProcess)".into());
         } else {
-            logs.push("当前为普通用户权限，运行基础进程工作集优化（内核待机列表清空需管理员权限）".into());
+            logs.push(
+                "当前为普通用户权限，运行基础进程工作集优化（内核待机列表清空需管理员权限）".into(),
+            );
         }
 
         // 1. 回收当前进程及基础工作集
@@ -297,11 +304,11 @@ pub fn optimize_memory(options: Option<MemoryOptimizeOptions>) -> Result<MemoryO
 
             // 注册表协调释放 (SystemRegistryReconciliationInformation = 155)
             if opts.registry_reconciliation {
-                let status = unsafe {
-                    set_sys_info(155, std::ptr::null(), 0)
-                };
+                let status = unsafe { set_sys_info(155, std::ptr::null(), 0) };
                 if status == 0 {
-                    logs.push("已协调并优化系统注册表内存占用 (SystemRegistryReconciliation)".into());
+                    logs.push(
+                        "已协调并优化系统注册表内存占用 (SystemRegistryReconciliation)".into(),
+                    );
                 }
             }
 
@@ -315,7 +322,8 @@ pub fn optimize_memory(options: Option<MemoryOptimizeOptions>) -> Result<MemoryO
                 let status = unsafe {
                     set_sys_info(
                         130,
-                        &combine_info as *const MemoryCombineInformationEx as *const std::ffi::c_void,
+                        &combine_info as *const MemoryCombineInformationEx
+                            as *const std::ffi::c_void,
                         std::mem::size_of::<MemoryCombineInformationEx>() as u32,
                     )
                 };
@@ -329,11 +337,9 @@ pub fn optimize_memory(options: Option<MemoryOptimizeOptions>) -> Result<MemoryO
         std::thread::sleep(std::time::Duration::from_millis(150));
         let after = get_system_memory_info()?;
 
-        let freed_bytes = if after.avail_phys_bytes > before.avail_phys_bytes {
-            after.avail_phys_bytes - before.avail_phys_bytes
-        } else {
-            0
-        };
+        let freed_bytes = after
+            .avail_phys_bytes
+            .saturating_sub(before.avail_phys_bytes);
 
         logs.push(format!(
             "优化完成：可用内存从 {:.2} GB 提升至 {:.2} GB，共释放 {:.1} MB",
@@ -369,8 +375,8 @@ pub fn restart_as_admin() -> Result<(), String> {
             s.encode_wide().chain(std::iter::once(0)).collect()
         }
 
-        let exe_path = std::env::current_exe()
-            .map_err(|e| format!("获取当前可执行文件路径失败: {}", e))?;
+        let exe_path =
+            std::env::current_exe().map_err(|e| format!("获取当前可执行文件路径失败: {}", e))?;
 
         let op = to_wide(OsStr::new("runas"));
         let file = to_wide(exe_path.as_os_str());
@@ -390,7 +396,10 @@ pub fn restart_as_admin() -> Result<(), String> {
             // 提权子进程已拉起，退出当前非管理员进程
             std::process::exit(0);
         } else {
-            Err(format!("UAC 提升管理员权限被取消或失败，错误代码: {}", res as usize))
+            Err(format!(
+                "UAC 提升管理员权限被取消或失败，错误代码: {}",
+                res as usize
+            ))
         }
     }
     #[cfg(not(windows))]

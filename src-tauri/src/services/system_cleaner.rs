@@ -293,9 +293,7 @@ where
 
 #[cfg(target_os = "windows")]
 fn is_admin() -> bool {
-    unsafe {
-        windows_sys::Win32::UI::Shell::IsUserAnAdmin() != 0
-    }
+    unsafe { windows_sys::Win32::UI::Shell::IsUserAnAdmin() != 0 }
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -356,15 +354,13 @@ pub fn run_system_cleanup(selected_categories: Vec<String>) -> Result<CleanupRun
         }
 
         for root in &rule.roots {
-            let mut on_file = |path: &Path, size: u64| {
-                match std::fs::remove_file(path) {
-                    Ok(()) => {
-                        freed_bytes = freed_bytes.saturating_add(size);
-                        cleaned_files = cleaned_files.saturating_add(1);
-                    }
-                    Err(_) => {
-                        failed_count = failed_count.saturating_add(1);
-                    }
+            let mut on_file = |path: &Path, size: u64| match std::fs::remove_file(path) {
+                Ok(()) => {
+                    freed_bytes = freed_bytes.saturating_add(size);
+                    cleaned_files = cleaned_files.saturating_add(1);
+                }
+                Err(_) => {
+                    failed_count = failed_count.saturating_add(1);
                 }
             };
             walk_path(root, rule.age_secs, now, &mut on_file, 0);
