@@ -169,6 +169,66 @@ fn default_wallpaper_fit() -> String {
 fn default_wallpaper_surface_transparency() -> u16 {
     20
 }
+fn default_wallpaper_enabled() -> bool {
+    true
+}
+fn default_layer_true() -> bool {
+    true
+}
+fn default_card_opacity() -> u16 {
+    80
+}
+fn default_sidebar_opacity() -> u16 {
+    75
+}
+fn default_backdrop_blur() -> u16 {
+    12
+}
+
+/// 自定义壁纸图层覆盖与游乐场调试配置
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WallpaperLayersConfig {
+    /// 侧边栏导航层
+    #[serde(default = "default_layer_true")]
+    pub sidebar: bool,
+    /// 主工作区底衬
+    #[serde(default = "default_layer_true")]
+    pub content: bool,
+    /// 卡片容器层
+    #[serde(default)]
+    pub cards: bool,
+    /// 顶部标题栏
+    #[serde(default)]
+    pub titlebar: bool,
+    /// 模态浮层
+    #[serde(default)]
+    pub modals: bool,
+    /// 卡片不透明度 (30-100)
+    #[serde(default = "default_card_opacity")]
+    pub card_opacity: u16,
+    /// 侧栏不透明度 (30-100)
+    #[serde(default = "default_sidebar_opacity")]
+    pub sidebar_opacity: u16,
+    /// 毛玻璃模糊度 (0-24px)
+    #[serde(default = "default_backdrop_blur")]
+    pub backdrop_blur: u16,
+}
+
+impl Default for WallpaperLayersConfig {
+    fn default() -> Self {
+        Self {
+            sidebar: true,
+            content: true,
+            cards: false,
+            titlebar: false,
+            modals: false,
+            card_opacity: default_card_opacity(),
+            sidebar_opacity: default_sidebar_opacity(),
+            backdrop_blur: default_backdrop_blur(),
+        }
+    }
+}
+
 fn default_dynamic_source() -> String {
     "windows".to_string()
 }
@@ -234,6 +294,10 @@ pub struct ThemeSettings {
     pub wallpaper_fit: String,
     #[serde(default = "default_wallpaper_surface_transparency")]
     pub wallpaper_surface_transparency: u16,
+    #[serde(default = "default_wallpaper_enabled")]
+    pub wallpaper_enabled: bool,
+    #[serde(default)]
+    pub wallpaper_layers: WallpaperLayersConfig,
 }
 
 impl Default for ThemeSettings {
@@ -254,6 +318,8 @@ impl Default for ThemeSettings {
             wallpaper_blur: default_wallpaper_blur(),
             wallpaper_fit: default_wallpaper_fit(),
             wallpaper_surface_transparency: default_wallpaper_surface_transparency(),
+            wallpaper_enabled: default_wallpaper_enabled(),
+            wallpaper_layers: WallpaperLayersConfig::default(),
         }
     }
 }

@@ -83,6 +83,25 @@ export type WallpaperFit = "cover" | "contain";
 
 export type ColorMode = "system" | "light" | "dark";
 
+export interface WallpaperLayersConfig {
+  /** 侧边栏导航层：左侧导航栏透出壁纸 */
+  sidebar: boolean;
+  /** 主工作区底板：右侧主工作区底衬透出壁纸 */
+  content: boolean;
+  /** 内容卡片层：各类卡片半透明磨砂透视 */
+  cards: boolean;
+  /** 顶部无边框标题栏：壁纸延伸铺满至顶部 48px */
+  titlebar: boolean;
+  /** 模态与浮层：弹窗面板带有毛玻璃透视 */
+  modals: boolean;
+  /** 卡片不透明度：30% - 100% */
+  card_opacity?: number;
+  /** 侧栏不透明度：30% - 100% */
+  sidebar_opacity?: number;
+  /** 毛玻璃磨砂滤镜强度：0 - 24px */
+  backdrop_blur?: number;
+}
+
 export interface ThemeSettings {
   accent_color: AccentColorKey | string; // 预设标识 | "custom" | "dynamic"
   custom_accent_hex?: string | null; // 自定义十六进制颜色如 "#3b82f6"
@@ -111,6 +130,10 @@ export interface ThemeSettings {
   wallpaper_fit?: WallpaperFit;
   /** 侧栏与页面底层透光度，0-50 */
   wallpaper_surface_transparency?: number;
+  /** 是否开启自定义壁纸功能 */
+  wallpaper_enabled?: boolean;
+  /** 壁纸图层覆盖与游乐场调试配置 */
+  wallpaper_layers?: WallpaperLayersConfig;
 }
 
 export interface AppConfig {

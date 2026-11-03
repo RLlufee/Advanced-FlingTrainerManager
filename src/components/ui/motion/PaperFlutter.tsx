@@ -33,7 +33,8 @@ export const PaperContainer: React.FC<PaperContainerProps> = ({
           },
         },
       }}
-      className={className}
+      data-paper-card="true"
+      className={`wallpaper-card-target ${className}`}
       {...props}
     >
       {children}
@@ -61,7 +62,7 @@ export const PaperCard: React.FC<PaperCardProps> = ({
 
   if (!isPaperFlutterEnabled) {
     return (
-      <div className={`transform-gpu ${className}`} {...(props as React.HTMLAttributes<HTMLDivElement>)}>
+      <div data-paper-card="true" className={`transform-gpu wallpaper-card-target ${className}`} {...(props as React.HTMLAttributes<HTMLDivElement>)}>
         {children}
       </div>
     );

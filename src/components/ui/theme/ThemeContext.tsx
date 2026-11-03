@@ -21,6 +21,7 @@ import {
   ColorMode,
   WallpaperSavedImage,
   WallpaperFit,
+  WallpaperLayersConfig,
 } from "../../../services/configApi";
 import {
   ACCENT_PRESETS,
@@ -56,12 +57,14 @@ export interface ThemeContextValue {
   gradientBackground: boolean;
 
   // --- 自定义壁纸 ---
+  wallpaperEnabled: boolean;
   wallpaperImages: WallpaperSavedImage[];
   activeWallpaper: WallpaperSavedImage | null;
   wallpaperOpacity: number;
   wallpaperBlur: number;
   wallpaperFit: WallpaperFit;
   wallpaperSurfaceTransparency: number;
+  wallpaperLayers: WallpaperLayersConfig;
   isWallpaperLoadFailed: boolean;
 
   // --- 莫奈三级动态取色状态 ---
@@ -77,6 +80,9 @@ export interface ThemeContextValue {
   setColorMode: (mode: ColorMode) => Promise<void>;
   toggleColorMode: () => Promise<void>;
   setGradientBackground: (enabled: boolean) => Promise<void>;
+  setWallpaperEnabled: (enabled: boolean) => Promise<void>;
+  setWallpaperLayers: (patch: Partial<WallpaperLayersConfig>) => Promise<void>;
+  resetWallpaperLayers: () => Promise<void>;
   addWallpaperFromFiles: (files: File[]) => Promise<number>;
   addWallpaperFromPaths: (paths: string[]) => Promise<number>;
   selectWallpaper: (id: string) => Promise<void>;
@@ -161,6 +167,17 @@ function applyAtmosphereToDom(
 const SUPPORTED_IMAGE_EXT = /\.(png|jpe?g|webp|bmp)$/i;
 const MAX_WALLPAPER_BYTES = 20 * 1024 * 1024;
 
+export const DEFAULT_WALLPAPER_LAYERS: WallpaperLayersConfig = {
+  sidebar: true,
+  content: true,
+  cards: false,
+  titlebar: false,
+  modals: false,
+  card_opacity: 80,
+  sidebar_opacity: 75,
+  backdrop_blur: 12,
+};
+
 const clampNumber = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
 
@@ -168,7 +185,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // 界面深浅模式（默认 "system" 跟随 Windows 系统）
   const [colorMode, setColorModeState] = useState<ColorMode>("system");
   const [gradientBackground, setGradientBackgroundState] = useState(true);
+  const [wallpaperEnabled, setWallpaperEnabledState] = useState<boolean>(true);
   const [wallpaperImages, setWallpaperImages] = useState<WallpaperSavedImage[]>([]);
+  const [wallpaperLayers, setWallpaperLayersState] = useState<WallpaperLayersConfig>(DEFAULT_WALLPAPER_LAYERS);
   const wallpaperImagesRef = useRef<WallpaperSavedImage[]>([]);
   const [activeWallpaperId, setActiveWallpaperId] = useState<string | null>(null);
   const [wallpaperOpacity, setWallpaperOpacityState] = useState(65);
@@ -301,13 +320,39 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     const root = document.documentElement;
-    const wallpaperIsActive = Boolean(activeWallpaper && !isWallpaperLoadFailed);
+    const wallpaperIsActive = Boolean(
+      wallpaperEnabled && activeWallpaper && !isWallpaperLoadFailed
+    );
     root.dataset.wallpaperActive = String(wallpaperIsActive);
+    root.dataset.wpSidebar = String(wallpaperLayers.sidebar);
+    root.dataset.wpContent = String(wallpaperLayers.content);
+    root.dataset.wpCards = String(wallpaperLayers.cards);
+    root.dataset.wpTitlebar = String(wallpaperLayers.titlebar);
+    root.dataset.wpModals = String(wallpaperLayers.modals);
+
     root.style.setProperty(
       "--app-wallpaper-surface-transparency",
       `${wallpaperSurfaceTransparency}%`
     );
-  }, [activeWallpaper, isWallpaperLoadFailed, wallpaperSurfaceTransparency]);
+    root.style.setProperty(
+      "--app-wp-card-opacity",
+      `${wallpaperLayers.card_opacity ?? 80}%`
+    );
+    root.style.setProperty(
+      "--app-wp-sidebar-opacity",
+      `${wallpaperLayers.sidebar_opacity ?? 75}%`
+    );
+    root.style.setProperty(
+      "--app-wp-blur",
+      `${wallpaperLayers.backdrop_blur ?? 12}px`
+    );
+  }, [
+    wallpaperEnabled,
+    activeWallpaper,
+    isWallpaperLoadFailed,
+    wallpaperSurfaceTransparency,
+    wallpaperLayers,
+  ]);
 
   // 2. 防丢失合并式防抖持久化落盘（支持同一帧内连续多次局部字段更新而不互相覆盖）
   const persistTheme = useCallback((patch: Partial<ThemeSettings>) => {
@@ -381,6 +426,15 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (typeof t.gradient_background === "boolean") {
             setGradientBackgroundState(t.gradient_background);
           }
+          if (typeof t.wallpaper_enabled === "boolean") {
+            setWallpaperEnabledState(t.wallpaper_enabled);
+          }
+          if (t.wallpaper_layers) {
+            setWallpaperLayersState({
+              ...DEFAULT_WALLPAPER_LAYERS,
+              ...t.wallpaper_layers,
+            });
+          }
           if (Array.isArray(t.wallpaper_images)) {
             wallpaperImagesRef.current = t.wallpaper_images;
             setWallpaperImages(t.wallpaper_images);
@@ -453,6 +507,37 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     },
     [persistTheme]
   );
+
+  const setWallpaperEnabled = useCallback(
+    async (enabled: boolean) => {
+      setWallpaperEnabledState(enabled);
+      if (enabled && !activeWallpaperId && wallpaperImagesRef.current.length > 0) {
+        const firstId = wallpaperImagesRef.current[0].id;
+        setActiveWallpaperId(firstId);
+        setIsWallpaperLoadFailed(false);
+        persistTheme({ wallpaper_enabled: true, active_wallpaper_id: firstId });
+        return;
+      }
+      persistTheme({ wallpaper_enabled: enabled });
+    },
+    [activeWallpaperId, persistTheme]
+  );
+
+  const setWallpaperLayers = useCallback(
+    async (patch: Partial<WallpaperLayersConfig>) => {
+      setWallpaperLayersState((prev) => {
+        const next = { ...prev, ...patch };
+        persistTheme({ wallpaper_layers: next });
+        return next;
+      });
+    },
+    [persistTheme]
+  );
+
+  const resetWallpaperLayers = useCallback(async () => {
+    setWallpaperLayersState(DEFAULT_WALLPAPER_LAYERS);
+    persistTheme({ wallpaper_layers: DEFAULT_WALLPAPER_LAYERS });
+  }, [persistTheme]);
 
   const setWallpaperOpacity = useCallback(
     async (value: number) => {
@@ -944,6 +1029,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     colorMode,
     resolvedColorMode,
     isDark,
+    wallpaperEnabled,
+    wallpaperLayers,
+    setWallpaperEnabled,
+    setWallpaperLayers,
+    resetWallpaperLayers,
     wallpaperImages,
     activeWallpaper,
     wallpaperOpacity,

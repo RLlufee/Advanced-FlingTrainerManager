@@ -5,10 +5,12 @@ import { useTheme } from "./ui/theme";
 
 export const WallpaperBackdrop: React.FC = () => {
   const {
+    wallpaperEnabled,
     activeWallpaper,
     wallpaperOpacity,
     wallpaperBlur,
     wallpaperFit,
+    wallpaperLayers,
     markWallpaperLoadFailed,
   } = useTheme();
   const [source, setSource] = useState("");
@@ -16,7 +18,7 @@ export const WallpaperBackdrop: React.FC = () => {
 
   useEffect(() => {
     setFallbackTried(false);
-    if (!activeWallpaper) {
+    if (!wallpaperEnabled || !activeWallpaper) {
       setSource("");
       return;
     }
@@ -25,7 +27,7 @@ export const WallpaperBackdrop: React.FC = () => {
     } catch {
       setSource(activeWallpaper.image_path);
     }
-  }, [activeWallpaper]);
+  }, [wallpaperEnabled, activeWallpaper]);
 
   const handleImageError = async () => {
     if (!activeWallpaper) return;
@@ -42,10 +44,18 @@ export const WallpaperBackdrop: React.FC = () => {
     markWallpaperLoadFailed();
   };
 
-  if (!activeWallpaper || !source) return null;
+  if (!wallpaperEnabled || !activeWallpaper || !source) return null;
+
+  // 当用户在游乐场中勾选覆盖顶部标题栏时，壁纸全屏铺设到 top-0
+  const isTitlebarCovered = Boolean(wallpaperLayers?.titlebar);
 
   return (
-    <div className="app-wallpaper-layer absolute inset-x-0 bottom-0 top-12 z-0 overflow-hidden pointer-events-none" aria-hidden="true">
+    <div
+      className={`app-wallpaper-layer absolute inset-x-0 bottom-0 z-0 overflow-hidden pointer-events-none transition-[top] duration-300 ease-out ${
+        isTitlebarCovered ? "top-0" : "top-12"
+      }`}
+      aria-hidden="true"
+    >
       <img
         key={activeWallpaper.id}
         src={source}

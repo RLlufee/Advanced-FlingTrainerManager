@@ -175,11 +175,79 @@ html[data-gradient-background="true"] .app-canvas {
     linear-gradient(138deg, var(--app-gradient-start) 0%, var(--app-gradient-mid) 48%, var(--app-gradient-end) 100%);
 }
 
+/* 自定义壁纸分图层穿透与覆盖引擎 */
 html[data-wallpaper-active="true"] .app-canvas {
   background-image: none;
 }
 
-html[data-wallpaper-active="true"] .wallpaper-shell {
+/* 1. 侧边栏导航层 (Sidebar) */
+html[data-wallpaper-active="true"][data-wp-sidebar="true"] aside.wallpaper-shell,
+html[data-wallpaper-active="true"][data-wp-sidebar="true"] .wallpaper-shell.wallpaper-sidebar,
+html[data-wallpaper-active="true"][data-wp-sidebar="true"] .wallpaper-shell-sidebar {
+  background-color: color-mix(
+    in srgb,
+    var(--app-surface-card) var(--app-wp-sidebar-opacity, 75%),
+    transparent
+  ) !important;
+  backdrop-filter: blur(var(--app-wp-blur, 12px));
+  -webkit-backdrop-filter: blur(var(--app-wp-blur, 12px));
+}
+html[data-wallpaper-active="true"][data-wp-sidebar="false"] aside.wallpaper-shell,
+html[data-wallpaper-active="true"][data-wp-sidebar="false"] .wallpaper-shell.wallpaper-sidebar,
+html[data-wallpaper-active="true"][data-wp-sidebar="false"] .wallpaper-shell-sidebar {
+  background-color: var(--app-surface-card) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* 2. 主工作区底板 (Content Area) */
+html[data-wallpaper-active="true"][data-wp-content="true"] main.wallpaper-shell,
+html[data-wallpaper-active="true"][data-wp-content="true"] .wallpaper-shell.wallpaper-content,
+html[data-wallpaper-active="true"][data-wp-content="true"] .wallpaper-shell-content {
+  background-color: color-mix(
+    in srgb,
+    var(--app-surface-card) calc(100% - var(--app-wallpaper-surface-transparency, 20%)),
+    transparent
+  ) !important;
+}
+html[data-wallpaper-active="true"][data-wp-content="false"] main.wallpaper-shell,
+html[data-wallpaper-active="true"][data-wp-content="false"] .wallpaper-shell.wallpaper-content,
+html[data-wallpaper-active="true"][data-wp-content="false"] .wallpaper-shell-content {
+  background-color: var(--app-surface-card) !important;
+}
+
+/* 3. 卡片容器层 (Cards) */
+html[data-wallpaper-active="true"][data-wp-cards="true"] .wallpaper-card-target,
+html[data-wallpaper-active="true"][data-wp-cards="true"] [data-paper-card="true"] {
+  background-color: color-mix(
+    in srgb,
+    var(--app-surface-card) var(--app-wp-card-opacity, 80%),
+    transparent
+  ) !important;
+  backdrop-filter: blur(calc(var(--app-wp-blur, 12px) * 0.75));
+  -webkit-backdrop-filter: blur(calc(var(--app-wp-blur, 12px) * 0.75));
+}
+
+/* 4. 顶部标题栏层 (TitleBar) */
+html[data-wallpaper-active="true"][data-wp-titlebar="true"] .pcl-titlebar-bg {
+  background-color: color-mix(in oklab, var(--color-primary-active) 55%, transparent) !important;
+  backdrop-filter: blur(var(--app-wp-blur, 12px));
+  -webkit-backdrop-filter: blur(var(--app-wp-blur, 12px));
+}
+
+/* 5. 模态弹窗与二级抽屉浮层 (Modals) */
+html[data-wallpaper-active="true"][data-wp-modals="true"] .wallpaper-modal-target {
+  background-color: color-mix(
+    in srgb,
+    var(--app-surface-card) 85%,
+    transparent
+  ) !important;
+  backdrop-filter: blur(var(--app-wp-blur, 12px));
+  -webkit-backdrop-filter: blur(var(--app-wp-blur, 12px));
+}
+
+/* 兜底旧类名兼容 */
+html[data-wallpaper-active="true"] .wallpaper-shell:not(aside):not(main):not(.wallpaper-shell-sidebar):not(.wallpaper-shell-content) {
   background-color: color-mix(
     in srgb,
     var(--app-surface-card) calc(100% - var(--app-wallpaper-surface-transparency, 20%)),

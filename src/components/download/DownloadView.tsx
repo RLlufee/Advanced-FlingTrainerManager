@@ -207,7 +207,7 @@ export const DownloadView: React.FC = () => {
         />
 
         {/* 右侧：修改器详情区 */}
-        <div className="wallpaper-shell flex-1 overflow-y-auto p-6">
+        <div className="wallpaper-shell wallpaper-shell-content flex-1 overflow-y-auto p-6">
           <TrainerDetailView
             selectedTrainer={selectedTrainer}
             isInstalled={isCurrentInstalled}
