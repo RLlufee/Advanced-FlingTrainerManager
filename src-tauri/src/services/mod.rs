@@ -10,4 +10,5 @@ pub mod monet;
 pub mod scraper;
 pub mod storage;
 pub mod system_cleaner;
+pub mod tray;
 pub mod wallpaper;

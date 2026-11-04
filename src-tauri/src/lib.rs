@@ -8,6 +8,21 @@ use commands::*;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            // 初始化系统托盘图标与上下文菜单
+            services::tray::setup_tray(app.handle())?;
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            // 拦截主窗口关闭请求：若用户开启“最小化到托盘”，则阻止直接销毁并隐藏窗口
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                let config = services::config::load_config();
+                if services::tray::should_close_to_tray(config.management.close_to_tray) {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             // Trainer & Launcher Commands
             fetch_trainers,
