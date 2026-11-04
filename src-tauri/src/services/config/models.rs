@@ -125,6 +125,8 @@ pub struct AnimationSettings {
     pub typewriter_speed: u64,
     #[serde(default = "default_anim_tab_transition_duration")]
     pub tab_transition_duration: u64,
+    #[serde(default = "default_anim_target_fps")]
+    pub target_fps: u32,
 }
 
 pub fn default_anim_enabled() -> bool {
@@ -148,6 +150,9 @@ pub fn default_anim_typewriter_speed() -> u64 {
 pub fn default_anim_tab_transition_duration() -> u64 {
     180
 }
+pub fn default_anim_target_fps() -> u32 {
+    144
+}
 
 impl Default for AnimationSettings {
     fn default() -> Self {
@@ -159,6 +164,7 @@ impl Default for AnimationSettings {
             magnetic_tabs: default_anim_magnetic_tabs(),
             typewriter_speed: default_anim_typewriter_speed(),
             tab_transition_duration: default_anim_tab_transition_duration(),
+            target_fps: default_anim_target_fps(),
         }
     }
 }

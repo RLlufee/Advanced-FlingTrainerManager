@@ -9,6 +9,7 @@ export const DEFAULT_ANIMATION_SETTINGS: AnimationSettings = {
   magnetic_tabs: true,
   typewriter_speed: 18,
   tab_transition_duration: 180,
+  target_fps: 144,
 };
 
 export interface AnimationContextValue {
@@ -23,6 +24,8 @@ export interface AnimationContextValue {
   isMagneticEnabled: boolean;
   effectiveTypewriterSpeed: number;
   effectiveTabTransitionDuration: number;
+  targetFps: number;
+  cycleTargetFps: () => Promise<void>;
 }
 
 const AnimationContext = createContext<AnimationContextValue>({
@@ -36,6 +39,8 @@ const AnimationContext = createContext<AnimationContextValue>({
   isMagneticEnabled: true,
   effectiveTypewriterSpeed: 18,
   effectiveTabTransitionDuration: 0.18,
+  targetFps: 144,
+  cycleTargetFps: async () => {},
 });
 
 export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -95,6 +100,16 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       ? 0
       : (rawTabDuration / 1000) / effectiveSpeed;
 
+  const targetFps = settings.target_fps ?? 144;
+
+  const cycleTargetFps = async () => {
+    // 60 ➔ 90 ➔ 120 ➔ 144 ➔ 0 (极速解锁)
+    const options = [60, 90, 120, 144, 0];
+    const currentIndex = options.indexOf(targetFps);
+    const nextFps = options[(currentIndex + 1) % options.length];
+    await updateSettings({ target_fps: nextFps });
+  };
+
   return (
     <AnimationContext.Provider
       value={{
@@ -108,6 +123,8 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         isMagneticEnabled,
         effectiveTypewriterSpeed,
         effectiveTabTransitionDuration,
+        targetFps,
+        cycleTargetFps,
       }}
     >
       {children}

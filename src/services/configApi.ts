@@ -45,6 +45,7 @@ export interface AnimationSettings {
   magnetic_tabs: boolean; // 磁吸跟手与流体滑动药丸 (默认 true)
   typewriter_speed: number; // 打字机提示打字间隔毫秒数 (0 = 瞬间完成，默认 18ms)
   tab_transition_duration: number; // 顶层主标签页切换过渡时长毫秒数 (0 = 瞬间完成，默认 180ms)
+  target_fps?: number; // 目标渲染帧率调节 (0 = 无上限/电竞极速解锁，常用 60 / 90 / 120 / 144)
 }
 
 export type AccentColorKey =

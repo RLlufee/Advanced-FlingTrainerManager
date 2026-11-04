@@ -1,5 +1,5 @@
 import React from "react";
-import { Gauge, Zap, Layers, MousePointerClick } from "lucide-react";
+import { Gauge, Zap, Layers, MousePointerClick, Activity } from "lucide-react";
 import { useAnimationConfig } from "../../ui/motion/AnimationContext";
 import { PaperCard } from "../../ui/motion/PaperFlutter";
 import { JellyIcon } from "../../ui/motion/JellyIcon";
@@ -118,6 +118,48 @@ export const AnimationSlidersCard: React.FC = () => {
             { value: 40, label: "40 ms (复古终端打字)" },
           ]}
         />
+      </div>
+
+      {/* 选项 4：渲染帧率上限与高刷适配 */}
+      <div className="space-y-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+            <Activity className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            渲染帧率上限与高刷适配 (Target Frame Rate)
+          </span>
+          <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+            {(settings.target_fps ?? 144) === 0 ? "⚡ 极速完全放飞 (无上限)" : `${settings.target_fps ?? 144} FPS`}
+          </span>
+        </div>
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+          已解除底层 WebView2 的 60Hz 节能锁频限制。配合高刷显示器与强劲多核 CPU，让页面与组件过渡丝滑如丝绸。
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+          {[
+            { fps: 60, label: "60 FPS", desc: "节能稳妥" },
+            { fps: 90, label: "90 FPS", desc: "均衡顺滑" },
+            { fps: 120, label: "120 FPS", desc: "超高高刷" },
+            { fps: 144, label: "144 FPS", desc: "电竞旗舰" },
+            { fps: 0, label: "极速解锁", desc: "完全放飞" },
+          ].map((item) => {
+            const isSelected = (settings.target_fps ?? 144) === item.fps;
+            return (
+              <button
+                key={item.fps}
+                type="button"
+                onClick={() => updateSettings({ target_fps: item.fps })}
+                className={`flex flex-col items-center justify-center p-2 rounded-xl text-xs transition-all border ${
+                  isSelected
+                    ? "bg-emerald-500/10 dark:bg-emerald-500/20 border-emerald-500/50 text-emerald-700 dark:text-emerald-300 shadow-2xs font-semibold ring-2 ring-emerald-500/20"
+                    : "bg-slate-50 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700/60 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                }`}
+              >
+                <span className="font-mono text-xs font-bold">{item.label}</span>
+                <span className="text-[10px] opacity-75 mt-0.5">{item.desc}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </PaperCard>
   );

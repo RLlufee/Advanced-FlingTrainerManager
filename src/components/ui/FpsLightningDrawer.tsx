@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Zap } from "lucide-react";
+import { useAnimationConfig } from "./motion/AnimationContext";
 
 export const FpsLightningDrawer: React.FC = () => {
   const [isHovered, setIsHovered] = useState(false);
   const [fps, setFps] = useState<number>(60);
   const [frameTime, setFrameTime] = useState<number>(16.6);
+
+  const { targetFps, cycleTargetFps } = useAnimationConfig();
 
   // 防抖收缩定时器
   const hideTimerRef = useRef<number | null>(null);
@@ -76,6 +79,11 @@ export const FpsLightningDrawer: React.FC = () => {
     }, 250);
   };
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    cycleTargetFps();
+  };
+
   // 帧率状态颜色
   const getFpsColor = () => {
     if (fps >= 55) return "text-emerald-400 bg-emerald-400";
@@ -83,16 +91,22 @@ export const FpsLightningDrawer: React.FC = () => {
     return "text-rose-400 bg-rose-400";
   };
 
+  const getTargetFpsBadge = () => {
+    if (targetFps === 0) return "极速";
+    return `${targetFps}Hz`;
+  };
+
   return (
     <div
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`h-8 flex items-center rounded-full transition-all duration-300 ease-out cursor-pointer select-none mr-1.5 ${
+      onClick={handleClick}
+      className={`h-8 flex items-center rounded-full transition-all duration-300 ease-out cursor-pointer select-none mr-1.5 active:scale-95 ${
         isHovered
-          ? "bg-black/45 backdrop-blur-md border border-white/25 px-2.5 shadow-lg"
+          ? "bg-black/55 backdrop-blur-md border border-white/25 px-2.5 shadow-lg"
           : "bg-white/10 hover:bg-white/15 border border-white/10 px-2"
       }`}
-      title="渲染帧率与生成时间 (鼠标移近展开)"
+      title={`当前帧率: ${fps} FPS · 目标: ${getTargetFpsBadge()} (点击切换 60/90/120/144/极速)`}
     >
       {/* 旋转的闪电图标 */}
       <div
@@ -108,7 +122,7 @@ export const FpsLightningDrawer: React.FC = () => {
       {/* 抽屉弹出内容区域 */}
       <div
         className={`flex items-center overflow-hidden transition-all duration-300 ease-out ${
-          isHovered ? "max-w-[130px] opacity-100 ml-2" : "max-w-0 opacity-0 ml-0"
+          isHovered ? "max-w-[170px] opacity-100 ml-2" : "max-w-0 opacity-0 ml-0"
         }`}
       >
         <div className="flex items-center gap-1.5 text-xs font-mono font-medium whitespace-nowrap text-white/90">
@@ -123,6 +137,11 @@ export const FpsLightningDrawer: React.FC = () => {
           <span className="text-white/30 text-[10px]">·</span>
           <span className="text-[11px] text-white/80">{frameTime}</span>
           <span className="text-[10px] text-white/50">ms</span>
+
+          {/* 目标档位胶囊标记 (可点击切换) */}
+          <span className="ml-1 px-1.5 py-0.2 rounded text-[9px] font-sans font-bold bg-white/15 text-cyan-200 border border-white/20 hover:bg-white/25 transition-colors">
+            {getTargetFpsBadge()}
+          </span>
         </div>
       </div>
     </div>
