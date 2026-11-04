@@ -36,15 +36,21 @@ pub async fn scan_and_import_trainers(folder_path: &str) -> Result<ImportSummary
     let max_depth = (config.management.scan_depth as usize).clamp(1, 10);
     let auto_extract_zip = config.management.auto_extract_zip;
 
-    // 递归查找候选文件 (根据设置的扫描深度与是否解压 ZIP)
-    let mut candidate_files = Vec::new();
-    collect_candidate_files(
-        &source_dir,
-        0,
-        max_depth,
-        auto_extract_zip,
-        &mut candidate_files,
-    );
+    // 递归查找候选文件：通过 spawn_blocking 卸载至专用阻塞线程池，防止遍历大型文件树时霸占 Tokio 工作线程
+    let scan_dir = source_dir.clone();
+    let candidate_files = tokio::task::spawn_blocking(move || {
+        let mut files = Vec::new();
+        collect_candidate_files(
+            &scan_dir,
+            0,
+            max_depth,
+            auto_extract_zip,
+            &mut files,
+        );
+        files
+    })
+    .await
+    .map_err(|e| format!("目录扫描任务执行失败: {}", e))?;
 
     let total_scanned = candidate_files.len();
     let existing_records = storage::load_installed_records();
