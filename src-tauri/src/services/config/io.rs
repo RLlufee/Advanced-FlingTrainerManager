@@ -59,10 +59,12 @@ pub fn load_config() -> AppConfig {
     default_config
 }
 
-/// 保存应用全局配置（原子替换落盘）
+/// 保存应用全局配置（原子替换落盘，并自动重置共享网络连接池使新配置立即热生效）
 pub fn save_config(config: &AppConfig) -> Result<(), String> {
     let file = get_config_file_path();
     let json =
         serde_json::to_string_pretty(config).map_err(|e| format!("序列化配置失败: {}", e))?;
-    atomic_write_file(&file, json.as_bytes())
+    atomic_write_file(&file, json.as_bytes())?;
+    super::network::reset_shared_http_client();
+    Ok(())
 }

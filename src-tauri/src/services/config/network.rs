@@ -1,6 +1,34 @@
 use super::io::load_config;
 use super::models::NetworkTestResult;
+use std::sync::RwLock;
 use std::time::Duration;
+
+static GLOBAL_HTTP_CLIENT: RwLock<Option<reqwest::Client>> = RwLock::new(None);
+
+/// 获取全局共享的复用 HTTP 客户端（内部共享连接池、DNS 缓存与 TLS 会话，零磁盘 I/O）
+pub fn get_shared_http_client() -> Result<reqwest::Client, String> {
+    if let Ok(guard) = GLOBAL_HTTP_CLIENT.read() {
+        if let Some(ref client) = *guard {
+            return Ok(client.clone());
+        }
+    }
+
+    let mut guard = GLOBAL_HTTP_CLIENT.write().map_err(|e| e.to_string())?;
+    if let Some(ref client) = *guard {
+        return Ok(client.clone());
+    }
+
+    let new_client = build_custom_http_client()?;
+    *guard = Some(new_client.clone());
+    Ok(new_client)
+}
+
+/// 重置全局 HTTP 客户端连接池（当用户保存新网络配置、代理或超时设置时触发无缝热重载）
+pub fn reset_shared_http_client() {
+    if let Ok(mut guard) = GLOBAL_HTTP_CLIENT.write() {
+        *guard = None;
+    }
+}
 
 /// 根据全局网络配置构建统一 reqwest::Client
 pub fn build_custom_http_client() -> Result<reqwest::Client, String> {
@@ -15,7 +43,9 @@ pub fn build_custom_http_client() -> Result<reqwest::Client, String> {
 
     let mut builder = reqwest::Client::builder()
         .user_agent(crate::services::scraper::USER_AGENT)
-        .timeout(timeout_val);
+        .timeout(timeout_val)
+        .pool_idle_timeout(Duration::from_secs(90))
+        .pool_max_idle_per_host(8);
 
     match net.proxy_mode.as_str() {
         "direct" => {

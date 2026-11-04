@@ -1,4 +1,4 @@
-use crate::services::config::build_custom_http_client;
+use crate::services::config::get_shared_http_client;
 use crate::services::storage::get_app_data_dir;
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
@@ -157,7 +157,7 @@ pub async fn read_image_as_data_url(source: &str) -> Result<String, String> {
     let max_bytes: usize = 20 * 1024 * 1024; // 20MB 安全上限
 
     let bytes = if trimmed.starts_with("https://") {
-        let client = build_custom_http_client()?;
+        let client = get_shared_http_client()?;
         let resp = client
             .get(trimmed)
             .send()

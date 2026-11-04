@@ -16,7 +16,7 @@ pub async fn download_cover_image(cover_path: &Path, candidate_urls: &[&str]) ->
         return true;
     }
 
-    let client = match crate::services::config::build_custom_http_client() {
+    let client = match crate::services::config::get_shared_http_client() {
         Ok(c) => c,
         Err(_) => return false,
     };

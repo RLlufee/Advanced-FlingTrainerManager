@@ -362,7 +362,7 @@ pub async fn fetch_steam_meta(game_name: &str) -> Option<(u32, String, String, S
         urlencoding(&cleaned)
     );
 
-    let client = crate::services::config::build_custom_http_client().ok()?;
+    let client = crate::services::config::get_shared_http_client().ok()?;
 
     let resp = client.get(&url).send().await.ok()?;
     if !resp.status().is_success() {
