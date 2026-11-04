@@ -3,6 +3,7 @@ import { Play, Download, Settings, LayoutGrid, Minus, Square, X, Sun, Moon, Moni
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { MagneticTab, JellyIcon, TypewriterTooltip } from "./ui/motion";
 import { useTheme } from "./ui/theme";
+import { FpsLightningDrawer } from "./ui/FpsLightningDrawer";
 
 export type NavTab = "launch" | "download" | "settings" | "more";
 
@@ -117,6 +118,9 @@ export const TitleBar: React.FC<TitleBarProps> = ({
 
       {/* 右侧：窗口控制按钮组（Q 弹果冻微动效） */}
       <div className="flex items-center gap-1 min-w-[140px] justify-end">
+        {/* 极客灵动旋转闪电帧率抽屉挂件 */}
+        <FpsLightningDrawer />
+
         {/* 深浅色彩模式快速切换按钮 */}
         <TypewriterTooltip
           content={
