@@ -1,323 +1,15 @@
+pub mod commands;
 pub mod models;
 pub mod services;
 
-use models::{InstalledTrainerRecord, PaginatedTrainers, Trainer};
-use services::{downloader, launcher, scraper, storage};
-use tauri::AppHandle;
-
-#[tauri::command]
-async fn fetch_trainers(
-    page: Option<u32>,
-    force_refresh: Option<bool>,
-) -> Result<PaginatedTrainers, String> {
-    let p = page.unwrap_or(1);
-    scraper::fetch_trainers_ext(p, force_refresh.unwrap_or(false)).await
-}
-
-#[tauri::command]
-async fn search_trainers(query: String, page: Option<u32>) -> Result<PaginatedTrainers, String> {
-    let p = page.unwrap_or(1);
-    scraper::search_trainers(&query, p).await
-}
-
-#[tauri::command]
-async fn get_trainer_detail(id: String, force_refresh: Option<bool>) -> Result<Trainer, String> {
-    scraper::get_trainer_detail_ext(&id, force_refresh.unwrap_or(false)).await
-}
-
-#[tauri::command]
-async fn download_trainer(
-    app: AppHandle,
-    trainer: Trainer,
-) -> Result<InstalledTrainerRecord, String> {
-    downloader::download_and_install_trainer(app, trainer).await
-}
-
-#[tauri::command]
-fn get_installed_trainers() -> Result<Vec<InstalledTrainerRecord>, String> {
-    Ok(storage::load_installed_records())
-}
-
-#[tauri::command]
-fn launch_trainer(id: String) -> Result<String, String> {
-    launcher::launch_trainer(&id)
-}
-
-#[tauri::command]
-fn launch_steam_game(app_id: u32) -> Result<(), String> {
-    let url = format!("steam://run/{}", app_id);
-    let _ = std::process::Command::new("rundll32")
-        .args(["url.dll,FileProtocolHandler", &url])
-        .spawn()
-        .map_err(|e| format!("启动 Steam 游戏失败: {}", e))?;
-    Ok(())
-}
-
-#[tauri::command]
-fn open_steam_store(app_id: u32) -> Result<(), String> {
-    let url = format!("https://store.steampowered.com/app/{}/", app_id);
-    let _ = std::process::Command::new("rundll32")
-        .args(["url.dll,FileProtocolHandler", &url])
-        .spawn()
-        .map_err(|e| format!("打开 Steam 商店失败: {}", e))?;
-    Ok(())
-}
-
-#[tauri::command]
-fn open_install_dir(dir_path: String) -> Result<(), String> {
-    launcher::open_install_dir(&dir_path)
-}
-
-#[tauri::command]
-fn open_trainers_root() -> Result<(), String> {
-    launcher::open_trainers_root()
-}
-
-#[tauri::command]
-fn delete_installed_trainer(id: String) -> Result<(), String> {
-    launcher::delete_installed_trainer(&id)
-}
-
-#[tauri::command]
-async fn launch_game_and_trainer(id: String, app_id: Option<u32>) -> Result<String, String> {
-    let config = services::config::load_config();
-
-    if let Some(aid) = app_id {
-        launch_steam_game(aid).map_err(|e| format!("调起 Steam 游戏失败: {}", e))?;
-        // 消费用户配置的双启延时（P1-08）
-        let delay_ms = (config.hotkey.double_launch_delay_sec.max(1) * 1000).max(600);
-        tokio::time::sleep(tokio::time::Duration::from_millis(delay_ms)).await;
-    }
-
-    let launch_msg = launcher::launch_trainer(&id)?;
-
-    // 若配置开启了一键双启自动同步热键，等待窗口就绪后触发同步 (P1-08)
-    if config.hotkey.auto_sync_on_double_launch {
-        let records = storage::load_installed_records();
-        if let Some(record) = records.iter().find(|r| r.id == id) {
-            let active_keys: Vec<String> = record
-                .saved_toggles
-                .iter()
-                .filter(|(_, v)| **v)
-                .map(|(k, _)| k.clone())
-                .collect();
-            if !active_keys.is_empty() {
-                tokio::time::sleep(tokio::time::Duration::from_millis(1500)).await;
-                #[cfg(target_os = "windows")]
-                services::key_simulator::focus_window_for_exe(&record.exe_name);
-                let _ = services::key_simulator::simulate_hotkeys_sequence(&active_keys).await;
-            }
-        }
-    }
-
-    Ok(launch_msg)
-}
-
-#[tauri::command]
-fn save_trainer_toggles(
-    id: String,
-    toggles: std::collections::HashMap<String, bool>,
-) -> Result<(), String> {
-    storage::update_trainer_toggles(&id, toggles)
-}
-
-#[tauri::command]
-async fn sync_trainer_hotkeys(id: String, hotkeys: Vec<String>) -> Result<u32, String> {
-    let records = storage::load_installed_records();
-    let record = records
-        .iter()
-        .find(|r| r.id == id)
-        .ok_or_else(|| format!("未找到修改器: {}", id))?;
-
-    #[cfg(target_os = "windows")]
-    {
-        let focused = services::key_simulator::focus_window_for_exe(&record.exe_name);
-        if !focused {
-            return Err(format!(
-                "未检测到修改器 '{}' 的运行窗口，请先启动修改器后再同步按键喵~",
-                record.exe_name
-            ));
-        }
-        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-    }
-
-    services::key_simulator::simulate_hotkeys_sequence(&hotkeys).await
-}
-
-#[tauri::command]
-async fn check_trainers_update() -> Result<Vec<models::TrainerUpdateInfo>, String> {
-    downloader::check_trainers_update().await
-}
-
-#[tauri::command]
-async fn update_trainer_to_latest(
-    app: AppHandle,
-    id: String,
-) -> Result<InstalledTrainerRecord, String> {
-    downloader::update_trainer_to_latest(app, &id).await
-}
-
-#[tauri::command]
-fn pick_external_folder() -> Result<Option<String>, String> {
-    services::importer::pick_folder_dialog()
-}
-
-#[tauri::command]
-async fn scan_and_import_trainers(
-    folder_path: String,
-) -> Result<services::importer::ImportSummary, String> {
-    services::importer::scan_and_import_trainers(&folder_path).await
-}
-
-#[tauri::command]
-async fn enrich_installed_trainer(id: String) -> Result<InstalledTrainerRecord, String> {
-    services::importer::enrich_installed_trainer(&id).await
-}
-
-#[tauri::command]
-async fn enrich_all_installed_trainers() -> Result<models::BatchEnrichResult, String> {
-    services::importer::enrich_all_installed_trainers().await
-}
-
-#[tauri::command]
-fn get_app_config() -> services::config::AppConfig {
-    services::config::load_config()
-}
-
-#[tauri::command]
-fn save_app_config(config: services::config::AppConfig) -> Result<(), String> {
-    services::config::save_config(&config)
-}
-
-#[tauri::command]
-fn export_all_presets() -> Result<String, String> {
-    services::config::export_all_presets()
-}
-
-#[tauri::command]
-fn import_all_presets(json_str: String) -> Result<u32, String> {
-    services::config::import_all_presets(&json_str)
-}
-
-#[tauri::command]
-fn clear_all_presets() -> Result<u32, String> {
-    services::config::clear_all_presets()
-}
-
-#[tauri::command]
-fn get_storage_stats() -> Result<services::config::StorageStats, String> {
-    services::config::get_storage_stats()
-}
-
-#[tauri::command]
-fn clean_orphan_cache() -> Result<services::config::CleanSummary, String> {
-    services::config::clean_orphan_cache()
-}
-
-#[tauri::command]
-fn migrate_trainers_dir(new_dir: String) -> Result<u32, String> {
-    services::config::migrate_trainers_dir(&new_dir)
-}
-
-#[tauri::command]
-fn set_launch_at_startup(enable: bool) -> Result<(), String> {
-    services::config::set_launch_at_startup(enable)
-}
-
-#[tauri::command]
-async fn test_network_connectivity(
-    target: Option<String>,
-) -> Result<services::config::NetworkTestResult, String> {
-    services::config::test_network_connectivity(target).await
-}
-
-#[tauri::command]
-fn get_system_memory_info() -> Result<services::memory_optimizer::SystemMemoryInfo, String> {
-    services::memory_optimizer::get_system_memory_info()
-}
-
-#[tauri::command]
-async fn optimize_memory(
-    options: Option<services::memory_optimizer::MemoryOptimizeOptions>,
-) -> Result<services::memory_optimizer::MemoryOptimizeResult, String> {
-    tokio::task::spawn_blocking(move || services::memory_optimizer::optimize_memory(options))
-        .await
-        .map_err(|e| e.to_string())?
-}
-
-#[tauri::command]
-fn restart_app_as_admin() -> Result<(), String> {
-    services::memory_optimizer::restart_as_admin()
-}
-
-#[tauri::command]
-fn open_system_tool(tool: String) -> Result<(), String> {
-    services::memory_optimizer::open_system_tool(&tool)
-}
-
-#[tauri::command]
-async fn get_hardware_overview() -> Result<services::hardware_inspector::HardwareOverview, String> {
-    tokio::task::spawn_blocking(services::hardware_inspector::collect_hardware_overview)
-        .await
-        .map_err(|e| e.to_string())?
-}
-
-#[tauri::command]
-async fn system_cleanup_scan() -> Result<services::system_cleaner::CleanupScanResult, String> {
-    tokio::task::spawn_blocking(services::system_cleaner::scan_system_cleanup)
-        .await
-        .map_err(|e| e.to_string())?
-}
-
-#[tauri::command]
-async fn system_cleanup_run(
-    categories: Vec<String>,
-) -> Result<services::system_cleaner::CleanupRunResult, String> {
-    tokio::task::spawn_blocking(move || services::system_cleaner::run_system_cleanup(categories))
-        .await
-        .map_err(|e| e.to_string())?
-}
-
-#[tauri::command]
-fn get_windows_accent_color() -> Result<String, String> {
-    services::monet::get_windows_accent_color()
-}
-
-#[tauri::command]
-fn save_monet_wallpaper_thumbnail(id: String, data_url: String) -> Result<String, String> {
-    services::monet::save_monet_wallpaper_thumbnail(&id, &data_url)
-}
-
-#[tauri::command]
-fn delete_monet_wallpaper_file(image_path: String) -> Result<(), String> {
-    services::monet::delete_monet_wallpaper_file(&image_path)
-}
-
-#[tauri::command]
-async fn read_image_as_data_url(source: String) -> Result<String, String> {
-    services::monet::read_image_as_data_url(&source).await
-}
-
-#[tauri::command]
-fn save_custom_wallpaper(id: String, data_url: String) -> Result<String, String> {
-    services::wallpaper::save_custom_wallpaper(&id, &data_url)
-}
-
-#[tauri::command]
-fn import_custom_wallpaper(id: String, source_path: String) -> Result<String, String> {
-    services::wallpaper::import_custom_wallpaper(&id, &source_path)
-}
-
-#[tauri::command]
-fn delete_custom_wallpaper(image_path: String) -> Result<(), String> {
-    services::wallpaper::delete_custom_wallpaper(&image_path)
-}
+use commands::*;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            // Trainer & Launcher Commands
             fetch_trainers,
             search_trainers,
             get_trainer_detail,
@@ -334,10 +26,12 @@ pub fn run() {
             sync_trainer_hotkeys,
             check_trainers_update,
             update_trainer_to_latest,
+            // Importer Commands
             pick_external_folder,
             scan_and_import_trainers,
             enrich_installed_trainer,
             enrich_all_installed_trainers,
+            // Config & Presets Commands
             get_app_config,
             save_app_config,
             export_all_presets,
@@ -348,6 +42,7 @@ pub fn run() {
             migrate_trainers_dir,
             set_launch_at_startup,
             test_network_connectivity,
+            // System Diagnostics & Cleanup Commands
             get_system_memory_info,
             optimize_memory,
             restart_app_as_admin,
@@ -355,6 +50,7 @@ pub fn run() {
             get_hardware_overview,
             system_cleanup_scan,
             system_cleanup_run,
+            // Wallpaper & Monet Accent Commands
             get_windows_accent_color,
             save_monet_wallpaper_thumbnail,
             delete_monet_wallpaper_file,
