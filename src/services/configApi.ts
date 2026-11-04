@@ -168,7 +168,7 @@ export const configApi = {
 
   // 保存全局配置
   async saveConfig(config: AppConfig): Promise<void> {
-    return await invoke<void>("save_app_config", { config });
+    return await invoke<void>("save_app_config", { appConfig: config });
   },
 
   // 导出所有修改器开关预设 (JSON 文本)

@@ -1,10 +1,10 @@
 import React from "react";
-import { Keyboard, FolderCog, Zap, Sparkles, Palette } from "lucide-react";
+import { Keyboard, FolderCog, Zap, Sparkles, Palette, Monitor } from "lucide-react";
 import { motion } from "motion/react";
 import { JellyIcon } from "../ui/motion/JellyIcon";
 import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
 
-export type SettingsTab = "appearance" | "hotkey" | "management" | "network" | "animation";
+export type SettingsTab = "appearance" | "hotkey" | "management" | "system" | "network" | "animation";
 
 interface SettingsSidebarProps {
   activeTab: SettingsTab;
@@ -47,7 +47,16 @@ const SETTINGS_TABS: SettingsTabConfig[] = [
     iconColor: "text-slate-400 group-hover:text-cyan-600",
     activeIconColor: "text-cyan-600",
     dotColor: "bg-cyan-500",
-    tooltipText: "管理 trainers 根目录、无损跨盘搬家、开机自启与孤儿缓存清理",
+    tooltipText: "管理 trainers 根目录、无损跨盘搬家、离线词库与孤儿缓存清理",
+  },
+  {
+    id: "system",
+    label: "系统与窗口行为",
+    icon: Monitor,
+    iconColor: "text-slate-400 group-hover:text-purple-600",
+    activeIconColor: "text-purple-600",
+    dotColor: "bg-purple-500",
+    tooltipText: "配置 Windows 登录自启动、关闭窗口最小化至系统托盘与系统级偏好",
   },
   {
     id: "network",

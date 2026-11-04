@@ -8,8 +8,7 @@ import {
   Layers,
   Info,
   Trash2,
-  Database,
-  Monitor,
+  Database
 } from "lucide-react";
 import { ManagementSettings, StorageStats } from "../../services/configApi";
 import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
@@ -27,7 +26,6 @@ interface ManagementTabProps {
   onPickNewDirectory: () => void;
   onOpenCurrentTrainersDir: () => void;
   onCleanCache: () => void;
-  onToggleStartup: (enable: boolean) => void;
   formatBytes: (bytes: number) => string;
 }
 
@@ -41,7 +39,6 @@ export const ManagementTab: React.FC<ManagementTabProps> = ({
   onPickNewDirectory,
   onOpenCurrentTrainersDir,
   onCleanCache,
-  onToggleStartup,
   formatBytes,
 }) => {
   return (
@@ -293,91 +290,6 @@ export const ManagementTab: React.FC<ManagementTabProps> = ({
         </div>
       </PaperCard>
 
-      {/* 卡片 4：🪟 窗口行为与开机启动 */}
-      <PaperCard className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-5 space-y-4">
-        <div className="flex items-start gap-3.5">
-          <JellyIcon intensity="gentle">
-            <div className="w-9 h-9 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 shrink-0 mt-0.5">
-              <Monitor className="w-5 h-5" />
-            </div>
-          </JellyIcon>
-          <div>
-            <h2 className="text-sm font-bold text-slate-900">
-              窗口行为与开机自启
-            </h2>
-            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              定义关闭客户端时的系统托盘驻留偏好，以及 Windows 登录自动加载。
-            </p>
-          </div>
-        </div>
-
-        <div className="pt-2 border-t border-slate-100 space-y-3">
-          {/* 开机自启 */}
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <span className="text-xs font-semibold text-slate-800">
-                Windows 登录时自动启动修改器管家
-              </span>
-              <p className="text-[11px] text-slate-400">
-                开机静默常驻，玩游戏时随时快捷调出修改器
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => onToggleStartup(!management.launch_at_startup)}
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                management.launch_at_startup ? "bg-purple-600" : "bg-slate-300"
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                  management.launch_at_startup ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* 关闭窗口最小化到托盘 */}
-          <div className="flex items-center justify-between pt-1">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-slate-800">
-                  点击关闭按钮时最小化到系统托盘
-                </span>
-                <span
-                  className={`px-1.5 py-0.5 text-[10px] font-medium rounded-full ${
-                    management.close_to_tray
-                      ? "bg-cyan-50 text-cyan-700 border border-cyan-200"
-                      : "bg-slate-100 text-slate-500 border border-slate-200"
-                  }`}
-                >
-                  {management.close_to_tray ? "已开启后台驻留" : "默认关闭 (直接退出)"}
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400">
-                开启后点击标题栏 X 或任务栏关闭将隐藏至托盘；关闭状态下点击关闭将直接退出应用
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() =>
-                onUpdateManagement({
-                  close_to_tray: !management.close_to_tray,
-                })
-              }
-              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                management.close_to_tray ? "bg-cyan-600" : "bg-slate-300"
-              }`}
-            >
-              <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                  management.close_to_tray ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-      </PaperCard>
     </PaperContainer>
   );
 };

@@ -15,6 +15,7 @@ import { SettingsSidebar, SettingsTab } from "./SettingsSidebar";
 import { AppearanceTab } from "./AppearanceTab";
 import { HotkeyTab } from "./HotkeyTab";
 import { ManagementTab } from "./ManagementTab";
+import { SystemTab } from "./SystemTab";
 import { NetworkTab } from "./NetworkTab";
 import { AnimationTab } from "./AnimationTab";
 
@@ -313,8 +314,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
   const handleToggleStartup = async (enable: boolean) => {
     try {
       await configApi.setLaunchAtStartup(enable);
-      await updateManagementSettings({ launch_at_startup: enable });
-      showToast("success", enable ? "已开启 Windows 登录自动启动喵~" : "已关闭开机自启");
+      const ok = await updateManagementSettings({ launch_at_startup: enable });
+      if (ok) {
+        showToast("success", enable ? "已开启 Windows 登录自动启动喵~" : "已关闭开机自启");
+      }
     } catch (e) {
       showToast("error", `配置开机自启失败: ${e}`);
     }
@@ -436,8 +439,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
             onPickNewDirectory={handlePickNewDirectory}
             onOpenCurrentTrainersDir={handleOpenCurrentTrainersDir}
             onCleanCache={handleCleanCache}
-            onToggleStartup={handleToggleStartup}
             formatBytes={formatBytes}
+          />
+        )}
+
+        {activeTab === "system" && management && (
+          <SystemTab
+            management={management}
+            onUpdateManagement={updateManagementSettings}
+            onToggleStartup={handleToggleStartup}
+            showToast={showToast}
           />
         )}
 

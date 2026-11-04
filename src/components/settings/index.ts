@@ -2,6 +2,7 @@ export * from "./SettingsSidebar";
 export * from "./AppearanceTab";
 export * from "./HotkeyTab";
 export * from "./ManagementTab";
+export * from "./SystemTab";
 export * from "./NetworkTab";
 export * from "./AnimationTab";
 export * from "./SettingsModals";
