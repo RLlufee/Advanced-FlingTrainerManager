@@ -1,7 +1,7 @@
 use crate::models::{DownloadProgressPayload, InstalledTrainerRecord, Trainer};
 use crate::services::{scraper, storage};
 use chrono::Local;
-use futures_util::StreamExt;
+use futures_util::stream::{self, StreamExt};
 use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -512,36 +512,38 @@ fn sanitize_game_folder_name(name: &str) -> String {
 
 use crate::models::TrainerUpdateInfo;
 
-/// 检测所有已安装修改器是否有新版本
+/// 检测所有已安装修改器是否有新版本（受控 3 并发 + 平滑限流削峰，兼顾高吞吐与源站防护）
 pub async fn check_trainers_update() -> Result<Vec<TrainerUpdateInfo>, String> {
     let installed = storage::load_installed_records();
-    let mut results = Vec::new();
+    if installed.is_empty() {
+        return Ok(Vec::new());
+    }
 
-    for item in installed {
-        // 请求风灵月影官网该修改器的最新详情，明确区分网络/解析失败与版本状态
-        match scraper::get_trainer_detail_ext(&item.id, true).await {
-            Ok(latest) => {
-                let version_changed = item.version.trim() != latest.version.trim();
-                let game_ver_changed = !latest.game_version.trim().is_empty()
-                    && item.game_version.trim() != latest.game_version.trim();
-                let options_added = latest.options.len() > item.options.len();
+    // 采用受控 3 并发流式检查，避免瞬间高 QPS 触发 Cloudflare 429 或人机验证
+    let results = stream::iter(installed)
+        .map(|item| async move {
+            let res = match scraper::get_trainer_detail_ext(&item.id, true).await {
+                Ok(latest) => {
+                    let version_changed = item.version.trim() != latest.version.trim();
+                    let game_ver_changed = !latest.game_version.trim().is_empty()
+                        && item.game_version.trim() != latest.game_version.trim();
+                    let options_added = latest.options.len() > item.options.len();
 
-                let has_update = version_changed || game_ver_changed || options_added;
+                    let has_update = version_changed || game_ver_changed || options_added;
 
-                results.push(TrainerUpdateInfo {
-                    id: item.id.clone(),
-                    has_update,
-                    current_version: item.version.clone(),
-                    latest_version: latest.version.clone(),
-                    current_game_version: item.game_version.clone(),
-                    latest_game_version: latest.game_version.clone(),
-                    latest_trainer: if has_update { Some(latest) } else { None },
-                    check_status: Some("ok".to_string()),
-                    error_message: None,
-                });
-            }
-            Err(e) => {
-                results.push(TrainerUpdateInfo {
+                    TrainerUpdateInfo {
+                        id: item.id.clone(),
+                        has_update,
+                        current_version: item.version.clone(),
+                        latest_version: latest.version.clone(),
+                        current_game_version: item.game_version.clone(),
+                        latest_game_version: latest.game_version.clone(),
+                        latest_trainer: if has_update { Some(latest) } else { None },
+                        check_status: Some("ok".to_string()),
+                        error_message: None,
+                    }
+                }
+                Err(e) => TrainerUpdateInfo {
                     id: item.id.clone(),
                     has_update: false,
                     current_version: item.version.clone(),
@@ -551,12 +553,16 @@ pub async fn check_trainers_update() -> Result<Vec<TrainerUpdateInfo>, String> {
                     latest_trainer: None,
                     check_status: Some("failed".to_string()),
                     error_message: Some(e),
-                });
-            }
-        }
+                },
+            };
 
-        tokio::time::sleep(tokio::time::Duration::from_millis(60)).await;
-    }
+            // 单 worker 微退避，削平突发流量波峰
+            tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+            res
+        })
+        .buffer_unordered(3)
+        .collect::<Vec<TrainerUpdateInfo>>()
+        .await;
 
     Ok(results)
 }

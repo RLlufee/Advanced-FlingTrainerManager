@@ -5,14 +5,8 @@ use std::time::Duration;
 use tokio::time::timeout;
 use super::scanner::download_cover_image;
 
-/// 对指定已安装的修改器进行全面数据补齐与同步（从风灵月影官网抓取选项、热键看板及高清封面）
-pub async fn enrich_installed_trainer(id: &str) -> Result<InstalledTrainerRecord, String> {
-    let records = storage::load_installed_records();
-    let mut target = records
-        .into_iter()
-        .find(|r| r.id == id)
-        .ok_or_else(|| format!("未找到指定的修改器记录: {}", id))?;
-
+/// 核心记录数据补齐实现（直接操作内存中的记录并单项保存回 trainer.json，不重复全库扫描）
+pub async fn enrich_record_internal(mut target: InstalledTrainerRecord) -> Result<InstalledTrainerRecord, String> {
     let trainers_root = storage::get_trainers_dir();
     let game_install_dir = trainers_root.join(&target.id);
 
@@ -107,18 +101,28 @@ pub async fn enrich_installed_trainer(id: &str) -> Result<InstalledTrainerRecord
         }
     }
 
-    // 保存回 trainer.json
+    // 保存回单个修改器的 trainer.json
     storage::save_installed_record(target.clone())?;
     Ok(target)
 }
 
-/// 一键并发补全所有缺失选项、热键看板或封面数据的修改器
+/// 对指定已安装的修改器进行全面数据补齐与同步（从风灵月影官网抓取选项、热键看板及高清封面）
+pub async fn enrich_installed_trainer(id: &str) -> Result<InstalledTrainerRecord, String> {
+    let records = storage::load_installed_records();
+    let target = records
+        .into_iter()
+        .find(|r| r.id == id)
+        .ok_or_else(|| format!("未找到指定的修改器记录: {}", id))?;
+
+    enrich_record_internal(target).await
+}
+
+/// 一键受控并发补全所有缺失选项、热键看板或封面数据的修改器（复用首次全量扫描结果，杜绝 N 轮重复读盘）
 pub async fn enrich_all_installed_trainers() -> Result<BatchEnrichResult, String> {
     let records = storage::load_installed_records();
-    let need_enrich: Vec<String> = records
+    let need_enrich: Vec<InstalledTrainerRecord> = records
         .into_iter()
         .filter(|r| r.option_items.is_empty() || r.options.is_empty() || r.capsule_image.is_none())
-        .map(|r| r.id)
         .collect();
 
     if need_enrich.is_empty() {
@@ -130,8 +134,12 @@ pub async fn enrich_all_installed_trainers() -> Result<BatchEnrichResult, String
     }
 
     let results = stream::iter(need_enrich)
-        .map(|id| async move { enrich_installed_trainer(&id).await.is_ok() })
-        .buffer_unordered(4)
+        .map(|record| async move {
+            let ok = enrich_record_internal(record).await.is_ok();
+            tokio::time::sleep(Duration::from_millis(50)).await;
+            ok
+        })
+        .buffer_unordered(3)
         .collect::<Vec<bool>>()
         .await;
 
