@@ -53,9 +53,9 @@ const SETTINGS_TABS: SettingsTabConfig[] = [
     id: "system",
     label: "系统与窗口行为",
     icon: Monitor,
-    iconColor: "text-slate-400 group-hover:text-purple-600",
-    activeIconColor: "text-purple-600",
-    dotColor: "bg-purple-500",
+    iconColor: "text-slate-400 group-hover:text-cyan-600",
+    activeIconColor: "text-cyan-600",
+    dotColor: "bg-cyan-500",
     tooltipText: "配置 Windows 登录自启动、关闭窗口最小化至系统托盘与系统级偏好",
   },
   {
