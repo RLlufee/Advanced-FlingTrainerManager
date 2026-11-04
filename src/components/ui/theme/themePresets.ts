@@ -27,7 +27,7 @@ export const ACCENT_PRESETS: Record<
   cyan: {
     id: "cyan",
     name: "青空之蓝",
-    tagline: "风灵月影与 PCL II 经典科技青蓝",
+    tagline: "风灵月影与经典科技青蓝",
     primary: "#06b6d4",
     hover: "#0891b2",
     active: "#0e7490",

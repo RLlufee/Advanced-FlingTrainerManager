@@ -77,7 +77,7 @@ export const AnimationPresetCards: React.FC<AnimationPresetCardsProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                界面动效总控与 PCL-CE 风格预设
+                界面动效总控与风格预设
               </h2>
               <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800 text-cyan-700 dark:text-cyan-400">
                 Motion 14 驱动

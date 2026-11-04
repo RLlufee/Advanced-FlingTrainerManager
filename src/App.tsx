@@ -21,7 +21,7 @@ const MainWorkspace: React.FC = () => {
       <WallpaperBackdrop />
       {/* 顶部现代化无边框标题栏（PCL II 风格） */}
       <TitleBar
-        title="PCL II  |  Fling Trainer"
+        title="Advanced - Fling Trainer"
         activeTab={activeTab}
         onTabChange={setActiveTab}
       />

@@ -152,7 +152,7 @@ export const MoreSidebar: React.FC<MoreSidebarProps> = ({
           <div className="flex items-center justify-between">
             <span className="font-medium text-slate-700">优化与清理引擎</span>
             <span className="text-cyan-600 font-mono text-[10px] font-bold">
-              PCL2 & TK
+              Advanced - Fling Trainer
             </span>
           </div>
           <p className="text-[10px] text-slate-400 leading-relaxed">

@@ -1,8 +1,8 @@
 [package]
 name = "advanced_fling_trainer_manager"
-version = "0.2.3"
+version = "0.2.37"
 description = "Advanced FlingTrainerManager Tauri Client"
-authors = ["you"]
+authors = ["青衣、白凌"]
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

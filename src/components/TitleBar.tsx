@@ -75,7 +75,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
     >
       {/* 左侧：应用标题（集成打字机 Tooltip 提示） */}
       <div data-tauri-drag-region className="flex items-center gap-2 min-w-[180px]">
-        <TypewriterTooltip content="PCL II 灵动视觉内核 · 已就绪喵~">
+        <TypewriterTooltip content="灵动视觉内核 · 已就绪喵~">
           <div className="flex items-center gap-2 cursor-pointer">
             <JellyIcon intensity="bouncy">
               <div

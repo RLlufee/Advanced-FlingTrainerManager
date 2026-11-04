@@ -67,7 +67,7 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
                 </span>
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                运用 PCL2 CE 同款 Windows NT 内核指令，直接清理物理工作集与备用缓存（Standby List），大幅释放可用内存
+                运用来自 Windows NT 内核指令，直接清理物理工作集与备用缓存（Standby List），大幅释放可用内存
               </p>
             </div>
           </div>

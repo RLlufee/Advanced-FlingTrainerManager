@@ -82,7 +82,7 @@ export const HardwareTab: React.FC = () => {
       `• 主板与固件: ${hardware.mainboard} (BIOS: ${hardware.bios})`,
       `• 磁盘分区: ${diskSummary}`,
       `• 连续运行时间: ${formatUptime(hardware.boot_at)}`,
-      `• 生成来源: PCL II | Fling Trainer Manager`,
+      `• 生成来源:Advanced - Fling Trainer Manager`,
     ].join("\n");
 
     try {
