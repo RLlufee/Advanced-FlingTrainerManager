@@ -14,6 +14,12 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            // 托盘小窗失焦时自动隐藏（达到原生无感收缩）
+            if let tauri::WindowEvent::Focused(false) = event {
+                if window.label() == "tray_popup" {
+                    let _ = window.hide();
+                }
+            }
             // 拦截主窗口关闭请求：若用户开启“最小化到托盘”，则阻止直接销毁并隐藏窗口
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 let config = services::config::load_config();
@@ -65,6 +71,8 @@ pub fn run() {
             get_hardware_overview,
             system_cleanup_scan,
             system_cleanup_run,
+            show_main_window,
+            quit_app,
             // Wallpaper & Monet Accent Commands
             get_windows_accent_color,
             save_monet_wallpaper_thumbnail,

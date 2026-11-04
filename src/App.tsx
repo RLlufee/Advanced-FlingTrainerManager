@@ -8,6 +8,9 @@ import { MoreView } from "./components/MoreView";
 import { AnimationProvider, useAnimationConfig } from "./components/ui/motion";
 import { ThemeProvider } from "./components/ui/theme";
 import { WallpaperBackdrop } from "./components/WallpaperBackdrop";
+import { TrayPopup } from "./components/tray/TrayPopup";
+
+const isTrayView = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("view") === "tray";
 
 const MainWorkspace: React.FC = () => {
   const [activeTab, setActiveTab] = useState<NavTab>("launch"); // 默认首发展示启动管理页
@@ -54,6 +57,16 @@ const MainWorkspace: React.FC = () => {
 };
 
 export const App: React.FC = () => {
+  if (isTrayView) {
+    return (
+      <ThemeProvider>
+        <AnimationProvider>
+          <TrayPopup />
+        </AnimationProvider>
+      </ThemeProvider>
+    );
+  }
+
   return (
     <ThemeProvider>
       <AnimationProvider>

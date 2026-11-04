@@ -46,3 +46,13 @@ pub async fn system_cleanup_run(
         .await
         .map_err(|e| e.to_string())?
 }
+
+#[tauri::command]
+pub fn show_main_window(app: tauri::AppHandle) {
+    crate::services::tray::show_main_window(&app);
+}
+
+#[tauri::command]
+pub fn quit_app(app: tauri::AppHandle) {
+    crate::services::tray::quit_app(&app);
+}
