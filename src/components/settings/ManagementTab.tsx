@@ -340,11 +340,22 @@ export const ManagementTab: React.FC<ManagementTabProps> = ({
           {/* 关闭窗口最小化到托盘 */}
           <div className="flex items-center justify-between pt-1">
             <div className="space-y-0.5">
-              <span className="text-xs font-semibold text-slate-800">
-                点击关闭按钮时最小化到系统托盘
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-800">
+                  点击关闭按钮时最小化到系统托盘
+                </span>
+                <span
+                  className={`px-1.5 py-0.5 text-[10px] font-medium rounded-full ${
+                    management.close_to_tray
+                      ? "bg-cyan-50 text-cyan-700 border border-cyan-200"
+                      : "bg-slate-100 text-slate-500 border border-slate-200"
+                  }`}
+                >
+                  {management.close_to_tray ? "已开启后台驻留" : "默认关闭 (直接退出)"}
+                </span>
+              </div>
               <p className="text-[11px] text-slate-400">
-                保持客户端后台驻留，避免误关后重新冷启动
+                开启后点击标题栏 X 或任务栏关闭将隐藏至托盘；关闭状态下点击关闭将直接退出应用
               </p>
             </div>
             <button

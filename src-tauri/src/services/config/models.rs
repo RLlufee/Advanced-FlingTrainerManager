@@ -37,8 +37,13 @@ pub struct ManagementSettings {
     pub custom_trainers_dir: Option<String>,
     pub auto_extract_zip: bool,
     pub scan_depth: u32,
+    #[serde(default = "default_close_to_tray")]
     pub close_to_tray: bool,
     pub launch_at_startup: bool,
+}
+
+pub fn default_close_to_tray() -> bool {
+    false
 }
 
 impl Default for ManagementSettings {
@@ -47,7 +52,7 @@ impl Default for ManagementSettings {
             custom_trainers_dir: None,
             auto_extract_zip: true,
             scan_depth: 2,
-            close_to_tray: true,
+            close_to_tray: false,
             launch_at_startup: false,
         }
     }

@@ -66,14 +66,15 @@ mod tests {
     #[test]
     fn test_tray_close_behavior_default() {
         let mgmt = ManagementSettings::default();
-        assert!(mgmt.close_to_tray, "默认必须启用关闭最小化到系统托盘");
-        assert!(should_close_to_tray(mgmt.close_to_tray));
+        // 用户需求：默认关闭最小化到系统托盘
+        assert!(!mgmt.close_to_tray, "默认必须关闭最小化到系统托盘");
+        assert!(!should_close_to_tray(mgmt.close_to_tray));
     }
 
     #[test]
-    fn test_tray_close_behavior_when_disabled() {
+    fn test_tray_close_behavior_when_enabled() {
         let mut mgmt = ManagementSettings::default();
-        mgmt.close_to_tray = false;
-        assert!(!should_close_to_tray(mgmt.close_to_tray));
+        mgmt.close_to_tray = true;
+        assert!(should_close_to_tray(mgmt.close_to_tray), "手动开启后应当拦截关闭并最小化到托盘");
     }
 }

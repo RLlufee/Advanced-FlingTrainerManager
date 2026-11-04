@@ -220,6 +220,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
     try {
       await configApi.saveConfig(newConfig);
       setConfig(newConfig);
+      if (partial.close_to_tray !== undefined) {
+        showToast(
+          "success",
+          partial.close_to_tray
+            ? "已开启关闭时最小化到系统托盘（后台驻留）~"
+            : "已关闭最小化到系统托盘（点击关闭直接退出）"
+        );
+      }
       return true;
     } catch (e) {
       setConfig(oldConfig);
