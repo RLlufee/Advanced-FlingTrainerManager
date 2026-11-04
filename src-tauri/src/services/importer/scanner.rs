@@ -31,7 +31,7 @@ pub async fn download_cover_image(cover_path: &Path, candidate_urls: &[&str]) ->
             && let Ok(bytes) = resp.bytes().await
             && bytes.len() > 1024
         {
-            let _ = fs::write(cover_path, bytes);
+            let _ = tokio::fs::write(cover_path, bytes).await;
             return true;
         }
     }
@@ -146,12 +146,15 @@ pub async fn process_and_import_single_file(
         return Ok(None);
     }
 
-    // 处理 .exe 或 .zip
+    // 处理 .exe 或 .zip：将 ZIP 解压卸载至专有阻塞线程池，避免重度 CPU 与文件解压霸占 Tokio 异步工作线程
     let is_extracted_zip = lower_name.ends_with(".zip");
     let target_exe: Option<PathBuf> = if lower_name.ends_with(".exe") {
         Some(file_path.clone())
     } else if is_extracted_zip {
-        extract_single_exe_from_zip(&file_path)
+        let zip_p = file_path.clone();
+        tokio::task::spawn_blocking(move || extract_single_exe_from_zip(&zip_p))
+            .await
+            .unwrap_or(None)
     } else {
         None
     };
