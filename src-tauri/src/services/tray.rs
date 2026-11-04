@@ -50,8 +50,13 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             _ => {}
         });
 
-    if let Some(icon) = app.default_window_icon() {
-        builder = builder.icon(icon.clone());
+    // 优先加载直接内嵌的 32x32 专属高清图标字节，彻底摆脱 Windows 资源缓存或 dev 增量编译导致的旧图标问题
+    let tray_icon = tauri::image::Image::from_bytes(include_bytes!("../../icons/32x32.png"))
+        .ok()
+        .or_else(|| app.default_window_icon().cloned());
+
+    if let Some(icon) = tray_icon {
+        builder = builder.icon(icon);
     }
 
     builder.build(app)?;
