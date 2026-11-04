@@ -5,4 +5,6 @@
 
 export * from "./themePresets";
 export * from "./monetEngine";
+export * from "./themeStorage";
+export * from "./themeDomApplier";
 export * from "./ThemeContext";
