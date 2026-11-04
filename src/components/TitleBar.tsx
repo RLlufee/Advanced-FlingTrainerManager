@@ -18,7 +18,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
   activeTab,
   onTabChange,
 }) => {
-  const { currentAccent, colorMode, isDark, toggleColorMode } = useTheme();
+  const { colorMode, isDark, toggleColorMode } = useTheme();
 
   const handleMinimize = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -78,12 +78,10 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         <TypewriterTooltip content="灵动视觉内核 · 已就绪喵~">
           <div className="flex items-center gap-2 cursor-pointer">
             <JellyIcon intensity="bouncy">
-              <div
-                className="w-2.5 h-2.5 rounded-full animate-pulse transition-all duration-300"
-                style={{
-                  backgroundColor: currentAccent.primary,
-                  boxShadow: `0 0 10px ${currentAccent.primary}`,
-                }}
+              <img
+                src="/app-icon.png"
+                alt="App Logo"
+                className="w-5 h-5 rounded-md object-contain drop-shadow-sm select-none"
               />
             </JellyIcon>
             <span
