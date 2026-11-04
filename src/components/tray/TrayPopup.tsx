@@ -7,6 +7,7 @@ import {
   Check,
   Shield,
 } from "lucide-react";
+
 import { invoke } from "@tauri-apps/api/core";
 import { useTheme } from "../ui/theme";
 import { JellyIcon } from "../ui/motion/JellyIcon";
@@ -84,16 +85,14 @@ export const TrayPopup: React.FC = () => {
         <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800/80">
           <div className="flex items-center gap-2">
             <JellyIcon intensity="bouncy">
-              <div
-                className="w-2.5 h-2.5 rounded-full animate-pulse transition-all duration-300"
-                style={{
-                  backgroundColor: currentAccent.primary,
-                  boxShadow: `0 0 10px ${currentAccent.primary}`,
-                }}
+              <img
+                src="/app-icon.png"
+                alt="App Icon"
+                className="w-4 h-4 rounded object-contain drop-shadow-xs"
               />
             </JellyIcon>
             <span className="text-xs font-bold text-slate-800 dark:text-slate-100 tracking-wide">
-              FlingTrainer 管家
+              FlingTrainer 管理器
             </span>
           </div>
 

@@ -33,7 +33,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
     setIsRestartingAdmin(true);
     try {
       await invoke("restart_app_as_admin");
-      showToast("info", "已尝试以管理员权限重新启动管家喵~");
+      showToast("info", "已尝试以管理员权限重新启动管理器喵~");
     } catch (e) {
       showToast("error", `提权重启失败: ${e}`);
     } finally {
@@ -178,7 +178,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
               </h2>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-              向当前用户的 Windows 注册表 Run 键写入启动项，开机登录后自动启动修改器管家。
+              向当前用户的 Windows 注册表 Run 键写入启动项，开机登录后自动启动修改器管理器。
             </p>
           </div>
         </div>
@@ -187,7 +187,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
           <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/60">
             <div className="space-y-0.5 max-w-xl">
               <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                Windows 登录时自动启动修改器管家
+                Windows 登录时自动启动修改器管理器！
               </span>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 开机自动常驻后台，在运行大型 3A 大作或独立游戏时可随叫随到，无需翻找快捷方式。
@@ -252,13 +252,13 @@ export const SystemTab: React.FC<SystemTabProps> = ({
           <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/60">
             <div className="space-y-0.5">
               <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                以管理员身份重新启动管家
+                以管理员身份重新启动管理器
               </span>
               <p className="text-[11px] text-slate-400">
                 触发 Windows UAC 提示并以完全提权状态运行，解决注入修改器时的权限拦截
               </p>
             </div>
-            <TypewriterTooltip text="触发系统 UAC 提示并重启管家" position="left">
+            <TypewriterTooltip text="触发系统 UAC 提示并重启管理器" position="left">
               <button
                 type="button"
                 onClick={handleRestartAsAdmin}
@@ -268,7 +268,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
                 <JellyIcon intensity="bouncy">
                   <RotateCcw className={`w-3.5 h-3.5 ${isRestartingAdmin ? "animate-spin" : ""}`} style={{ color: currentAccent.primary }} />
                 </JellyIcon>
-                <span>{isRestartingAdmin ? "正在启动..." : "提权重启管家"}</span>
+                <span>{isRestartingAdmin ? "正在启动..." : "提权重启管理器"}</span>
               </button>
             </TypewriterTooltip>
           </div>
