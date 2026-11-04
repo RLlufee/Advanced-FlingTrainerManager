@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   trainerApi,
   InstalledTrainerRecord,
@@ -52,7 +52,13 @@ export function useInstalledTrainers({ isActive, showToast }: UseInstalledTraine
   // 莫奈动态主题引擎（用于第三级「游戏取色」）
   const { isDynamic, gameAdaptiveAccent, applyEphemeralGameAccent } = useTheme();
 
-  // 加载已安装列表
+  // 保持 selectedId 随时可通过 Ref 读取，切断 loadTrainers 对 selectedId 状态变化的依赖联动
+  const selectedIdRef = useRef<string | null>(selectedId);
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
+
+  // 加载已安装列表（函数引用稳定，不再随 selectedId 变动而重建）
   const loadTrainers = useCallback(
     async (keepSelectedId?: string) => {
       if (cachedInstalledTrainers.length === 0) {
@@ -61,7 +67,7 @@ export function useInstalledTrainers({ isActive, showToast }: UseInstalledTraine
       try {
         const records = await trainerApi.getInstalledTrainers();
         setTrainers(records);
-        const targetId = keepSelectedId || cachedSelectedId || selectedId;
+        const targetId = keepSelectedId ?? selectedIdRef.current ?? cachedSelectedId;
         if (records.length > 0) {
           if (targetId && records.some((r) => r.id === targetId)) {
             setSelectedId(targetId);
@@ -77,19 +83,29 @@ export function useInstalledTrainers({ isActive, showToast }: UseInstalledTraine
         setIsLoading(false);
       }
     },
-    [selectedId, setSelectedId, setTrainers, showToast]
+    [setTrainers, setSelectedId, showToast]
   );
 
-  useEffect(() => {
-    loadTrainers();
-  }, [loadTrainers]);
+  // 合并首次挂载与切页激活为单一路标，杜绝并发双读与 selectedId 变动导致的冗余全盘 I/O
+  const isFirstMountRef = useRef(true);
+  const prevIsActiveRef = useRef(isActive);
 
-  // 当用户从其他 Tab 切换回启动页时，自动静默刷新已安装列表
   useEffect(() => {
-    if (isActive) {
-      loadTrainers(selectedId || undefined);
+    if (isFirstMountRef.current) {
+      isFirstMountRef.current = false;
+      // 首次挂载：只要当前不是处于后台失活态（undefined 或 true），就只发起一次读取
+      if (isActive !== false) {
+        loadTrainers();
+      }
+      return;
     }
-  }, [isActive, loadTrainers, selectedId]);
+
+    // 后续仅当从“非激活”切换为“激活”时，才进行静默重新校验刷新
+    if (!prevIsActiveRef.current && isActive) {
+      loadTrainers();
+    }
+    prevIsActiveRef.current = isActive;
+  }, [isActive, loadTrainers]);
 
   // 当前选中的修改器对象
   const selectedTrainer = useMemo(() => {
