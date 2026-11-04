@@ -1,5 +1,5 @@
-// Prevents additional console window on Windows in release, DO NOT REMOVE!!
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// 全局纯窗口子系统（无论 Debug 还是 Release 模式均彻底消除 Windows 控制台黑框）
+#![windows_subsystem = "windows"]
 
 fn main() {
     // 解除 Windows WebView2 默认的 60Hz 节能锁频限制，解锁 120Hz/144Hz/240Hz+ 满血电竞高刷与 GPU 硬件栅格化加速
