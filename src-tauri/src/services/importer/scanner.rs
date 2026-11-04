@@ -217,7 +217,7 @@ pub async fn process_and_import_single_file(
         let _ = fs::create_dir_all(&game_install_dir);
     }
 
-    // 拷贝 exe 到专属子目录中
+    // 拷贝 exe 到专属子目录中（异步文件复制，不阻塞 Tokio 异步工作线程）
     let final_exe_name = exe_to_import
         .file_name()
         .unwrap_or_default()
@@ -226,17 +226,17 @@ pub async fn process_and_import_single_file(
     let target_exe_path = game_install_dir.join(&final_exe_name);
 
     if exe_to_import != target_exe_path
-        && let Err(e) = fs::copy(&exe_to_import, &target_exe_path)
+        && let Err(e) = tokio::fs::copy(&exe_to_import, &target_exe_path).await
     {
         eprintln!("复制修改器可执行程序失败: {}", e);
         if is_extracted_zip && let Some(parent) = exe_to_import.parent() {
-            let _ = fs::remove_dir_all(parent);
+            let _ = tokio::fs::remove_dir_all(parent).await;
         }
         return Ok(None);
     }
 
     if is_extracted_zip && let Some(parent) = exe_to_import.parent() {
-        let _ = fs::remove_dir_all(parent);
+        let _ = tokio::fs::remove_dir_all(parent).await;
     }
 
     // 5. 抓取并缓存 cover.jpg 封面到本地目录
