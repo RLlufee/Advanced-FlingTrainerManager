@@ -5,7 +5,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use std::sync::{LazyLock, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{LazyLock, RwLock};
+use std::time::Duration;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameMetaCacheItem {
@@ -15,7 +17,7 @@ pub struct GameMetaCacheItem {
     pub capsule_image: Option<String>,
 }
 
-static META_CACHE: LazyLock<Mutex<HashMap<String, GameMetaCacheItem>>> = LazyLock::new(|| {
+static META_CACHE: LazyLock<RwLock<HashMap<String, GameMetaCacheItem>>> = LazyLock::new(|| {
     let mut map = HashMap::new();
     let cache_file = get_cache_file_path();
     if cache_file.exists()
@@ -24,25 +26,65 @@ static META_CACHE: LazyLock<Mutex<HashMap<String, GameMetaCacheItem>>> = LazyLoc
     {
         map = loaded;
     }
-    Mutex::new(map)
+    RwLock::new(map)
 });
+
+static CACHE_DIRTY: AtomicBool = AtomicBool::new(false);
+static IS_FLUSH_SCHEDULED: AtomicBool = AtomicBool::new(false);
 
 fn get_cache_file_path() -> PathBuf {
     get_app_data_dir().join("game_meta_cache.json")
 }
 
-fn save_cache_to_disk() {
-    if let Ok(cache) = META_CACHE.lock() {
-        let file = get_cache_file_path();
-        if let Ok(json) = serde_json::to_string_pretty(&*cache) {
+/// 触发异步防抖持久化（合并 500ms 内的多次写入，锁外序列化 + 异步非阻塞写盘）
+pub fn save_cache_to_disk() {
+    CACHE_DIRTY.store(true, Ordering::Release);
+
+    // 如果当前尚未安排刷新任务，启动轻量防抖任务
+    if IS_FLUSH_SCHEDULED
+        .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+        .is_ok()
+    {
+        tokio::spawn(async {
+            tokio::time::sleep(Duration::from_millis(500)).await;
+            IS_FLUSH_SCHEDULED.store(false, Ordering::Release);
+
+            if CACHE_DIRTY.swap(false, Ordering::AcqRel) {
+                // 仅持有轻量读锁提取快照，几微秒内释放
+                let snapshot = {
+                    if let Ok(guard) = META_CACHE.read() {
+                        guard.clone()
+                    } else {
+                        return;
+                    }
+                };
+
+                // 锁外执行 JSON 序列化与异步非阻塞文件写入
+                if let Ok(json) = serde_json::to_string_pretty(&snapshot) {
+                    let file = get_cache_file_path();
+                    let _ = tokio::fs::write(file, json).await;
+                }
+            }
+        });
+    }
+}
+
+/// 同步立即刷盘（用于测试或需要强保证写入的场景）
+pub fn flush_cache_to_disk_sync() {
+    if let Ok(guard) = META_CACHE.read() {
+        let snapshot = guard.clone();
+        drop(guard);
+        if let Ok(json) = serde_json::to_string_pretty(&snapshot) {
+            let file = get_cache_file_path();
             let _ = fs::write(file, json);
+            CACHE_DIRTY.store(false, Ordering::Release);
         }
     }
 }
 
-/// 从缓存中查询已有的游戏元数据（优先 ID，次选清洗后的游戏名称）
+/// 从缓存中查询已有的游戏元数据（优先 ID，次选清洗后的游戏名称，使用读锁无等待并发）
 pub fn get_cached_game_meta(trainer_id: &str, game_name: &str) -> Option<GameMetaCacheItem> {
-    if let Ok(cache) = META_CACHE.lock() {
+    if let Ok(cache) = META_CACHE.read() {
         if let Some(item) = cache.get(trainer_id) {
             return Some(item.clone());
         }
@@ -411,7 +453,7 @@ pub async fn enrich_trainer(trainer: &mut Trainer) {
     let cleaned_name = clean_game_name(&trainer.name);
 
     // 1. 先检查内存/磁盘持久化缓存（仅当已完整获取到 Steam 元数据时才直接短路返回，避免把网络偶发失败持久化为终态）
-    if let Ok(cache) = META_CACHE.lock()
+    if let Ok(cache) = META_CACHE.read()
         && let Some(cached) = cache.get(&trainer.id)
     {
         if cached.steam_app_id.is_some()
@@ -457,7 +499,7 @@ pub async fn enrich_trainer(trainer: &mut Trainer) {
             capsule_image: Some(capsule),
         };
 
-        if let Ok(mut cache) = META_CACHE.lock() {
+        if let Ok(mut cache) = META_CACHE.write() {
             cache.insert(trainer.id.clone(), item);
         }
         save_cache_to_disk();
@@ -490,7 +532,7 @@ pub async fn resolve_meta_for_name(game_name: &str) -> GameMetaCacheItem {
             capsule_image: Some(capsule),
         };
 
-        if let Ok(mut cache) = META_CACHE.lock() {
+        if let Ok(mut cache) = META_CACHE.write() {
             cache.insert(cleaned, item.clone());
         }
         save_cache_to_disk();
