@@ -38,6 +38,7 @@
   <br />
 </div>
 
+> [!TIP]
 > 💡 **告别弹窗广告、繁琐解压与古董黑框！**  
 > 无论是 Steam 游戏一键联动双驱、离线中英拼音毫秒级搜库，还是 20px 磨砂亚克力小托盘与 Windows NT 内核级物理内存压缩，皆为追求极致体验的 PC 玩家而生。
 
@@ -151,12 +152,26 @@
 
 ---
 
-## 🚀 快速上手 (Quick Start)
+## 📥 下载与快速上手 (Quick Start)
 
-> [!NOTE]
+### 🎮 普通玩家（推荐 · 开箱即用）
+
+1. 点击前往 👉 **[GitHub Releases 页面](https://github.com/RLlufee/Advanced-FlingTrainerManager/releases)**；
+2. 在最新版本（Latest）下方的 **Assets** 列表中，下载安装程序：
+   - **安装版**：`Advanced-FlingTrainerManager_x.x.x_x64-setup.exe`（推荐，支持桌面快捷方式与开机自启）
+   - **便携版**：`advanced_fling_trainer_manager.exe` 即用，无需安装（下载没有setup的.exe）
+3. 双击运行即可开启次世代修改器管理体验！（若被杀软拦截，请参考下方的 [FAQ 常见问题](#-常见问题-faq) 添加信任）
+
+---
+
+### 💻 开发者（源码调试与构建）
+
+<details>
+<summary><b>🛠️ 点击展开前端与 Rust 全栈开发环境配置</b></summary>
+
 > 运行环境要求：**Windows 10 / 11 (64-bit)**，**Node.js 18+**（推荐 pnpm 9+），以及 **Rust 1.80+ (2024 Edition)**。
 
-```bash
+\`\`\`bash
 # 1. 克隆代码仓库
 git clone https://github.com/RLlufee/Advanced-FlingTrainerManager.git
 cd Advanced-FlingTrainerManager
@@ -169,6 +184,9 @@ pnpm tauri dev
 
 # 4. 生产环境编译打包 (生成 NSIS 极速安装程序)
 pnpm tauri build
+\`\`\`
+
+</details>
 ```
 
 ---
