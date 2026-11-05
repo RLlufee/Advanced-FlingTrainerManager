@@ -169,7 +169,7 @@
 <details>
 <summary><b>🛠️ 点击展开前端与 Rust 全栈开发环境配置</b></summary>
 
-> 运行环境要求：**Windows 10 / 11 (64-bit)**，**Node.js 18+**（推荐 pnpm 9+），以及 **Rust 1.80+ (2024 Edition)**。
+> 运行环境要求：**Windows 10 / 11 (64-bit)**，**Node.js 24+**（推荐 **pnpm 11+**），以及 **Rust 1.99+ (2024 Edition)**。
 
 \`\`\`bash
 # 1. 克隆代码仓库
@@ -187,7 +187,6 @@ pnpm tauri build
 \`\`\`
 
 </details>
-```
 
 ---
 
@@ -236,10 +235,16 @@ pnpm tauri build
 
 <div align="center">
 
-<img src="https://github.com/RLlufee.png" width="84" height="84" style="border-radius: 50%; box-shadow: 0 4px 16px rgba(33, 129, 153, 0.15);" /><br />**青衣 ([@RLlufee](https://github.com/RLlufee))** 
+<img src="https://github.com/RLlufee.png" width="84" height="84" style="border-radius: 50%; box-shadow: 0 4px 16px rgba(33, 129, 153, 0.15);" /><br />**青衣 ([@RLlufee](https://github.com/RLlufee))** & **白凌 (Bai Ling)**
 
-<br />
+<br /><br />
 
-**开源协议**：本项目基于 [GPLv3 License](LICENSE) 开放源码。修改器资源版权均归原作者“风灵月影”所有，本项目仅供个人学习与交流使用。
+</div>
+
+### 📜 协议与免责声明
+
+- **开源协议**：本项目源码完全基于 [GNU General Public License v3.0 (GPLv3)](LICENSE) 开放源码。在遵守 GPLv3 许可证条款的前提下，享有运行、研究、修改与分发本软件的完全自由。
+- **版权声明**：本项目为独立的第三方开源桌面管理客户端。风灵月影修改器程序本体、美术资产及相关商标著作权均归原作者 **风灵月影 (FLiNG)** 所有。
+- **免责声明**：本项目仅提供网络公开资源的索引检索、流式下载解压与本地生命周期管理功能，不包含、不修改修改器底层二进制。用户在使用第三方修改器过程中产生的任何游戏封号、数据损坏或安全风险需自行承担。
 
 <br />
