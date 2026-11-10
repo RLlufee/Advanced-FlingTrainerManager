@@ -1,4 +1,4 @@
-use app_lib::services::{config, game_meta, scraper};
+use app_lib::services::{config, game_meta, scraper, single_instance};
 use std::fs;
 use std::path::PathBuf;
 
@@ -90,4 +90,51 @@ fn test_p2_08_clean_orphan_cache_accurate_reporting() {
     assert!(!file_b.exists(), "临时文件 B 应被成功删除");
 
     let _ = fs::remove_dir_all(&test_dir);
+}
+
+#[cfg(windows)]
+#[test]
+fn test_p2_09_single_instance_prevents_duplicate_tray_and_wakes_existing() {
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    let unique = format!(
+        "p2_09_{}_{}",
+        std::process::id(),
+        chrono::Utc::now().timestamp_nanos_opt().unwrap_or(0)
+    );
+    let mutex_name = format!("Local\\fling_p2_mutex_{}", unique);
+    let event_name = format!("Local\\fling_p2_event_{}", unique);
+
+    // 模拟首个实例启动并挂载托盘唤醒监听
+    let mut primary = match single_instance::acquire_or_notify_with_names(&mutex_name, &event_name, None) {
+        single_instance::AcquireOutcome::Primary(guard) => guard,
+        single_instance::AcquireOutcome::SecondaryNotified => {
+            panic!("首个实例必须成功抢占单实例锁")
+        }
+    };
+
+    let wakeups = Arc::new(AtomicUsize::new(0));
+    let wakeups_clone = Arc::clone(&wakeups);
+    primary.start_wakeup_listener(move || {
+        wakeups_clone.fetch_add(1, Ordering::SeqCst);
+    });
+
+    // 模拟主程序退至托盘后再次双击启动两次：均应返回 SecondaryNotified 并唤醒原实例
+    for expected in 1..=2 {
+        match single_instance::acquire_or_notify_with_names(&mutex_name, &event_name, None) {
+            single_instance::AcquireOutcome::Primary(_) => {
+                panic!("已存在托盘驻留实例时，重复启动不能创建新实例")
+            }
+            single_instance::AcquireOutcome::SecondaryNotified => {}
+        }
+
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+        while wakeups.load(Ordering::SeqCst) < expected && std::time::Instant::now() < deadline {
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        assert_eq!(wakeups.load(Ordering::SeqCst), expected);
+    }
+
+    drop(primary);
 }

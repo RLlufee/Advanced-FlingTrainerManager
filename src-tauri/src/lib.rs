@@ -3,14 +3,37 @@ pub mod models;
 pub mod services;
 
 use commands::*;
+use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let wait_pid = services::single_instance::parse_relaunch_wait_pid();
+    match services::single_instance::acquire_or_notify(wait_pid) {
+        services::single_instance::AcquireOutcome::Primary(guard) => {
+            services::single_instance::set_active_guard(guard);
+        }
+        services::single_instance::AcquireOutcome::SecondaryNotified => {
+            // 已有运行中的主实例（含托盘驻留态），已发送唤醒信号，当前次级进程直接退出
+            return;
+        }
+    }
+    let _single_instance_scope = services::single_instance::ActiveGuardScope;
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             // 初始化系统托盘图标与上下文菜单
             services::tray::setup_tray(app.handle())?;
+
+            // 启动单实例唤醒监听：当重复打开程序时在主线程唤醒并置顶已存在的主窗口
+            let app_handle = app.handle().clone();
+            services::single_instance::start_active_wakeup_listener(move || {
+                let handle_for_main = app_handle.clone();
+                let _ = app_handle.run_on_main_thread(move || {
+                    services::tray::show_main_window(&handle_for_main);
+                });
+            });
+
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -20,10 +43,17 @@ pub fn run() {
                     let _ = window.hide();
                 }
             }
-            // 拦截主窗口关闭请求：若用户开启“最小化到托盘”，则阻止直接销毁并隐藏窗口
+            // 拦截主窗口关闭请求：若开启“最小化到托盘”则隐藏主窗口；否则显式退出应用（避免隐藏的 tray_popup 导致进程残留）
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                let config = services::config::load_config();
-                if services::tray::should_close_to_tray(config.management.close_to_tray) {
+                if window.label() == "main" {
+                    let config = services::config::load_config();
+                    if services::tray::should_close_to_tray(config.management.close_to_tray) {
+                        api.prevent_close();
+                        let _ = window.hide();
+                    } else {
+                        services::tray::quit_app(window.app_handle());
+                    }
+                } else if window.label() == "tray_popup" {
                     api.prevent_close();
                     let _ = window.hide();
                 }

@@ -119,13 +119,17 @@ pub fn show_main_window(app: &AppHandle) {
     }
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
-        let _ = window.unminimize();
+        if window.is_minimized().unwrap_or(false) {
+            let _ = window.unminimize();
+        }
         let _ = window.set_focus();
     }
 }
 
-/// 退出程序
+/// 退出程序（显式移除托盘图标并释放单实例锁后再退出事件循环）
 pub fn quit_app(app: &AppHandle) {
+    let _ = app.remove_tray_by_id("main-tray");
+    crate::services::single_instance::release_active_guard();
     app.exit(0);
 }
 

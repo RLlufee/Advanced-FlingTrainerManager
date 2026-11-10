@@ -8,6 +8,7 @@ pub mod launcher;
 pub mod memory_optimizer;
 pub mod monet;
 pub mod scraper;
+pub mod single_instance;
 pub mod storage;
 pub mod system_cleaner;
 pub mod tray;

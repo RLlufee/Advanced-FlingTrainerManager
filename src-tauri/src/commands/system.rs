@@ -15,8 +15,11 @@ pub async fn optimize_memory(
 }
 
 #[tauri::command]
-pub fn restart_app_as_admin() -> Result<(), String> {
-    memory_optimizer::restart_as_admin()
+pub fn restart_app_as_admin(app: tauri::AppHandle) -> Result<(), String> {
+    memory_optimizer::restart_as_admin_with_cleanup(|| {
+        let _ = app.remove_tray_by_id("main-tray");
+        crate::services::single_instance::release_active_guard();
+    })
 }
 
 #[tauri::command]

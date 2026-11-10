@@ -364,6 +364,13 @@ pub fn optimize_memory(
 }
 
 pub fn restart_as_admin() -> Result<(), String> {
+    restart_as_admin_with_cleanup(|| {})
+}
+
+pub fn restart_as_admin_with_cleanup<F>(before_exit: F) -> Result<(), String>
+where
+    F: FnOnce(),
+{
     #[cfg(windows)]
     {
         use std::ffi::OsStr;
@@ -378,22 +385,29 @@ pub fn restart_as_admin() -> Result<(), String> {
         let exe_path =
             std::env::current_exe().map_err(|e| format!("获取当前可执行文件路径失败: {}", e))?;
 
+        let relaunch_arg = format!(
+            "{} {}",
+            crate::services::single_instance::RELAUNCH_WAIT_PID_ARG,
+            std::process::id()
+        );
         let op = to_wide(OsStr::new("runas"));
         let file = to_wide(exe_path.as_os_str());
+        let params = to_wide(OsStr::new(&relaunch_arg));
 
         let res = unsafe {
             ShellExecuteW(
                 std::ptr::null_mut(),
                 op.as_ptr(),
                 file.as_ptr(),
-                std::ptr::null(),
+                params.as_ptr(),
                 std::ptr::null(),
                 SW_SHOWNORMAL,
             )
         };
 
         if res as usize > 32 {
-            // 提权子进程已拉起，退出当前非管理员进程
+            // 提权子进程已拉起：先执行旧进程清理回调（释放托盘图标与单实例锁），再退出当前非管理员进程
+            before_exit();
             std::process::exit(0);
         } else {
             Err(format!(
@@ -404,6 +418,7 @@ pub fn restart_as_admin() -> Result<(), String> {
     }
     #[cfg(not(windows))]
     {
+        let _ = before_exit;
         Err("仅支持 Windows 操作系统".into())
     }
 }
