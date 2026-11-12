@@ -9,6 +9,17 @@ pub fn get_app_config() -> AppConfig {
 
 #[tauri::command]
 pub fn save_app_config(app_config: AppConfig) -> Result<(), String> {
+    if let Some(ref custom_dir) = app_config.management.custom_trainers_dir {
+        let current_cfg = config::load_config();
+        crate::services::storage::validate_custom_trainers_dir(
+            custom_dir,
+            current_cfg.management.custom_trainers_dir.as_deref(),
+        )?;
+        let trimmed = custom_dir.trim();
+        if !trimmed.is_empty() {
+            let _ = crate::services::storage::write_library_marker(std::path::Path::new(trimmed));
+        }
+    }
     config::save_config(&app_config)
 }
 
@@ -40,6 +51,17 @@ pub fn clean_orphan_cache() -> Result<CleanSummary, String> {
 #[tauri::command]
 pub fn migrate_trainers_dir(new_dir: String) -> Result<u32, String> {
     config::migrate_trainers_dir(&new_dir)
+}
+
+#[tauri::command]
+pub fn resolve_trainers_target_dir(selected_dir: String) -> Result<String, String> {
+    let resolved = crate::services::storage::resolve_safe_trainers_target_dir(&selected_dir)?;
+    Ok(resolved.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub fn switch_trainers_dir(new_dir: String) -> Result<String, String> {
+    config::switch_trainers_dir(&new_dir)
 }
 
 #[tauri::command]

@@ -242,11 +242,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
     try {
       const chosen = await configApi.pickDirectory();
       if (!chosen) return;
-      if (storageStats && chosen.toLowerCase() === storageStats.trainers_dir.toLowerCase()) {
+      const safeTarget = await configApi.resolveTrainersTargetDir(chosen);
+      if (storageStats && safeTarget.toLowerCase() === storageStats.trainers_dir.toLowerCase()) {
         showToast("info", "所选目录与当前存储目录完全一致喵~");
         return;
       }
-      setMigrateTargetDir(chosen);
+      if (safeTarget.toLowerCase() !== chosen.trim().toLowerCase()) {
+        showToast("info", "为防止误删普通目录中的已有文件，已自动为您定位至专用 FlingTrainers 子目录喵~");
+      }
+      setMigrateTargetDir(safeTarget);
       setShowMigrateModal(true);
     } catch (e) {
       showToast("error", `选择目录失败: ${e}`);
@@ -272,16 +276,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
     }
   };
 
-  // 仅切换路径不移动文件（只有落盘成功后才提示成功并关闭弹窗 P1-05）
+  // 仅切换路径不移动文件（经后端安全校验并写入库标记后才刷新状态并关闭弹窗）
   const handleSwitchPathOnly = async () => {
     if (!migrateTargetDir) return;
-    const ok = await updateManagementSettings({ custom_trainers_dir: migrateTargetDir });
-    if (!ok) return;
-
-    showToast("success", "已将修改器存储路径切换到新目录喵~");
-    setShowMigrateModal(false);
-    setMigrateTargetDir(null);
-    await loadStorageStats();
+    try {
+      await configApi.switchTrainersDir(migrateTargetDir);
+      showToast("success", "已将修改器存储路径安全切换到新目录喵~");
+      setShowMigrateModal(false);
+      setMigrateTargetDir(null);
+      await loadConfig();
+      await loadStorageStats();
+    } catch (e) {
+      showToast("error", `切换存储目录失败: ${e}`);
+    }
   };
 
   // 在系统文件资源管理器中打开当前 trainers 目录

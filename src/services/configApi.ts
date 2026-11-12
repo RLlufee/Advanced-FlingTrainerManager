@@ -201,6 +201,16 @@ export const configApi = {
     return await invoke<number>("migrate_trainers_dir", { newDir });
   },
 
+  // 解析安全的修改器存储目标目录（普通非空目录会自动落至 FlingTrainers 专用子目录）
+  async resolveTrainersTargetDir(selectedDir: string): Promise<string> {
+    return await invoke<string>("resolve_trainers_target_dir", { selectedDir });
+  },
+
+  // 仅切换修改器存储路径（经由后端校验并写入库归属标记）
+  async switchTrainersDir(newDir: string): Promise<string> {
+    return await invoke<string>("switch_trainers_dir", { newDir });
+  },
+
   // 设置 Windows 开机自启
   async setLaunchAtStartup(enable: boolean): Promise<void> {
     return await invoke<void>("set_launch_at_startup", { enable });

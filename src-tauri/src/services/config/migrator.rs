@@ -48,6 +48,9 @@ pub fn migrate_trainers_dir_from_to(
         let path = entry.path();
         if path.is_dir() {
             let folder_name = entry.file_name();
+            if folder_name.to_string_lossy().starts_with('.') {
+                continue;
+            }
             let new_game_dir = canon_target.join(&folder_name);
             // 目标目录已有同名目录，拒绝静默覆盖
             if new_game_dir.exists() {
@@ -64,6 +67,7 @@ pub fn migrate_trainers_dir_from_to(
     if to_migrate.is_empty() {
         if persist_config {
             let clean_target = storage::strip_verbatim_prefix(&canon_target);
+            storage::write_library_marker(&clean_target)?;
             let mut config = load_config();
             config.management.custom_trainers_dir =
                 Some(clean_target.to_string_lossy().to_string());
@@ -166,6 +170,7 @@ pub fn migrate_trainers_dir_from_to(
             // 更新全局配置 custom_trainers_dir（若需要持久化）
             if persist_config {
                 let clean_target = storage::strip_verbatim_prefix(&canon_target);
+                storage::write_library_marker(&clean_target)?;
                 let mut config = load_config();
                 config.management.custom_trainers_dir =
                     Some(clean_target.to_string_lossy().to_string());
@@ -192,10 +197,26 @@ pub fn migrate_trainers_dir_from_to(
     }
 }
 
-/// 一键无损迁移所有已安装修改器至新目录
+/// 一键无损迁移所有已安装修改器至新目录（自动通过安全目录解析，普通非空目录会隔离到 FlingTrainers 子目录）
 pub fn migrate_trainers_dir(new_dir_str: &str) -> Result<u32, String> {
+    let safe_target = storage::resolve_safe_trainers_target_dir(new_dir_str)?;
+    let safe_str = safe_target.to_string_lossy().to_string();
     let current_dir = storage::get_trainers_dir();
-    migrate_trainers_dir_from_to(&current_dir, new_dir_str, true)
+    migrate_trainers_dir_from_to(&current_dir, &safe_str, true)
+}
+
+/// 仅切换修改器存储路径（自动隔离普通非空目录并写入库标记，返回实际生效目录）
+pub fn switch_trainers_dir(new_dir_str: &str) -> Result<String, String> {
+    let safe_target = storage::resolve_safe_trainers_target_dir(new_dir_str)?;
+    storage::write_library_marker(&safe_target)?;
+    let canon = fs::canonicalize(&safe_target).unwrap_or(safe_target);
+    let clean_target = storage::strip_verbatim_prefix(&canon);
+    let final_str = clean_target.to_string_lossy().to_string();
+
+    let mut config = load_config();
+    config.management.custom_trainers_dir = Some(final_str.clone());
+    save_config(&config)?;
+    Ok(final_str)
 }
 
 fn copy_dir_all(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {

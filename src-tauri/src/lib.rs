@@ -91,6 +91,8 @@ pub fn run() {
             get_storage_stats,
             clean_orphan_cache,
             migrate_trainers_dir,
+            resolve_trainers_target_dir,
+            switch_trainers_dir,
             set_launch_at_startup,
             test_network_connectivity,
             // System Diagnostics & Cleanup Commands

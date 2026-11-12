@@ -207,3 +207,87 @@ fn test_p0_02_migration_transaction_success_and_path_healing() {
 
     let _ = fs::remove_dir_all(&root);
 }
+
+#[test]
+fn test_h2_ordinary_game_dir_not_inferred_and_cannot_be_deleted() {
+    let root = create_temp_test_dir("h2_ordinary_game_dir");
+    let games_dir = root.join("Games");
+    let game_folder = games_dir.join("EldenRing");
+    fs::create_dir_all(&game_folder).unwrap();
+    fs::write(game_folder.join("eldenring.exe"), b"MZ-real-game-binary").unwrap();
+    fs::write(game_folder.join("savegame.dat"), b"precious-save-data").unwrap();
+
+    // 1. 扫描普通游戏目录绝不能推断并写入 trainer.json
+    let records = storage::load_installed_records_in_dir(&games_dir);
+    assert!(
+        records.is_empty(),
+        "普通游戏目录不含 trainer.json 时绝不能被识别为修改器"
+    );
+    assert!(
+        !game_folder.join("trainer.json").exists(),
+        "加载列表时严禁向普通游戏目录写入推断出的 trainer.json"
+    );
+    assert!(
+        !game_folder.join(storage::TRAINER_MARKER_FILE).exists(),
+        "加载列表时严禁向普通游戏目录写入归属标记"
+    );
+
+    // 2. 即使直接按文件夹同名 id 调用删除，也必须因为缺少合法 trainer.json 归属标记而被拦截
+    let del_res = storage::delete_installed_trainer_in_dir("EldenRing", &games_dir);
+    assert!(del_res.is_err(), "缺少合法 trainer.json 的目录必须拒绝删除");
+    assert!(game_folder.exists(), "普通游戏文件夹不能被误删");
+    assert!(
+        game_folder.join("eldenring.exe").exists(),
+        "普通游戏主程序不能被误删"
+    );
+    assert!(
+        game_folder.join("savegame.dat").exists(),
+        "普通游戏存档不能被误删"
+    );
+
+    let _ = fs::remove_dir_all(&root);
+}
+
+#[test]
+fn test_h2_safe_target_dir_isolation_and_config_validation() {
+    let root = create_temp_test_dir("h2_target_isolation");
+
+    // 1. 普通非空游戏目录：自动隔离至 FlingTrainers 专用子目录，且配置直写校验必须拦截原普通目录
+    let games_dir = root.join("Games");
+    let game_folder = games_dir.join("Cyberpunk2077");
+    fs::create_dir_all(&game_folder).unwrap();
+    fs::write(game_folder.join("game.exe"), b"MZ-game").unwrap();
+
+    let resolved_games =
+        storage::resolve_safe_trainers_target_dir(games_dir.to_str().unwrap()).unwrap();
+    assert_eq!(
+        resolved_games,
+        games_dir.join(storage::DEDICATED_LIBRARY_SUBDIR),
+        "选择非空普通目录时必须自动隔离至 FlingTrainers 专用子目录"
+    );
+    assert!(
+        storage::validate_custom_trainers_dir(games_dir.to_str().unwrap(), None).is_err(),
+        "直接把非空普通目录写入 custom_trainers_dir 必须被拦截"
+    );
+
+    // 2. 磁盘根目录校验必须拒绝直接写入配置，并能自动解析为 <盘符>/FlingTrainers
+    #[cfg(windows)]
+    {
+        assert!(storage::validate_custom_trainers_dir(r"C:\", None).is_err());
+        let resolved_root = storage::resolve_safe_trainers_target_dir(r"C:\").unwrap();
+        assert_eq!(
+            resolved_root,
+            PathBuf::from(r"C:\").join(storage::DEDICATED_LIBRARY_SUBDIR)
+        );
+    }
+
+    // 3. 已有受管库标记或纯修改器库目录应允许直接复用，不再嵌套子目录
+    let existing_lib = root.join("MyTrainers");
+    storage::write_library_marker(&existing_lib).unwrap();
+    let resolved_lib =
+        storage::resolve_safe_trainers_target_dir(existing_lib.to_str().unwrap()).unwrap();
+    assert_eq!(resolved_lib, existing_lib);
+    assert!(storage::validate_custom_trainers_dir(existing_lib.to_str().unwrap(), None).is_ok());
+
+    let _ = fs::remove_dir_all(&root);
+}
