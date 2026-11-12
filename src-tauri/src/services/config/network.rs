@@ -65,9 +65,21 @@ pub fn build_custom_http_client() -> Result<reqwest::Client, String> {
         Duration::from_millis(net.timeout_ms)
     };
 
+    // 禁止重定向降级至非 HTTPS 协议，防止中间人通过 302 跳转劫持为明文 HTTP
+    let redirect_policy = reqwest::redirect::Policy::custom(|attempt| {
+        if attempt.previous().len() >= 10 {
+            return attempt.error("重定向次数过多");
+        }
+        if !attempt.url().scheme().eq_ignore_ascii_case("https") {
+            return attempt.error("安全拦截：禁止重定向降级至非 HTTPS 协议");
+        }
+        attempt.follow()
+    });
+
     let mut builder = reqwest::Client::builder()
         .user_agent(crate::services::scraper::USER_AGENT)
         .timeout(timeout_val)
+        .redirect(redirect_policy)
         .pool_idle_timeout(Duration::from_secs(90))
         .pool_max_idle_per_host(8);
 

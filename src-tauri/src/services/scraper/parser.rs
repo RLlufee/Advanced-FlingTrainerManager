@@ -355,7 +355,7 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
         }
     }
 
-    // 提取下载链接
+    // 提取下载链接并强制校验 HTTPS + flingtrainer.com 白名单域名
     let mut download_url = String::new();
     if let Ok(attach_sel) = Selector::parse("a.attachment-link, .da-attachments-table a") {
         for a in document.select(&attach_sel) {
@@ -365,16 +365,20 @@ pub fn parse_trainer_detail(html: &str, slug: &str) -> Result<Trainer, String> {
                     || href.ends_with(".zip")
                     || href.ends_with(".exe"))
             {
-                download_url = href.to_string();
-                break;
+                let candidate = if href.starts_with("//") {
+                    format!("https:{}", href)
+                } else if href.starts_with('/') {
+                    format!("https://flingtrainer.com{}", href)
+                } else {
+                    href.to_string()
+                };
+
+                if let Ok(valid_url) = super::validate_official_download_url(&candidate) {
+                    download_url = valid_url;
+                    break;
+                }
             }
         }
-    }
-
-    if download_url.starts_with("//") {
-        download_url = format!("https:{}", download_url);
-    } else if download_url.starts_with('/') {
-        download_url = format!("https://flingtrainer.com{}", download_url);
     }
 
     // 校验页面有效性
@@ -470,6 +474,43 @@ mod tests {
         assert_eq!(
             trainer.option_items[2].note.as_ref().unwrap(),
             "Takes effect when you open the character details menu of the character you want to edit."
+        );
+    }
+
+    #[test]
+    fn test_parse_trainer_detail_rejects_untrusted_download_links() {
+        let html = r#"
+        <div class="post-content">
+            <h1 class="entry-title">Test Game Trainer</h1>
+            <div class="da-attachments-table">
+                <a class="attachment-link" href="http://flingtrainer.com/downloads/insecure.zip">HTTP link</a>
+                <a class="attachment-link" href="https://evil.com/payload/download.exe">Evil link</a>
+                <a class="attachment-link" href="https://flingtrainer.com.evil.com/downloads/fake.zip">Lookalike link</a>
+                <a class="attachment-link" href="https://flingtrainer.com/downloads/I7E3hFAco4_f6W8JJaJcqg,,">Official link</a>
+            </div>
+        </div>
+        "#;
+
+        let trainer = parse_trainer_detail(html, "test-game-trainer").unwrap();
+        assert_eq!(
+            trainer.download_url,
+            "https://flingtrainer.com/downloads/I7E3hFAco4_f6W8JJaJcqg,,"
+        );
+
+        let relative_html = r#"
+        <div class="post-content">
+            <h1 class="entry-title">Relative Test Trainer</h1>
+            <div class="da-attachments-table">
+                <a class="attachment-link" href="https://evil.example/download.zip">Evil link</a>
+                <a class="attachment-link" href="/downloads/relative_pkg,,">Relative link</a>
+            </div>
+        </div>
+        "#;
+
+        let relative_trainer = parse_trainer_detail(relative_html, "relative-test-trainer").unwrap();
+        assert_eq!(
+            relative_trainer.download_url,
+            "https://flingtrainer.com/downloads/relative_pkg,,"
         );
     }
 }

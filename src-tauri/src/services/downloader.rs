@@ -2,38 +2,72 @@ use crate::models::{DownloadProgressPayload, InstalledTrainerRecord, Trainer};
 use crate::services::{scraper, storage};
 use chrono::Local;
 use futures_util::stream::{self, StreamExt};
+use sha2::{Digest, Sha256};
 use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 use tauri::{AppHandle, Emitter, Runtime};
 
+/// 计算本地文件的 SHA-256 十六进制摘要（小写）
+pub fn compute_file_sha256(path: &Path) -> Result<String, String> {
+    let mut file =
+        fs::File::open(path).map_err(|e| format!("无法打开文件计算校验和 {}: {}", path.display(), e))?;
+    let mut hasher = Sha256::new();
+    let mut buf = [0u8; 64 * 1024];
+    loop {
+        let n = file
+            .read(&mut buf)
+            .map_err(|e| format!("读取文件计算校验和失败 {}: {}", path.display(), e))?;
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buf[..n]);
+    }
+    let digest = hasher.finalize();
+    Ok(digest.iter().map(|b| format!("{:02x}", b)).collect())
+}
+
 pub async fn download_and_install_trainer<R: Runtime>(
     app: AppHandle<R>,
     mut trainer: Trainer,
 ) -> Result<InstalledTrainerRecord, String> {
-    // 1. 如果没有下载链接或详情，先抓取详情获取
-    if (trainer.download_url.is_empty() || trainer.options.is_empty())
-        && let Ok(detail) = scraper::get_trainer_detail(&trainer.id).await
-    {
-        trainer.download_url = detail.download_url;
-        if trainer.options.is_empty() {
-            trainer.options = detail.options;
-            trainer.option_items = detail.option_items;
-        }
-        if trainer.description.is_empty() {
-            trainer.description = detail.description;
-        }
-        if trainer.game_version.is_empty() {
-            trainer.game_version = detail.game_version;
-        }
+    // 1. 绝不直接信任前端传入的 download_url 或过期本地缓存，
+    //    始终按合法化后的 slug 强制向官网重新解析权威下载直链
+    let slug = scraper::sanitize_trainer_slug(&trainer.id)?;
+    trainer.id = slug.clone();
+
+    let detail = scraper::get_trainer_detail_ext(&slug, true).await?;
+    trainer.download_url = detail.download_url;
+    if trainer.name.trim().is_empty() {
+        trainer.name = detail.name;
     }
+    if trainer.options.is_empty() {
+        trainer.options = detail.options;
+        trainer.option_items = detail.option_items;
+    }
+    if trainer.description.is_empty() {
+        trainer.description = detail.description;
+    }
+    if trainer.game_version.is_empty() {
+        trainer.game_version = detail.game_version;
+    }
+
+    download_and_install_verified(app, trainer).await
+}
+
+async fn download_and_install_verified<R: Runtime>(
+    app: AppHandle<R>,
+    mut trainer: Trainer,
+) -> Result<InstalledTrainerRecord, String> {
     // 确保补齐 Steam 官方高清原画与胶囊元数据
     crate::services::game_meta::enrich_trainer(&mut trainer).await;
 
     if trainer.download_url.is_empty() {
         return Err("未能在官网上找到该修改器的下载直链".to_string());
     }
+    // 强制校验下载直链满足 HTTPS + flingtrainer.com 域名白名单
+    trainer.download_url = scraper::validate_official_download_url(&trainer.download_url)?;
 
     let download_dir = storage::get_download_dir();
     let display_name = trainer.chinese_name.as_deref().unwrap_or(&trainer.name);
@@ -65,6 +99,10 @@ pub async fn download_and_install_trainer<R: Runtime>(
         .send()
         .await
         .map_err(|e| format!("无法连接下载服务器: {}", e))?;
+
+    if !res.url().scheme().eq_ignore_ascii_case("https") {
+        return Err(format!("安全拦截：下载响应被重定向至非 HTTPS 地址: {}", res.url()));
+    }
 
     if !res.status().is_success() {
         let err_msg = format!("下载服务返回错误状态: {}", res.status());
@@ -201,8 +239,10 @@ pub async fn download_and_install_trainer<R: Runtime>(
         },
     );
 
+    let package_sha256 = compute_file_sha256(&temp_file_path)?;
     let exe_path = process_package(&temp_file_path, &target_dir, &trainer.id)?;
     let _ = fs::remove_file(&temp_file_path);
+    let exe_sha256 = compute_file_sha256(&exe_path)?;
 
     // 4. 尝试将封面图下载到本地子目录中 (cover.jpg)，确保断网/重启纯本地 0ms 秒开
     let cover_file = target_dir.join("cover.jpg");
@@ -263,6 +303,8 @@ pub async fn download_and_install_trainer<R: Runtime>(
         options: trainer.options.clone(),
         option_items: trainer.option_items.clone(),
         saved_toggles,
+        package_sha256: Some(package_sha256),
+        exe_sha256: Some(exe_sha256),
     };
 
     storage::save_installed_record(record.clone())?;
@@ -573,5 +615,5 @@ pub async fn update_trainer_to_latest(
     id: &str,
 ) -> Result<InstalledTrainerRecord, String> {
     let latest_trainer = scraper::get_trainer_detail_ext(id, true).await?;
-    download_and_install_trainer(app, latest_trainer).await
+    download_and_install_verified(app, latest_trainer).await
 }

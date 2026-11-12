@@ -130,14 +130,21 @@ pub async fn get_trainer_detail(id: &str) -> Result<Trainer, String> {
 }
 
 pub async fn get_trainer_detail_ext(id: &str, force_refresh: bool) -> Result<Trainer, String> {
-    let slug = id.trim_matches('/').split('/').next_back().unwrap_or(id);
+    let slug = sanitize_trainer_slug(id)?;
 
-    // 1. 若非强制刷新，优先检查磁盘持久化缓存 (有效期 7 天)
+    // 1. 若非强制刷新，优先检查磁盘持久化缓存 (有效期 7 天)，并校验缓存直链仍在官网白名单内
     if !force_refresh
-        && let Some(cached) = storage::load_cached_trainer(slug, 7 * 86400)
+        && let Some(mut cached) = storage::load_cached_trainer(&slug, 7 * 86400)
         && (!cached.options.is_empty() || !cached.option_items.is_empty())
     {
-        return Ok(cached);
+        if cached.download_url.is_empty() {
+            return Ok(cached);
+        }
+        if let Ok(valid_url) = validate_official_download_url(&cached.download_url) {
+            cached.download_url = valid_url;
+            return Ok(cached);
+        }
+        // 若旧缓存中的下载链接不在白名单内，忽略该缓存并重新从官网抓取
     }
 
     let client = create_client()?;
@@ -159,7 +166,7 @@ pub async fn get_trainer_detail_ext(id: &str, force_refresh: bool) -> Result<Tra
         .await
         .map_err(|e| format!("解析详情网页失败: {}", e))?;
 
-    let mut trainer = parse_trainer_detail(&html, slug)?;
+    let mut trainer = parse_trainer_detail(&html, &slug)?;
     // 异步富化本地中文名与 Steam 官方高清原画、AppID 元数据
     crate::services::game_meta::enrich_trainer(&mut trainer).await;
 

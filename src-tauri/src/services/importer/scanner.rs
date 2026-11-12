@@ -320,6 +320,8 @@ pub async fn process_and_import_single_file(
         options,
         option_items,
         saved_toggles,
+        package_sha256: None,
+        exe_sha256: crate::services::downloader::compute_file_sha256(&target_exe_path).ok(),
     };
 
     let _ = storage::save_installed_record(record);

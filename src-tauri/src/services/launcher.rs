@@ -62,6 +62,8 @@ pub fn launch_trainer(id: &str) -> Result<String, String> {
         return Err(format!("修改器可执行文件不存在: {}", record.exe_path));
     }
 
+    verify_record_exe_integrity(record, &exe_path)?;
+
     let work_dir = PathBuf::from(&record.install_dir);
 
     let config = crate::services::config::load_config();
@@ -107,6 +109,85 @@ pub fn open_trainers_root() -> Result<(), String> {
     Ok(())
 }
 
+pub fn verify_record_exe_integrity(
+    record: &crate::models::InstalledTrainerRecord,
+    exe_path: &Path,
+) -> Result<(), String> {
+    if let Some(ref expected_hash) = record.exe_sha256 {
+        let actual_hash = crate::services::downloader::compute_file_sha256(exe_path)?;
+        if !expected_hash.eq_ignore_ascii_case(&actual_hash) {
+            return Err(format!(
+                "安全拦截：可执行文件完整性校验失败（{}），预期 SHA-256 为 {}，实际为 {}，疑似文件已被篡改，已阻止启动！",
+                exe_path.display(),
+                expected_hash,
+                actual_hash
+            ));
+        }
+    }
+    Ok(())
+}
+
 pub fn delete_installed_trainer(id: &str) -> Result<(), String> {
     storage::delete_installed_trainer(id)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::InstalledTrainerRecord;
+    use std::collections::HashMap;
+    use std::fs;
+
+    fn sample_record(exe_path: &Path, exe_sha256: Option<String>) -> InstalledTrainerRecord {
+        InstalledTrainerRecord {
+            id: "test-trainer".to_string(),
+            name: "Test Trainer".to_string(),
+            chinese_name: None,
+            version: "v1.0".to_string(),
+            game_version: "".to_string(),
+            exe_path: exe_path.to_string_lossy().to_string(),
+            exe_name: "Test.exe".to_string(),
+            install_dir: exe_path.parent().unwrap().to_string_lossy().to_string(),
+            installed_at: "".to_string(),
+            last_launched_at: None,
+            steam_app_id: None,
+            thumbnail: "".to_string(),
+            hero_image: None,
+            capsule_image: None,
+            description: "".to_string(),
+            options: vec![],
+            option_items: vec![],
+            saved_toggles: HashMap::new(),
+            package_sha256: None,
+            exe_sha256,
+        }
+    }
+
+    #[test]
+    fn test_verify_record_exe_integrity_blocks_tampered_binary() {
+        let dir = std::env::temp_dir().join(format!(
+            "fling_h1_launcher_test_{}_{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(&dir).unwrap();
+        let exe_path = dir.join("Test.exe");
+        fs::write(&exe_path, b"MZoriginal-binary-payload").unwrap();
+
+        let real_hash = crate::services::downloader::compute_file_sha256(&exe_path).unwrap();
+        let record = sample_record(&exe_path, Some(real_hash));
+
+        // 原始未篡改文件应校验通过
+        assert!(verify_record_exe_integrity(&record, &exe_path).is_ok());
+
+        // 模拟本地 EXE 被替换/篡改
+        fs::write(&exe_path, b"MZtampered-evil-payload").unwrap();
+        let err = verify_record_exe_integrity(&record, &exe_path).unwrap_err();
+        assert!(err.contains("疑似文件已被篡改"));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
 }

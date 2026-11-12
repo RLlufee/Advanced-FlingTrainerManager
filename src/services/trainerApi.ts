@@ -67,6 +67,8 @@ export interface InstalledTrainerRecord {
   options?: string[];
   option_items?: TrainerOptionItem[];
   saved_toggles?: Record<string, boolean>;
+  package_sha256?: string | null;
+  exe_sha256?: string | null;
 }
 
 export const trainerApi = {

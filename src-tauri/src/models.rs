@@ -81,6 +81,10 @@ pub struct InstalledTrainerRecord {
     pub option_items: Vec<TrainerOptionItem>,
     #[serde(default)]
     pub saved_toggles: std::collections::HashMap<String, bool>,
+    #[serde(default)]
+    pub package_sha256: Option<String>,
+    #[serde(default)]
+    pub exe_sha256: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
