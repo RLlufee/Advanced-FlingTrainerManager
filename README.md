@@ -20,7 +20,7 @@
 
   <p align="center">
     <img src="https://img.shields.io/badge/Platform-Windows%2010%2F11-0078D6.svg?style=flat-square&logo=windows" alt="Platform Windows" />
-    <img src="https://img.shields.io/badge/Display-240Hz%2B%20Gaming%20Ready-ff007f.svg?style=flat-square" alt="240Hz High Refresh" />
+    <img src="https://img.shields.io/badge/Frame%20Rate-Follows%20Display%20Refresh-ff007f.svg?style=flat-square" alt="Frame rate follows display refresh" />
     <img src="https://img.shields.io/badge/Memory-NT%20EmptyWorkingSet-10b981.svg?style=flat-square" alt="Kernel Memory Optimization" />
     <img src="https://img.shields.io/badge/Subsystem-Pure%20GUI%20(Zero%20Conhost)-8b5cf6.svg?style=flat-square" alt="Pure GUI" />
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPLv3-green.svg?style=flat-square" alt="GPLv3 License" /></a>
@@ -53,7 +53,7 @@
 | **启动流程** | 手动启动游戏 -> 翻找文件夹解压修改器 -> 手动切回运行 | **一键双驱联动**：单次点击自动关联 Steam 游戏并同步呼出修改器 |
 | **系统托盘** | Win32 祖传死板黑框右键菜单，极易卡死或误触发 | **260×320 悬浮亚克力磨砂小窗**，自适应吸附任务栏，失焦无感即收 |
 | **内存负担** | 游戏与修改器进程散落残留，系统物理内存持续告急 | **Windows NT 内核级内存压缩**（`EmptyWorkingSet`），一键秒级释放 RAM |
-| **视觉交互** | 灰暗死板、WebView 锁频 60Hz 掉帧、提权弹出黑控制台 | **Material 3 莫奈动态取色 + 240Hz 满血高刷 + 纯 GUI 零黑框闪现** |
+| **视觉交互** | 灰暗死板、动画生硬、提权弹出黑控制台 | **Material 3 莫奈动态取色 + 帧率跟随显示器（档位可调） + 纯 GUI 零黑框闪现** |
 
 ---
 
@@ -90,7 +90,7 @@
 - 🖥️ **系统与窗口行为**：开机自启（注册表驱动）、关闭窗口最小化至托盘驻留、管理员提权无黑重启；
 - 💾 **便携存储管理**：自定义安装目录、事务级跨盘迁移（带异常自动回滚）、离线词库重建；
 - 🎨 **外观与色彩沙盒**：Material 3 莫奈动态取色、明暗双模秒切、调色盘 Hex 自定义；
-- 🎬 **动效实验室**：Motion 弹簧力学刚度/阻尼无级微调，微交互独立开关；
+- 🎬 **动效实验室**：Motion 弹簧力学刚度/阻尼无级微调，微交互独立开关；帧率上限 30 / 60 / 120 / 165 档即时切换（240 / 无上限为实验性档位）；
 - 🌐 **网络代理通道**：HTTP/SOCKS5 代理网关配置、Steam CDN 加速节点切换。
 
 #### 🧰 4. 更多工具 (More Tools)
@@ -113,8 +113,8 @@
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        Retina Visual Experience                        │
 ├─────────────────────┬──────────────────────────┬───────────────────────┤
-│ 💎 Material 3 莫奈  │ 🌊 Spring 弹性物理力学   │ 🚀 240Hz+ 满血电竞高刷│
-│ 提取壁纸派生 6 级主色│ 告别生硬机械过渡，自然回弹│ 解锁 WebView2 锁频限制│
+│ 💎 Material 3 莫奈  │ 🌊 Spring 弹性物理力学   │ 🚀 帧率档位自由调节   │
+│ 提取壁纸派生 6 级主色│ 告别生硬机械过渡，自然回弹│ 跟随显示器，按需限帧  │
 └─────────────────────┴──────────────────────────┴───────────────────────┘
 ```
 
@@ -208,6 +208,18 @@ pnpm tauri build
 > Windows NT 严格的安全隔离机制限制了普通进程向高完整性级别进程执行内存挂钩。如果游戏是以管理员权限启动的，修改器必须具备相同权限才能正常注入。
 > 
 > 点击托盘浮窗或设置中心的「🛡️ 以管理员身份重启」即可**无黑框平滑提权**。
+</details>
+
+<details>
+<summary><b>🎞️ 帧率上限档位怎么选？240 / 无上限有什么区别？</b></summary>
+<br />
+
+> WebView2 默认就按显示器刷新率出帧（165 Hz 屏即 165 FPS），并不存在 60 Hz 锁频。默认档位为不超过显示器刷新率的最高档，一般无需调整。
+>
+> - **30 / 60 / 120 / 165**：不超过显示器刷新率时保持垂直同步，并按所选档位限制界面动画帧率，切换即时生效；想省电可选低档。
+> - **240 / 无上限（实验性）**：高于显示器刷新率时会关闭垂直同步，需要重启应用才生效。显示器本身无法显示超出刷新率的画面，且实测部分设备在该模式下帧率反而会被系统降到约 60，并持续占用 GPU，**不建议日常使用**。
+>
+> 可将鼠标悬停在标题栏的闪电图标上查看实时帧率。
 </details>
 
 <details>

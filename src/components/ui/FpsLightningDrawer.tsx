@@ -7,7 +7,7 @@ export const FpsLightningDrawer: React.FC = () => {
   const [fps, setFps] = useState<number>(60);
   const [frameTime, setFrameTime] = useState<number>(16.6);
 
-  const { targetFps, cycleTargetFps } = useAnimationConfig();
+  const { targetFps, cycleTargetFps, fpsNeedsRestart } = useAnimationConfig();
 
   // 防抖收缩定时器
   const hideTimerRef = useRef<number | null>(null);
@@ -44,7 +44,7 @@ export const FpsLightningDrawer: React.FC = () => {
           const avgDelta =
             frameHistoryRef.current.reduce((a, b) => a + b, 0) /
             frameHistoryRef.current.length;
-          const currentFps = Math.min(360, Math.round(1000 / avgDelta));
+          const currentFps = Math.min(9999, Math.round(1000 / avgDelta));
           setFps(currentFps);
           setFrameTime(parseFloat(avgDelta.toFixed(1)));
           lastUiUpdateRef.current = now;
@@ -92,8 +92,8 @@ export const FpsLightningDrawer: React.FC = () => {
   };
 
   const getTargetFpsBadge = () => {
-    if (targetFps === 0) return "极速";
-    return `${targetFps}Hz`;
+    if (targetFps === 0) return "无上限";
+    return `上限 ${targetFps}`;
   };
 
   return (
@@ -106,14 +106,14 @@ export const FpsLightningDrawer: React.FC = () => {
           ? "bg-black/55 backdrop-blur-md border border-white/25 px-2.5 shadow-lg"
           : "bg-white/10 hover:bg-white/15 border border-white/10 px-2"
       }`}
-      title={`当前帧率: ${fps} FPS · 目标: ${getTargetFpsBadge()} (点击切换 60/90/120/144/极速)`}
+      title={`当前 ${fps} FPS · ${getTargetFpsBadge()}（点击切换 30 / 60 / 120 / 165 / 240 / 无上限，高于显示器刷新率的档位为实验性）${
+        fpsNeedsRestart ? " · 需重启生效，可在 设置 › 界面与动效 中重启" : ""
+      }`}
     >
-      {/* 旋转的闪电图标 */}
+      {/* 闪电图标：仅在展开时旋转。常驻的无限动画会让合成器一刻不停地出帧，白白占用 GPU */}
       <div
         className={`flex items-center justify-center transition-transform ${
-          isHovered
-            ? "animate-[spin_1.5s_linear_infinite]"
-            : "animate-[spin_4s_linear_infinite]"
+          isHovered ? "animate-[spin_1.5s_linear_infinite]" : ""
         }`}
       >
         <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300/40 drop-shadow-[0_0_6px_rgba(252,211,77,0.7)]" />
@@ -122,7 +122,7 @@ export const FpsLightningDrawer: React.FC = () => {
       {/* 抽屉弹出内容区域 */}
       <div
         className={`flex items-center overflow-hidden transition-all duration-300 ease-out ${
-          isHovered ? "max-w-[170px] opacity-100 ml-2" : "max-w-0 opacity-0 ml-0"
+          isHovered ? "max-w-[200px] opacity-100 ml-2" : "max-w-0 opacity-0 ml-0"
         }`}
       >
         <div className="flex items-center gap-1.5 text-xs font-mono font-medium whitespace-nowrap text-white/90">
@@ -139,8 +139,11 @@ export const FpsLightningDrawer: React.FC = () => {
           <span className="text-[10px] text-white/50">ms</span>
 
           {/* 目标档位胶囊标记 (可点击切换) */}
-          <span className="ml-1 px-1.5 py-0.2 rounded text-[9px] font-sans font-bold bg-white/15 text-cyan-200 border border-white/20 hover:bg-white/25 transition-colors">
+          <span className="relative ml-1 px-1.5 py-px rounded text-[10px] font-sans font-bold bg-white/15 text-cyan-200 border border-white/20 hover:bg-white/25 transition-colors">
             {getTargetFpsBadge()}
+            {fpsNeedsRestart && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-black/40" />
+            )}
           </span>
         </div>
       </div>

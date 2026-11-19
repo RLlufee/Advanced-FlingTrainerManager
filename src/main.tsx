@@ -1,3 +1,5 @@
+// 必须最先执行：在动画库捕获 requestAnimationFrame 之前接管帧率节流
+import "./lib/frameRateLimiter";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";

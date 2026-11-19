@@ -45,7 +45,7 @@ export interface AnimationSettings {
   magnetic_tabs: boolean; // 磁吸跟手与流体滑动药丸 (默认 true)
   typewriter_speed: number; // 打字机提示打字间隔毫秒数 (0 = 瞬间完成，默认 18ms)
   tab_transition_duration: number; // 顶层主标签页切换过渡时长毫秒数 (0 = 瞬间完成，默认 180ms)
-  target_fps?: number; // 目标渲染帧率调节 (0 = 无上限/电竞极速解锁，常用 60 / 90 / 120 / 144)
+  target_fps?: number; // 渲染帧率档位：30 / 60 / 120 / 165 / 240，0 = 无上限
 }
 
 export type AccentColorKey =
@@ -160,7 +160,32 @@ export interface CleanSummary {
   freed_bytes: number;
 }
 
+/** 可选帧率档位；0 表示无上限（与 src-tauri/src/services/frame_rate.rs 保持一致） */
+export const FPS_TIERS = [30, 60, 120, 165, 240, 0] as const;
+
+export interface FrameRateStatus {
+  /** 探测到的最高显示器刷新率（Hz），探测失败为 null */
+  refresh_rate: number | null;
+  /** 当前进程启动时是否关闭了垂直同步 */
+  unlocked_at_startup: boolean;
+  /** 未设置时应使用的默认档位 */
+  auto_target_fps: number;
+}
+
+/** 该档位是否需要关闭垂直同步（无上限，或高于显示器刷新率） */
+export function fpsNeedsUnlock(fps: number, refreshRate: number | null): boolean {
+  return fps === 0 || fps > (refreshRate ?? 60);
+}
+
 export const configApi = {
+  async getFrameRateStatus(): Promise<FrameRateStatus> {
+    return await invoke<FrameRateStatus>("get_frame_rate_status");
+  },
+
+  async restartApp(): Promise<void> {
+    await invoke("restart_app");
+  },
+
   // 获取全局配置
   async getConfig(): Promise<AppConfig> {
     return await invoke<AppConfig>("get_app_config");

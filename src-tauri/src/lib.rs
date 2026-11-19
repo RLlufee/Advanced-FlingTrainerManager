@@ -99,6 +99,8 @@ pub fn run() {
             get_system_memory_info,
             optimize_memory,
             restart_app_as_admin,
+            restart_app,
+            get_frame_rate_status,
             open_system_tool,
             get_hardware_overview,
             system_cleanup_scan,

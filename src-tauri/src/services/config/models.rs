@@ -130,7 +130,11 @@ pub struct AnimationSettings {
     pub typewriter_speed: u64,
     #[serde(default = "default_anim_tab_transition_duration")]
     pub tab_transition_duration: u64,
-    #[serde(default = "default_anim_target_fps")]
+    /// 渲染帧率档位：30 / 60 / 120 / 165 / 240，0 表示无上限（见 services::frame_rate）
+    #[serde(
+        default = "default_anim_target_fps",
+        deserialize_with = "deserialize_target_fps"
+    )]
     pub target_fps: u32,
 }
 
@@ -155,8 +159,23 @@ pub fn default_anim_typewriter_speed() -> u64 {
 pub fn default_anim_tab_transition_duration() -> u64 {
     180
 }
+/// 默认档位：不超过显示器刷新率的最高档位
 pub fn default_anim_target_fps() -> u32 {
-    144
+    crate::services::frame_rate::auto_target_fps(
+        crate::services::frame_rate::max_display_refresh_rate(),
+    )
+}
+
+/// 读取配置时把旧版本的帧率值（60/90/120/144/0）归一到新档位
+fn deserialize_target_fps<'de, D>(deserializer: D) -> Result<u32, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let raw = <u32 as serde::Deserialize>::deserialize(deserializer)?;
+    Ok(crate::services::frame_rate::normalize_target_fps(
+        raw,
+        crate::services::frame_rate::max_display_refresh_rate(),
+    ))
 }
 
 impl Default for AnimationSettings {

@@ -2,12 +2,13 @@
 #![windows_subsystem = "windows"]
 
 fn main() {
-    // 解除 Windows WebView2 默认的 60Hz 节能锁频限制，解锁 120Hz/144Hz/240Hz+ 满血电竞高刷与 GPU 硬件栅格化加速
+    // WebView2 默认即按显示器刷新率同步出帧（并不存在 60 Hz 锁频）。仅当用户选择「无上限」或
+    // 高于显示器刷新率的档位时才关闭垂直同步，详见 services::frame_rate。
     #[cfg(target_os = "windows")]
     unsafe {
         std::env::set_var(
             "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
-            "--disable-frame-rate-limit --enable-gpu-rasterization --ignore-gpu-blocklist",
+            app_lib::services::frame_rate::webview_browser_args(),
         );
     }
 

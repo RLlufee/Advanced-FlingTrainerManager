@@ -1,5 +1,6 @@
 pub mod config;
 pub mod downloader;
+pub mod frame_rate;
 pub mod game_meta;
 pub mod hardware_inspector;
 pub mod importer;

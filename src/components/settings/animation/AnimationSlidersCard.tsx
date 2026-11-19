@@ -1,12 +1,25 @@
 import React from "react";
-import { Gauge, Zap, Layers, MousePointerClick, Activity } from "lucide-react";
+import { Gauge, Zap, Layers, MousePointerClick, Activity, RotateCw } from "lucide-react";
 import { useAnimationConfig } from "../../ui/motion/AnimationContext";
 import { PaperCard } from "../../ui/motion/PaperFlutter";
 import { JellyIcon } from "../../ui/motion/JellyIcon";
 import { FluidSlider } from "../../ui/motion/FluidSlider";
+import { FPS_TIERS, fpsNeedsUnlock } from "../../../services/configApi";
+import { buttonClass } from "../../ui/buttonStyles";
 
 export const AnimationSlidersCard: React.FC = () => {
-  const { settings, updateSettings } = useAnimationConfig();
+  const { settings, updateSettings, targetFps, refreshRate, fpsNeedsRestart, restartApp } =
+    useAnimationConfig();
+
+  const tierLabel = (fps: number) => (fps === 0 ? "无上限" : `${fps}`);
+  const tierHint = (fps: number) => {
+    // 需要关闭垂直同步的档位：实测部分设备反而会被系统降到约 60 FPS，标注为实验性
+    if (fpsNeedsUnlock(fps, refreshRate)) return "实验性";
+    if (refreshRate !== null && fps === refreshRate) return "跟随显示器";
+    if (fps <= 30) return "省电";
+    if (fps <= 60) return "标准";
+    return "流畅";
+  };
 
   return (
     <PaperCard className="bg-white dark:bg-[#131c31] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-2xs p-5 space-y-5 transition-colors">
@@ -120,46 +133,65 @@ export const AnimationSlidersCard: React.FC = () => {
         />
       </div>
 
-      {/* 选项 4：渲染帧率上限与高刷适配 */}
+      {/* 选项 4：渲染帧率上限 */}
       <div className="space-y-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
         <div className="flex items-center justify-between text-xs">
           <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-            <Activity className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            渲染帧率上限与高刷适配 (Target Frame Rate)
+            <Activity className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+            帧率上限
           </span>
-          <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
-            {(settings.target_fps ?? 144) === 0 ? "不限制" : `${settings.target_fps ?? 144} FPS`}
+          <span className="text-slate-400 dark:text-slate-500">
+            {refreshRate !== null ? `显示器 ${refreshRate} Hz` : "未能识别显示器刷新率"}
           </span>
         </div>
-        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-          已解除 WebView2 默认的 60 Hz 帧率限制，高刷新率显示器上动画更流畅。
+        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+          不超过显示器刷新率的档位会跟随垂直同步，切换即时生效。更高的档位和「无上限」为实验性功能：会关闭垂直同步并需要重启，显示器无法显示超出刷新率的画面，部分设备上帧率反而会被系统降到约 60，并持续占用 GPU，不建议日常使用。
         </p>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
-          {[
-            { fps: 60, label: "60 FPS", desc: "节能稳妥" },
-            { fps: 90, label: "90 FPS", desc: "均衡顺滑" },
-            { fps: 120, label: "120 FPS", desc: "超高高刷" },
-            { fps: 144, label: "144 FPS", desc: "高刷" },
-            { fps: 0, label: "不限制", desc: "跟随显示器" },
-          ].map((item) => {
-            const isSelected = (settings.target_fps ?? 144) === item.fps;
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 pt-1">
+          {FPS_TIERS.map((fps) => {
+            const isSelected = targetFps === fps;
+            const unlock = fpsNeedsUnlock(fps, refreshRate);
             return (
               <button
-                key={item.fps}
+                key={fps}
                 type="button"
-                onClick={() => updateSettings({ target_fps: item.fps })}
-                className={`flex flex-col items-center justify-center p-2 rounded-xl text-xs transition-all border ${
+                onClick={() => updateSettings({ target_fps: fps })}
+                aria-pressed={isSelected}
+                className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-colors cursor-pointer ${
                   isSelected
-                    ? "bg-emerald-500/10 dark:bg-emerald-500/20 border-emerald-500/50 text-emerald-700 dark:text-emerald-300 shadow-2xs font-semibold ring-2 ring-emerald-500/20"
-                    : "bg-slate-50 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700/60 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    ? "bg-cyan-50 border-cyan-300 text-cyan-800 ring-2 ring-cyan-500/15 dark:bg-cyan-500/10 dark:border-cyan-500/50 dark:text-cyan-200"
+                    : "bg-slate-50 border-slate-200/80 text-slate-600 hover:bg-slate-100 dark:bg-slate-800/60 dark:border-slate-700/60 dark:text-slate-300 dark:hover:bg-slate-800"
                 }`}
               >
-                <span className="font-mono text-xs font-bold">{item.label}</span>
-                <span className="text-[10px] opacity-75 mt-0.5">{item.desc}</span>
+                <span className="font-mono text-sm font-semibold leading-tight">
+                  {tierLabel(fps)}
+                  {fps !== 0 && <span className="ml-0.5 text-[11px] font-sans font-normal opacity-70">FPS</span>}
+                </span>
+                <span
+                  className={`text-[11px] mt-0.5 ${
+                    unlock ? "text-amber-600 dark:text-amber-400" : "opacity-70"
+                  }`}
+                >
+                  {tierHint(fps)}
+                </span>
               </button>
             );
           })}
         </div>
+
+        {fpsNeedsRestart && (
+          <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/30">
+            <p className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+              {fpsNeedsUnlock(targetFps, refreshRate)
+                ? "实验性档位需要重启应用才能关闭垂直同步。若重启后帧率不升反降，请改回不超过显示器刷新率的档位。"
+                : "当前仍处于关闭垂直同步的状态，重启后恢复跟随显示器，降低 GPU 占用。"}
+            </p>
+            <button type="button" onClick={restartApp} className={buttonClass("warning", "sm", "shrink-0")}>
+              <RotateCw className="w-3.5 h-3.5" />
+              <span>立即重启</span>
+            </button>
+          </div>
+        )}
       </div>
     </PaperCard>
   );

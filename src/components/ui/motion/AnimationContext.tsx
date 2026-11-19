@@ -1,5 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { configApi, AnimationSettings, JellyIntensity } from "../../../services/configApi";
+import {
+  configApi,
+  AnimationSettings,
+  JellyIntensity,
+  FPS_TIERS,
+  fpsNeedsUnlock,
+  FrameRateStatus,
+} from "../../../services/configApi";
+import { setFrameRateLimit } from "../../../lib/frameRateLimiter";
 
 export const DEFAULT_ANIMATION_SETTINGS: AnimationSettings = {
   enabled: true,
@@ -9,7 +17,8 @@ export const DEFAULT_ANIMATION_SETTINGS: AnimationSettings = {
   magnetic_tabs: true,
   typewriter_speed: 18,
   tab_transition_duration: 180,
-  target_fps: 144,
+  // 实际默认值由后端按显示器刷新率决定（不超过刷新率的最高档位），这里只是加载前的占位
+  target_fps: 60,
 };
 
 export interface AnimationContextValue {
@@ -26,6 +35,11 @@ export interface AnimationContextValue {
   effectiveTabTransitionDuration: number;
   targetFps: number;
   cycleTargetFps: () => Promise<void>;
+  /** 显示器刷新率（Hz），未知为 null */
+  refreshRate: number | null;
+  /** 当前档位与本次启动的垂直同步模式不一致，需要重启才能完全生效 */
+  fpsNeedsRestart: boolean;
+  restartApp: () => Promise<void>;
 }
 
 const AnimationContext = createContext<AnimationContextValue>({
@@ -39,12 +53,17 @@ const AnimationContext = createContext<AnimationContextValue>({
   isMagneticEnabled: true,
   effectiveTypewriterSpeed: 18,
   effectiveTabTransitionDuration: 0.18,
-  targetFps: 144,
+  targetFps: 60,
   cycleTargetFps: async () => {},
+  refreshRate: null,
+  fpsNeedsRestart: false,
+  restartApp: async () => {},
 });
 
 export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<AnimationSettings>(DEFAULT_ANIMATION_SETTINGS);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [frameRateStatus, setFrameRateStatus] = useState<FrameRateStatus | null>(null);
 
   // 初始化加载配置
   useEffect(() => {
@@ -61,6 +80,17 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       })
       .catch((e) => {
         console.warn("读取动效配置失败，回退至默认设置:", e);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoaded(true);
+      });
+    configApi
+      .getFrameRateStatus()
+      .then((status) => {
+        if (isMounted) setFrameRateStatus(status);
+      })
+      .catch((e) => {
+        console.warn("读取显示器刷新率失败:", e);
       });
     return () => {
       isMounted = false;
@@ -82,7 +112,10 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const resetSettings = async () => {
-    await updateSettings(DEFAULT_ANIMATION_SETTINGS);
+    await updateSettings({
+      ...DEFAULT_ANIMATION_SETTINGS,
+      target_fps: frameRateStatus?.auto_target_fps ?? DEFAULT_ANIMATION_SETTINGS.target_fps,
+    });
   };
 
   // 判定是否真正启用动效 (当 enabled 为 false 或倍率 >= 30 视为即时完成/无动画)
@@ -100,14 +133,26 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       ? 0
       : (rawTabDuration / 1000) / effectiveSpeed;
 
-  const targetFps = settings.target_fps ?? 144;
+  const targetFps = settings.target_fps ?? frameRateStatus?.auto_target_fps ?? 60;
+  const refreshRate = frameRateStatus?.refresh_rate ?? null;
+  const fpsNeedsRestart =
+    frameRateStatus !== null &&
+    fpsNeedsUnlock(targetFps, refreshRate) !== frameRateStatus.unlocked_at_startup;
+
+  // 运行层帧率上限：配置加载完成后才下发，避免占位值短暂生效
+  useEffect(() => {
+    if (isLoaded) setFrameRateLimit(targetFps);
+  }, [isLoaded, targetFps]);
 
   const cycleTargetFps = async () => {
-    // 60 ➔ 90 ➔ 120 ➔ 144 ➔ 0 (极速解锁)
-    const options = [60, 90, 120, 144, 0];
-    const currentIndex = options.indexOf(targetFps);
-    const nextFps = options[(currentIndex + 1) % options.length];
+    // 30 ➔ 60 ➔ 120 ➔ 165 ➔ 240 ➔ 无上限
+    const currentIndex = FPS_TIERS.indexOf(targetFps as (typeof FPS_TIERS)[number]);
+    const nextFps = FPS_TIERS[(currentIndex + 1) % FPS_TIERS.length];
     await updateSettings({ target_fps: nextFps });
+  };
+
+  const restartApp = async () => {
+    await configApi.restartApp();
   };
 
   return (
@@ -125,6 +170,9 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         effectiveTabTransitionDuration,
         targetFps,
         cycleTargetFps,
+        refreshRate,
+        fpsNeedsRestart,
+        restartApp,
       }}
     >
       {children}
