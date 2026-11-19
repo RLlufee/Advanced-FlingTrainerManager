@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   Download,
-  Play,
   CheckCircle2,
   Calendar,
   Layers,
@@ -12,6 +11,7 @@ import {
   Check,
   RefreshCw,
   Search,
+  Zap,
 } from "lucide-react";
 import type { Trainer, DownloadProgressPayload } from "../../services/trainerApi";
 import { trainerApi } from "../../services/trainerApi";
@@ -20,6 +20,8 @@ import { matchHotkey, translateHotkeyTitle } from "../../lib/hotkeyTranslate";
 import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
 import { JellyIcon } from "../ui/motion/JellyIcon";
 import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
+import { HotkeyLabel } from "../ui/HotkeyLabel";
+import { buttonClass } from "../ui/buttonStyles";
 
 export interface TrainerDetailViewProps {
   selectedTrainer: Trainer | null;
@@ -171,17 +173,17 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
               {isInstalled ? (
                 <button
                   onClick={() => onLaunch(selectedTrainer.id)}
-                  className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-95"
+                  className={buttonClass("primary", "md", "px-5")}
                 >
-                  <JellyIcon intensity="bouncy">
-                    <Play className="w-4 h-4 fill-current" />
+                  <JellyIcon intensity="gentle">
+                    <Zap className="w-4 h-4 fill-current" />
                   </JellyIcon>
-                  <span>立即启动修改器</span>
+                  <span>启动修改器</span>
                 </button>
               ) : currentDownload?.status === "downloading" ? (
                 <div className="flex-1 max-w-xs">
                   <div className="flex justify-between text-xs mb-1 text-slate-600 dark:text-slate-300 font-medium">
-                    <span>正在极速下载... {currentDownload.progress.toFixed(0)}%</span>
+                    <span>正在下载 {currentDownload.progress.toFixed(0)}%</span>
                     <span>{formatSpeed(currentDownload.speed_bytes_per_sec)}</span>
                   </div>
                   <div className="w-full bg-slate-200 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-300/60 dark:border-slate-700">
@@ -194,23 +196,23 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
               ) : currentDownload?.status === "extracting" ? (
                 <div className="flex items-center gap-2 text-xs text-primary font-medium">
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>正在自动解压并部署修改器组件...</span>
+                  <span>正在解压安装…</span>
                 </div>
               ) : (
                 <button
                   onClick={() => onDownload(selectedTrainer)}
-                  className="px-6 py-2.5 bg-primary bg-primary-hover text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-95"
+                  className={buttonClass("primary", "md", "px-5")}
                 >
-                  <JellyIcon intensity="bouncy">
+                  <JellyIcon intensity="gentle">
                     <Download className="w-4 h-4" />
                   </JellyIcon>
-                  <span>一键下载并安装</span>
+                  <span>下载并安装</span>
                 </button>
               )}
 
               {/* 唤醒并启动 Steam 原版游戏按钮 */}
               {selectedTrainer.steam_app_id && (
-                <TypewriterTooltip text="唤醒 Steam 客户端启动原版游戏本体" position="top">
+                <TypewriterTooltip text="通过 Steam 启动游戏" position="top">
                   <button
                     onClick={async () => {
                       try {
@@ -219,23 +221,22 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                         alert(String(e));
                       }
                     }}
-                    className="px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 bg-sky-50 dark:bg-sky-950/70 hover:bg-sky-100 dark:hover:bg-sky-900/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 shadow-2xs transition-all cursor-pointer active:scale-95"
+                    className={buttonClass("secondary", "md")}
                   >
-                    <JellyIcon intensity="bouncy">
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                    </JellyIcon>
-                    <span>启动 Steam 游戏</span>
+                    <Gamepad2 className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    <span>运行游戏</span>
                   </button>
                 </TypewriterTooltip>
               )}
 
               {isInstalled && (
-                <TypewriterTooltip text="重新覆盖下载此修改器安装包" position="top">
+                <TypewriterTooltip text="重新下载并覆盖安装" position="top">
                   <button
                     onClick={() => onDownload(selectedTrainer)}
-                    className="px-4 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/60 dark:border-slate-700"
+                    className={buttonClass("secondary", "md")}
                   >
-                    重新下载
+                    <Download className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    <span>重新下载</span>
                   </button>
                 </TypewriterTooltip>
               )}
@@ -252,10 +253,10 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">修改器功能与热键清单</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">功能与热键</h3>
             {selectedTrainer.options && selectedTrainer.options.length > 0 && (
               <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary-soft text-primary-text">
-                {selectedTrainer.options.length} 项修改
+                {selectedTrainer.options.length} 项
               </span>
             )}
             {copyFeedback && (
@@ -274,7 +275,7 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                 type="text"
                 value={hotkeyFilter}
                 onChange={(e) => setHotkeyFilter(e.target.value)}
-                placeholder="过滤热键 (生命 / 金钱 / Num 1...)"
+                placeholder="过滤：生命、金钱、Num 1…"
                 className="pl-7 pr-2.5 py-1 text-xs bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-750 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary w-44 sm:w-52 transition-all text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
@@ -301,7 +302,7 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                           })
                           .join("\n");
                   navigator.clipboard.writeText(items);
-                  setCopyFeedback("全部热键（含中文标注）已复制");
+                  setCopyFeedback("已复制全部");
                   setTimeout(() => setCopyFeedback(null), 2000);
                 }}
                 className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-all cursor-pointer active:scale-95 shrink-0"
@@ -332,7 +333,7 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
           return (
             <PaperContainer className="mt-4">
               {filteredItems.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {filteredItems.map((item, idx) => {
                     const cnTag = translateHotkeyTitle(item.title);
                     return (
@@ -343,38 +344,20 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                         onClick={() => {
                           const copyText = cnTag ? `${item.title} [${cnTag}]` : item.title;
                           navigator.clipboard.writeText(copyText);
-                          setCopyFeedback(`已复制: ${copyText}`);
+                          setCopyFeedback(`已复制：${copyText}`);
                           setTimeout(() => setCopyFeedback(null), 1500);
                         }}
-                        title="点击复制此项热键与中文说明"
-                        className="group flex flex-col p-3 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-800 hover:bg-slate-100/90 dark:hover:bg-slate-850 hover:border-primary transition-all gap-1.5 cursor-pointer shadow-2xs"
+                        title="点击复制"
+                        className="group flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-900/50 border border-slate-200/70 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer"
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex items-start gap-2 flex-wrap flex-1">
-                            <div className="w-2 h-2 rounded-full bg-primary shadow-xs shrink-0 mt-1" />
-                            <span className="text-xs text-slate-800 dark:text-slate-200 font-semibold font-mono tracking-tight break-words">
-                              {item.title}
-                            </span>
-                            {cnTag && (
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary-soft text-primary-text border border-primary-border shrink-0">
-                                {cnTag}
-                              </span>
-                            )}
-                          </div>
-                          <Copy className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5" />
-                        </div>
-                        {item.note && (
-                          <div className="pl-4 text-[11px] text-slate-500 dark:text-slate-400 bg-white/70 dark:bg-slate-800/80 border border-slate-200/50 dark:border-slate-700/60 rounded-lg p-1.5 leading-relaxed font-sans">
-                            <span className="font-medium text-primary mr-1">ℹ️ 生效说明:</span>
-                            {item.note}
-                          </div>
-                        )}
+                        <HotkeyLabel title={item.title} tag={cnTag} note={item.note} className="flex-1" />
+                        <Copy className="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                       </PaperCard>
                     );
                   })}
                 </div>
               ) : filteredPlain.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {filteredPlain.map((opt, idx) => {
                     const cnTag = translateHotkeyTitle(opt);
                     return (
@@ -385,35 +368,25 @@ export const TrainerDetailView: React.FC<TrainerDetailViewProps> = ({
                         onClick={() => {
                           const copyText = cnTag ? `${opt} [${cnTag}]` : opt;
                           navigator.clipboard.writeText(copyText);
-                          setCopyFeedback(`已复制: ${copyText}`);
+                          setCopyFeedback(`已复制：${copyText}`);
                           setTimeout(() => setCopyFeedback(null), 1500);
                         }}
-                        title="点击复制此项热键"
-                        className="group flex items-center justify-between p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 hover:bg-slate-100/90 dark:hover:bg-slate-850 hover:border-primary transition-all cursor-pointer shadow-2xs"
+                        title="点击复制"
+                        className="group flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-900/50 border border-slate-200/70 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 transition-colors cursor-pointer"
                       >
-                        <div className="flex items-center gap-2 flex-wrap flex-1">
-                          <div className="w-2 h-2 rounded-full bg-primary shadow-xs shrink-0" />
-                          <span className="text-xs text-slate-700 dark:text-slate-200 font-medium font-mono">
-                            {opt}
-                          </span>
-                          {cnTag && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary-soft text-primary-text border border-primary-border shrink-0">
-                              {cnTag}
-                            </span>
-                          )}
-                        </div>
-                        <Copy className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                        <HotkeyLabel title={opt} tag={cnTag} className="flex-1" />
+                        <Copy className="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                       </PaperCard>
                     );
                   })}
                 </div>
               ) : hotkeyFilter.trim() ? (
                 <div className="p-8 text-center text-xs text-slate-400 bg-slate-50/50 dark:bg-slate-900/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
-                  未搜索到匹配 “{hotkeyFilter}” 的修改项
+                  没有匹配“{hotkeyFilter}”的功能
                 </div>
               ) : (
                 <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 text-xs text-slate-500 dark:text-slate-400 leading-relaxed whitespace-pre-wrap font-mono border border-slate-200/60 dark:border-slate-800">
-                  {selectedTrainer.description || "正在从风灵月影官网拉取完整说明..."}
+                  {selectedTrainer.description || "正在从风灵月影官网获取说明…"}
                 </div>
               )}
             </PaperContainer>

@@ -84,7 +84,7 @@ export const AnimationPresetCards: React.FC<AnimationPresetCardsProps> = ({
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-              借鉴 Plain Craft Launcher 2 的动效速度与性能调度哲学，支持毫秒级无级调节全站动画倍率，亦可一键瞬间切换或彻底关闭。
+              参考 Plain Craft Launcher 2 的动效设计，可整体调节动画速度，也可以完全关闭。
             </p>
           </div>
         </div>
@@ -177,12 +177,12 @@ export const AnimationPresetCards: React.FC<AnimationPresetCardsProps> = ({
                 <JellyIcon intensity="gentle">
                   <Zap className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 fill-indigo-600" />
                 </JellyIcon>
-                极速电竞
+                即时
               </span>
               <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">0ms 瞬切</span>
             </div>
             <p className="text-[10px] text-slate-400 dark:text-slate-400 leading-snug">
-              无任何等待过渡，高刷新率极客首选
+              取消过渡动画，切换立即完成
             </p>
           </div>
 
@@ -203,7 +203,7 @@ export const AnimationPresetCards: React.FC<AnimationPresetCardsProps> = ({
               <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">性能</span>
             </div>
             <p className="text-[10px] text-slate-400 dark:text-slate-400 leading-snug">
-              彻底停用动效，极致精简与低功耗
+              关闭所有动效，最省资源
             </p>
           </div>
         </div>

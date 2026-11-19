@@ -32,7 +32,7 @@ export const AppearanceCapabilitiesCard: React.FC = () => {
               </span>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              支持跟随 Windows 系统自动变色（默认）、固定雅致明亮浅色、与纯净夜幕极客深色模式。
+              可跟随 Windows 自动切换（默认），也可固定为浅色或深色。
             </p>
           </div>
         </div>

@@ -15,6 +15,8 @@ import {
   isToggleableOption,
 } from "../../lib/hotkeyTranslate";
 import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
+import { HotkeyLabel } from "../ui/HotkeyLabel";
+import { buttonClass } from "../ui/buttonStyles";
 import { JellyIcon } from "../ui/motion/JellyIcon";
 import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
 
@@ -63,24 +65,24 @@ export const HotkeyPanel: React.FC<HotkeyPanelProps> = ({
       <div className="bg-white dark:bg-[#131c31] p-4 rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 transition-colors duration-200">
         <div className="flex items-center gap-3">
           <JellyIcon intensity="gentle">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300 flex items-center justify-center shrink-0">
               <Sliders className="w-4 h-4" />
             </div>
           </JellyIcon>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">修改器功能热键看板</h2>
+              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">功能与热键</h2>
               <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full border border-slate-200/60 dark:border-slate-700">
                 {filteredHotkeys.length} / {activeOptionItems.length} 项
               </span>
               {enabledTogglesCount > 0 && (
-                <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 px-2 py-0.5 rounded-full border border-emerald-200/70 dark:border-emerald-800">
+                <span className="text-[11px] font-semibold text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-200 dark:border-cyan-500/30">
                   已预设 {enabledTogglesCount} 项
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
-              支持记录开关状态并一键模拟按键同步 · 支持中英文同义词搜索
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+              打开开关加入预设，启动修改器后可一键按顺序触发
             </p>
           </div>
         </div>
@@ -91,13 +93,15 @@ export const HotkeyPanel: React.FC<HotkeyPanelProps> = ({
             <button
               onClick={onSyncHotkeys}
               disabled={enabledTogglesCount === 0 || isSyncing}
-              className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 active:scale-95 text-white flex items-center gap-1.5 transition-all shadow-sm shadow-emerald-600/20 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              className={buttonClass("soft", "sm", "shrink-0")}
             >
-              <JellyIcon intensity="bouncy">
-                <Zap className={`w-3.5 h-3.5 fill-white ${isSyncing ? "animate-bounce" : ""}`} />
-              </JellyIcon>
+              <Zap className={`w-3.5 h-3.5 fill-current ${isSyncing ? "animate-pulse" : ""}`} />
               <span>
-                {isSyncing ? "正在模拟按键同步..." : `一键同步预设 (${enabledTogglesCount})`}
+                {isSyncing
+                  ? "正在同步…"
+                  : enabledTogglesCount > 0
+                  ? `一键同步预设 · ${enabledTogglesCount}`
+                  : "一键同步预设"}
               </span>
             </button>
           </TypewriterTooltip>
@@ -107,7 +111,7 @@ export const HotkeyPanel: React.FC<HotkeyPanelProps> = ({
             <button
               onClick={() => onToggleAll(true)}
               title="将当前修改器的所有二元开关项全部打开预设"
-              className="px-2 py-1 rounded text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 transition-colors cursor-pointer"
+              className="px-2 py-1 rounded text-slate-600 dark:text-slate-300 hover:text-cyan-700 dark:hover:text-cyan-300 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 transition-colors cursor-pointer"
             >
               全开
             </button>
@@ -129,7 +133,7 @@ export const HotkeyPanel: React.FC<HotkeyPanelProps> = ({
               value={hotkeyQuery}
               onChange={(e) => onHotkeyQueryChange(e.target.value)}
               placeholder="过滤热键功能..."
-              className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:bg-white dark:focus:bg-slate-750 transition-all text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+              className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500"
             />
             {hotkeyQuery && (
               <button
@@ -170,26 +174,22 @@ export const HotkeyPanel: React.FC<HotkeyPanelProps> = ({
           <Sliders className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600 stroke-[1.5]" />
           <div>
             <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-              {hotkeyQuery ? "未找到符合过滤条件的热键" : "该修改器尚未同步官方功能看板与热键说明"}
+              {hotkeyQuery ? "没有匹配的热键" : "还没有这款修改器的功能列表"}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
               {hotkeyQuery
-                ? "可以尝试搜索拼音或英文原词（如 HP, Money, God）"
-                : "检测到此修改器缺少结构化热键数据，点击下方按钮即可秒级联网匹配风灵月影官方功能项、按键清单及高清封面海报！"}
+                ? "试试英文原词，例如 HP、Money、God"
+                : "从风灵月影官网获取功能、热键说明和游戏封面。"}
             </p>
           </div>
           {!hotkeyQuery && (
             <button
               onClick={onEnrichTrainer}
               disabled={isEnriching}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary bg-primary-hover text-white rounded-xl text-xs font-bold shadow-md shadow-primary-glow active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+              className={buttonClass("primary", "md")}
             >
-              <JellyIcon intensity="bouncy">
-                <Sparkles className={`w-4 h-4 text-white ${isEnriching ? "animate-spin" : ""}`} />
-              </JellyIcon>
-              <span>
-                {isEnriching ? "正在匹配风灵月影官方数据..." : "一键获取官方功能看板与封面"}
-              </span>
+              <Sparkles className={`w-4 h-4 ${isEnriching ? "animate-spin" : ""}`} />
+              <span>{isEnriching ? "正在获取…" : "获取功能列表"}</span>
             </button>
           )}
         </div>
@@ -197,7 +197,7 @@ export const HotkeyPanel: React.FC<HotkeyPanelProps> = ({
         <PaperContainer
           key={trainer.id + (hotkeyQuery ? "-filtered" : "")}
           staggerDelay={0.018}
-          className="grid grid-cols-1 md:grid-cols-2 gap-3"
+          className="grid grid-cols-1 md:grid-cols-2 gap-2"
         >
           {filteredHotkeys.map((item, idx) => {
             const cnTag = translateHotkeyTitle(item.title);
@@ -210,49 +210,29 @@ export const HotkeyPanel: React.FC<HotkeyPanelProps> = ({
                 key={idx}
                 delayIndex={idx}
                 tiltAngle={1.2}
-                className={`rounded-xl border p-3 shadow-2xs transition-all flex items-start justify-between gap-3 group ${
+                className={`rounded-xl border px-3 py-2.5 transition-colors flex items-center justify-between gap-3 group ${
                   isToggled
-                    ? "bg-emerald-50/20 dark:bg-emerald-950/40 border-emerald-300/80 dark:border-emerald-700/80 ring-1 ring-emerald-500/15 shadow-xs"
-                    : "bg-white dark:bg-[#131c31] border-slate-200/80 dark:border-slate-800 hover:shadow-md hover:border-primary/80"
+                    ? "bg-cyan-50/70 border-cyan-200 dark:bg-cyan-500/10 dark:border-cyan-500/35"
+                    : "bg-white dark:bg-[#131c31] border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
                 }`}
               >
-                <div className="space-y-1 min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span
-                      className={`text-xs font-semibold leading-snug ${
-                        isToggled ? "text-emerald-900 dark:text-emerald-300 font-bold" : "text-slate-800 dark:text-slate-200"
-                      }`}
-                    >
-                      {item.title}
-                    </span>
-                    {cnTag && (
-                      <span
-                        className={`px-1.5 py-0.2 rounded text-[10px] font-bold border shrink-0 ${
-                          isToggled
-                            ? "bg-emerald-100/70 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border-emerald-300/70 dark:border-emerald-700/70"
-                            : "bg-primary-soft text-primary-text border-primary-border"
-                        }`}
-                      >
-                        {cnTag}
-                      </span>
-                    )}
-                  </div>
-                  {item.note && (
-                    <p className="text-[11px] text-slate-400 leading-relaxed font-normal">
-                      {item.note}
-                    </p>
-                  )}
-                </div>
+                <HotkeyLabel
+                  title={item.title}
+                  tag={cnTag}
+                  note={item.note}
+                  active={isToggled}
+                  className="flex-1"
+                />
 
                 {/* 右侧操作区：单项复制 + 预设开关 */}
-                <div className="flex items-center gap-2 shrink-0 self-center">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     onClick={() => onCopySingle(item.title, item.note, idx)}
-                    title="复制此项快捷键说明"
-                    className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-cyan-700 hover:bg-cyan-50 transition-all cursor-pointer"
+                    title="复制这一项"
+                    className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-all cursor-pointer"
                   >
                     {isCopied ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     ) : (
                       <Copy className="w-3.5 h-3.5" />
                     )}
@@ -265,15 +245,11 @@ export const HotkeyPanel: React.FC<HotkeyPanelProps> = ({
                       role="switch"
                       aria-checked={isToggled}
                       onClick={() => onToggleOption(item.title)}
-                      title={
+                      title={isToggled ? "已加入预设，点击移除" : "加入预设，一键同步时自动触发"}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 ${
                         isToggled
-                          ? "已开启预设：点击关闭"
-                          : "未加入预设：点击开启后可通过“一键同步”自动模拟按键"
-                      }
-                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        isToggled
-                          ? "bg-emerald-500 shadow-xs shadow-emerald-500/40"
-                          : "bg-slate-200 hover:bg-slate-300"
+                          ? "bg-cyan-600"
+                          : "bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600"
                       }`}
                     >
                       <span
@@ -284,10 +260,10 @@ export const HotkeyPanel: React.FC<HotkeyPanelProps> = ({
                     </button>
                   ) : (
                     <span
-                      title="此项需多档位增减或手动数值输入，需在修改器窗口内设定喵~"
-                      className="text-[10px] text-slate-400 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/80 select-none"
+                      title="多档位或数值类功能，请在修改器窗口内调节"
+                      className="text-[11px] text-slate-400 dark:text-slate-500 px-1.5 select-none whitespace-nowrap"
                     >
-                      数值调节
+                      数值项
                     </span>
                   )}
                 </div>

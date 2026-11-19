@@ -38,7 +38,7 @@ export const SteamCdnCard: React.FC<SteamCdnCardProps> = ({
         <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/80">
           <div>
             <span className="text-xs font-semibold text-slate-800">
-              启用 Steam 封面 CDN 智能加速 (建议开启⚠️)
+              使用 Steam 封面 CDN 加速（推荐）
             </span>
             <p className="text-[11px] text-slate-400">
               自动将 Steam 官方海报图片路由至国内高可用 CDN 边缘分发节点

@@ -176,7 +176,7 @@ export function useInstalledTrainers({ isActive, showToast }: UseInstalledTraine
   const handleCheckUpdates = useCallback(async () => {
     if (isCheckingUpdate || trainers.length === 0) return;
     setIsCheckingUpdate(true);
-    showToast("info", "正在连接风灵月影官网比对最新版本元数据喵...");
+    showToast("info", "正在检查更新…");
     try {
       const results = await trainerApi.checkTrainersUpdate();
       const map: Record<string, TrainerUpdateInfo> = {};
@@ -189,14 +189,14 @@ export function useInstalledTrainers({ isActive, showToast }: UseInstalledTraine
       }
       setUpdateMap(map);
       if (failedCount === results.length && results.length > 0) {
-        showToast("error", "检测更新失败：无法连接官网获取最新版本信息喵...");
+        showToast("error", "检查更新失败：无法连接风灵月影官网");
       } else if (updateCount > 0) {
         const failNotice = failedCount > 0 ? ` (另有 ${failedCount} 款检测失败)` : "";
-        showToast("success", `🎉 检测完毕！发现 ${updateCount} 款修改器有新版本可用喵~${failNotice}`);
+        showToast("success", `发现 ${updateCount} 款修改器有新版本${failNotice}`);
       } else if (failedCount > 0) {
-        showToast("info", `检测完成，已知修改器为最新版，但有 ${failedCount} 款由于网络未能成功核对喵~`);
+        showToast("info", `已检查的修改器均为最新版，另有 ${failedCount} 款因网络问题未能检查`);
       } else {
-        showToast("success", "检测完毕！您安装的所有修改器均已是官网最新版本喵~");
+        showToast("success", "所有修改器都是最新版");
       }
     } catch (e) {
       showToast("error", `检测修改器更新失败: ${e}`);
@@ -210,7 +210,7 @@ export function useInstalledTrainers({ isActive, showToast }: UseInstalledTraine
     async (id: string) => {
       if (updatingId) return;
       setUpdatingId(id);
-      showToast("info", "开始下载新版修改器，所有配置与开关预设将自动完整继承喵...");
+      showToast("info", "正在下载新版本，开关预设会自动保留…");
       try {
         await trainerApi.updateTrainerToLatest(id);
         await loadTrainers(id);
@@ -219,7 +219,7 @@ export function useInstalledTrainers({ isActive, showToast }: UseInstalledTraine
           delete next[id];
           return next;
         });
-        showToast("success", "🎉 修改器已成功升级到最新版！所有开关预设已原封不动保留喵~");
+        showToast("success", "已升级到最新版，开关预设已保留");
       } catch (e) {
         showToast("error", `更新修改器失败: ${e}`);
       } finally {
@@ -239,7 +239,7 @@ export function useInstalledTrainers({ isActive, showToast }: UseInstalledTraine
       setIsImporting(true);
       showToast(
         "info",
-        `正在扫描并联网匹配 Steam 封面与元数据: ${selectedPath}，请稍候喵...`
+        `正在扫描 ${selectedPath} 并匹配封面…`
       );
 
       const summary = await trainerApi.scanAndImportTrainers(selectedPath);
@@ -248,12 +248,12 @@ export function useInstalledTrainers({ isActive, showToast }: UseInstalledTraine
       if (summary.imported_count > 0) {
         showToast(
           "success",
-          `🎉 扫描导入大成功！共检查 ${summary.total_scanned} 个文件，成功收纳建档 ${summary.imported_count} 款修改器喵~`
+          `已导入 ${summary.imported_count} 款修改器（共扫描 ${summary.total_scanned} 个文件）`
         );
       } else {
         showToast(
           "info",
-          `扫描完毕，目标文件夹中未发现新的有效修改器（已跳过 ${summary.skipped_count} 项）喵~`
+          `没有发现新的修改器（跳过 ${summary.skipped_count} 项）`
         );
       }
     } catch (e) {
@@ -268,12 +268,12 @@ export function useInstalledTrainers({ isActive, showToast }: UseInstalledTraine
     async (id: string) => {
       if (isEnriching) return;
       setIsEnriching(true);
-      showToast("info", "正在联网匹配风灵月影官方功能看板与高清海报喵...");
+      showToast("info", "正在获取功能列表与封面…");
       try {
         const updated = await trainerApi.enrichInstalledTrainer(id);
         showToast(
           "success",
-          `已成功同步《${updated.chinese_name || updated.name}》的全部功能与封面喵~`
+          `已更新《${updated.chinese_name || updated.name}》的功能列表与封面`
         );
         await loadTrainers(id);
       } catch (e) {
@@ -291,21 +291,21 @@ export function useInstalledTrainers({ isActive, showToast }: UseInstalledTraine
     setIsEnriching(true);
     showToast(
       "info",
-      "正在全量匹配补齐所有缺失修改器的官方功能与封面，请稍候喵..."
+      "正在为缺少数据的修改器补全功能列表与封面…"
     );
     try {
       const res = await trainerApi.enrichAllInstalledTrainers();
       if (res.attempted === 0) {
-        showToast("info", "所有修改器的数据均已是完整状态喵~");
+        showToast("info", "所有修改器的数据都已完整");
       } else if (res.failed > 0) {
         showToast(
           res.succeeded > 0 ? "success" : "error",
-          `补全处理完成：成功 ${res.succeeded} 款，${res.failed} 款因网络超时或未匹配失败喵~`
+          `补全完成：成功 ${res.succeeded} 款，失败 ${res.failed} 款（网络超时或未匹配）`
         );
       } else {
         showToast(
           "success",
-          `🎉 补全大成功！已为全部 ${res.succeeded} 款修改器同步官方功能看板与高清海报喵~`
+          `已为 ${res.succeeded} 款修改器补全功能列表与封面`
         );
       }
       await loadTrainers(selectedId || undefined);

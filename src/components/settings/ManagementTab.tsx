@@ -277,7 +277,7 @@ export const ManagementTab: React.FC<ManagementTabProps> = ({
                   本地 SQLite 游戏名称离线映射库
                 </span>
                 <p className="text-[11px] text-slate-400">
-                  断网时亦能秒级将中文游戏名反向映射为风灵月影官网标准 Slug
+                  离线时也能把中文游戏名匹配到风灵月影官网条目
                 </p>
               </div>
             </div>

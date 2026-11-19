@@ -13,6 +13,7 @@ import { NetworkSettings, NetworkTestResult } from "../../../services/configApi"
 import { PaperCard } from "../../ui/motion/PaperFlutter";
 import { JellyIcon } from "../../ui/motion/JellyIcon";
 import { TypewriterTooltip } from "../../ui/motion/TypewriterTooltip";
+import { buttonClass } from "../../ui/buttonStyles";
 
 interface ProxyConfigCardProps {
   network: NetworkSettings;
@@ -184,12 +185,12 @@ export const ProxyConfigCard: React.FC<ProxyConfigCardProps> = ({
                 type="button"
                 onClick={onTestNetwork}
                 disabled={isTestingNetwork}
-                className="px-3.5 py-1.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white rounded-lg text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                className={buttonClass("primary", "sm")}
               >
                 {isTestingNetwork ? (
                   <>
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>测试中...</span>
+                    <span>测试中…</span>
                   </>
                 ) : (
                   <>

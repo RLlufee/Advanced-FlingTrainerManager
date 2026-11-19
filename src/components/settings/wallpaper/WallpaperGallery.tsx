@@ -21,7 +21,7 @@ export const WallpaperGallery: React.FC<WallpaperGalleryProps> = ({
   if (wallpaperImages.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-700 py-6 text-center text-xs text-slate-400">
-        尚未添加壁纸，点击上方按钮或拖入图片即可快速添加喵~
+        还没有壁纸，点击上方按钮或拖入图片添加
       </div>
     );
   }

@@ -75,7 +75,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
     >
       {/* 左侧：应用标题（集成打字机 Tooltip 提示） */}
       <div data-tauri-drag-region className="flex items-center gap-2 min-w-[180px]">
-        <TypewriterTooltip content="灵动视觉内核 · 已就绪喵~">
+        <TypewriterTooltip content="风灵月影修改器管理器">
           <div className="flex items-center gap-2 cursor-pointer">
             <JellyIcon intensity="bouncy">
               <img
@@ -123,10 +123,10 @@ export const TitleBar: React.FC<TitleBarProps> = ({
         <TypewriterTooltip
           content={
             colorMode === "system"
-              ? `当前色彩：跟随系统 (${isDark ? "深色" : "浅色"}) · 点击切换`
+              ? `当前：跟随系统（${isDark ? "深色" : "浅色"}）· 点击切换`
               : colorMode === "dark"
-              ? "当前色彩：极客深色 · 点击切换"
-              : "当前色彩：明亮浅色 · 点击切换"
+              ? "当前：深色 · 点击切换"
+              : "当前：浅色 · 点击切换"
           }
           position="bottom"
         >

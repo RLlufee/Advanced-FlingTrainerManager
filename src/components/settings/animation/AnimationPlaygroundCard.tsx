@@ -38,7 +38,7 @@ export const AnimationPlaygroundCard: React.FC<AnimationPlaygroundCardProps> = (
               </span>
             </h3>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              调节上方滑块或预设后，可在此测试卡片直接感受真实的弹性与入场动效喵~
+              调整上方预设或滑块后，可在这里预览效果
             </p>
           </div>
         </div>
@@ -102,7 +102,7 @@ export const AnimationPlaygroundCard: React.FC<AnimationPlaygroundCardProps> = (
             </span>
           </div>
           <div>
-            <TypewriterTooltip text="恭喜！打字机提示与纸片动效已全域完美联动喵~" position="top">
+            <TypewriterTooltip text="这是一条提示预览" position="top">
               <button
                 type="button"
                 className="w-full py-1.5 px-2 bg-amber-50/80 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800 rounded-lg text-[11px] font-semibold text-amber-800 dark:text-amber-300 cursor-help transition-colors text-center"

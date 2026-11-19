@@ -33,7 +33,7 @@ export const SystemTab: React.FC<SystemTabProps> = ({
     setIsRestartingAdmin(true);
     try {
       await invoke("restart_app_as_admin");
-      showToast("info", "已尝试以管理员权限重新启动管理器喵~");
+      showToast("info", "正在以管理员身份重新启动…");
     } catch (e) {
       showToast("error", `提权重启失败: ${e}`);
     } finally {

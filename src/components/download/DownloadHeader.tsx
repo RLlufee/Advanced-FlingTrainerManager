@@ -46,7 +46,7 @@ export const DownloadHeader: React.FC<DownloadHeaderProps> = ({
         <TypewriterTooltip text="在风灵月影官网全库检索游戏修改器" position="top">
           <button
             onClick={onSearchSubmit}
-            className="px-3.5 py-1.5 bg-primary bg-primary-hover text-white rounded-lg text-xs font-semibold cursor-pointer transition-all shrink-0 active:scale-95 shadow-xs flex items-center gap-1.5"
+            className="px-3.5 py-1.5 bg-primary bg-primary-hover text-white rounded-lg text-xs font-semibold cursor-pointer transition-all shrink-0 whitespace-nowrap active:scale-95 shadow-xs flex items-center gap-1.5"
           >
             <JellyIcon intensity="gentle">
               <Search className="w-3.5 h-3.5 stroke-[2.5]" />

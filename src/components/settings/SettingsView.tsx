@@ -184,12 +184,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
   // 导入并还原预设
   const handleImportPresets = async () => {
     if (!importInput.trim()) {
-      showToast("info", "请先粘贴预设备份的 JSON 内容喵~");
+      showToast("info", "请先粘贴预设备份的 JSON 内容");
       return;
     }
     try {
       const count = await configApi.importAllPresets(importInput.trim());
-      showToast("success", `🎉 导入还原成功！已恢复 ${count} 款修改器的开关预设喵~`);
+      showToast("success", `已恢复 ${count} 款修改器的开关预设`);
       setShowImportModal(false);
       setImportInput("");
     } catch (e) {
@@ -244,11 +244,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
       if (!chosen) return;
       const safeTarget = await configApi.resolveTrainersTargetDir(chosen);
       if (storageStats && safeTarget.toLowerCase() === storageStats.trainers_dir.toLowerCase()) {
-        showToast("info", "所选目录与当前存储目录完全一致喵~");
+        showToast("info", "所选目录就是当前存储目录");
         return;
       }
       if (safeTarget.toLowerCase() !== chosen.trim().toLowerCase()) {
-        showToast("info", "为防止误删普通目录中的已有文件，已自动为您定位至专用 FlingTrainers 子目录喵~");
+        showToast("info", "为避免误删已有文件，已改用该目录下的 FlingTrainers 子目录");
       }
       setMigrateTargetDir(safeTarget);
       setShowMigrateModal(true);
@@ -261,10 +261,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
   const handleStartMigration = async () => {
     if (!migrateTargetDir) return;
     setIsMigrating(true);
-    showToast("info", "正在将所有修改器文件无损搬家至新目录，请稍候喵...");
+    showToast("info", "正在迁移修改器文件…");
     try {
       const count = await configApi.migrateTrainersDir(migrateTargetDir);
-      showToast("success", `🎉 搬家大成功！已将 ${count} 款修改器完整迁移至新目录喵~`);
+      showToast("success", `已将 ${count} 款修改器迁移到新目录`);
       setShowMigrateModal(false);
       setMigrateTargetDir(null);
       await loadConfig();
@@ -281,7 +281,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
     if (!migrateTargetDir) return;
     try {
       await configApi.switchTrainersDir(migrateTargetDir);
-      showToast("success", "已将修改器存储路径安全切换到新目录喵~");
+      showToast("success", "已切换到新的存储目录");
       setShowMigrateModal(false);
       setMigrateTargetDir(null);
       await loadConfig();
@@ -307,7 +307,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
       const summary = await configApi.cleanOrphanCache();
       showToast(
         "success",
-        `🎉 清理完成！共清除 ${summary.cleaned_files_count} 个临时文件，释放 ${formatBytes(summary.freed_bytes)} 空间喵~`
+        `清理完成：删除 ${summary.cleaned_files_count} 个临时文件，释放 ${formatBytes(summary.freed_bytes)}`
       );
       await loadStorageStats();
     } catch (e) {
@@ -323,7 +323,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
       await configApi.setLaunchAtStartup(enable);
       const ok = await updateManagementSettings({ launch_at_startup: enable });
       if (ok) {
-        showToast("success", enable ? "已开启 Windows 登录自动启动喵~" : "已关闭开机自启");
+        showToast("success", enable ? "已开启开机自启" : "已关闭开机自启");
       }
     } catch (e) {
       showToast("error", `配置开机自启失败: ${e}`);
@@ -359,7 +359,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
       const res = await configApi.testNetworkConnectivity(target || testTarget);
       setTestResult(res);
       if (res.success) {
-        showToast("success", `⚡ 连通成功！延迟 ${res.latency_ms}ms 喵~`);
+        showToast("success", `连接正常，延迟 ${res.latency_ms} ms`);
       } else {
         showToast("error", `连接失败: ${res.message}`);
       }
@@ -383,7 +383,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ isActive = true }) =
     };
     await updateNetworkSettings(defaultNetwork);
     setTestResult(null);
-    showToast("info", "已恢复为默认网络设置喵~");
+    showToast("info", "已恢复默认网络设置");
   };
 
   if (!config && isLoading) {

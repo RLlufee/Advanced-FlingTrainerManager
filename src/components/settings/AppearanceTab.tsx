@@ -34,7 +34,7 @@ export const AppearanceTab: React.FC = () => {
                 <Palette className="w-4 h-4" />
               </div>
             </JellyIcon>
-            <span>外观与个性化主题</span>
+            <span>外观</span>
             <span
               className="text-[10px] font-mono px-2 py-0.5 rounded-full font-medium transition-colors duration-300"
               style={{
@@ -43,11 +43,11 @@ export const AppearanceTab: React.FC = () => {
                 border: `1px solid ${currentAccent.border}`,
               }}
             >
-              0ms 实时全域换肤
+              实时生效
             </span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            定制启动器全局核心强调色与莫奈动态取色引擎，配置自动持久化保存并在全站即时生效喵~
+            强调色、深浅模式、动态取色与壁纸。修改后立即生效并自动保存。
           </p>
         </div>
 

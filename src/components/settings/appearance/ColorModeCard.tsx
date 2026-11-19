@@ -24,10 +24,10 @@ export const ColorModeCard: React.FC = () => {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-            界面深浅色彩模式
+            深浅模式
           </h3>
           <span className="text-[11px] text-slate-400 dark:text-slate-500">
-            （默认自动跟随系统，亦可固定浅色或深色）
+            （默认跟随系统）
           </span>
         </div>
         <span className="text-xs font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
@@ -43,8 +43,8 @@ export const ColorModeCard: React.FC = () => {
             {colorMode === "system"
               ? `跟随系统 (${resolvedColorMode === "dark" ? "深色" : "浅色"})`
               : colorMode === "dark"
-              ? "极客深色"
-              : "明亮浅色"}
+              ? "深色"
+              : "浅色"}
           </span>
         </span>
       </div>
@@ -92,7 +92,7 @@ export const ColorModeCard: React.FC = () => {
                   </span>
                 </h4>
                 <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                  Windows 系统首选
+                  跟随 Windows 设置
                 </span>
               </div>
             </div>
@@ -106,9 +106,9 @@ export const ColorModeCard: React.FC = () => {
             )}
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-            随 Windows 系统夜间/深浅主题自动无缝切换，当前检测为{" "}
-            <strong className="text-slate-700 dark:text-slate-300">
-              {resolvedColorMode === "dark" ? "深色夜空" : "明亮浅色"}
+            随系统自动切换深浅色，当前为{" "}
+            <strong className="text-slate-700 dark:text-slate-300 whitespace-nowrap">
+              {resolvedColorMode === "dark" ? "深色" : "浅色"}
             </strong>
           </p>
         </div>
@@ -149,7 +149,7 @@ export const ColorModeCard: React.FC = () => {
               </JellyIcon>
               <div>
                 <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  明亮浅色
+                  浅色
                 </h4>
                 <span className="text-[10px] text-slate-400 dark:text-slate-500">
                   Light Mode
@@ -166,7 +166,7 @@ export const ColorModeCard: React.FC = () => {
             )}
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-            纯净明亮，文字通透高反差，适合明朗白昼环境与习惯经典浅底的用户
+            浅色界面，适合白天与明亮环境
           </p>
         </div>
 
@@ -206,7 +206,7 @@ export const ColorModeCard: React.FC = () => {
               </JellyIcon>
               <div>
                 <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                  沉浸深色
+                  深色
                 </h4>
                 <span className="text-[10px] text-slate-400 dark:text-slate-500">
                   Dark Mode
@@ -223,7 +223,7 @@ export const ColorModeCard: React.FC = () => {
             )}
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-            深邃深空黑灰层次，柔和护眼，大幅降低暗光眩光，尽显游戏极客质感
+            深色界面，夜间与暗光环境下更舒适
           </p>
         </div>
       </div>

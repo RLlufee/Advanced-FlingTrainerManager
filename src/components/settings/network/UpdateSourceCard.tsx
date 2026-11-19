@@ -62,13 +62,13 @@ export const UpdateSourceCard: React.FC<UpdateSourceCardProps> = ({
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-cyan-900">国内免翻镜像 (推荐✨)</span>
+            <span className="text-xs font-bold text-cyan-900">国内镜像（推荐）</span>
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-100 text-cyan-700 font-semibold">
               高速反代
             </span>
           </div>
           <p className="text-[11px] text-slate-400 leading-relaxed">
-            通过 ghproxy 极速 CDN 节点拉取，国内无需开启科学上网即可秒级检测与下载
+            通过 ghproxy 镜像下载，国内网络无需代理
           </p>
         </div>
 

@@ -44,10 +44,10 @@ export const HotkeyTab: React.FC<HotkeyTabProps> = ({
             </JellyIcon>
             <div>
               <h2 className="text-sm font-bold text-slate-900">
-                以管理员身份提权启动修改器（建议开启⚠️）
+                以管理员身份启动修改器（推荐）
               </h2>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                单机大作（如《艾尔登法环》、《赛博朋克2077》）常运行在高完整性权限下。开启后启动修改器将触发 Windows UAC 提权授权，确保全局热键钩子正常监听、内存成功注入且绝不闪退。
+                多数大型单机游戏以较高权限运行，修改器需要同等权限才能读写游戏内存、响应热键。开启后，启动修改器时会弹出 UAC 确认。
               </p>
             </div>
           </div>
@@ -81,10 +81,10 @@ export const HotkeyTab: React.FC<HotkeyTabProps> = ({
           </JellyIcon>
           <div>
             <h2 className="text-sm font-bold text-slate-900">
-              模拟按键时序与防吞键引擎
+              按键模拟时序
             </h2>
             <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              在点击“一键同步”时，系统将依序模拟键盘按键。通过微调按键间隔与持续时长，可彻底消除不同游戏引擎（卡普空 RE、虚幻引擎等）因连击过快导致的按键丢失。
+              「一键同步」会依次模拟按下预设热键。部分游戏（如卡普空 RE 引擎、虚幻引擎作品）按键过快会丢失输入，可在这里调慢。
             </p>
           </div>
         </div>

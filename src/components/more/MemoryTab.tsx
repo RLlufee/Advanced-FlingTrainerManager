@@ -19,6 +19,7 @@ import {
 import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
 import { JellyIcon } from "../ui/motion/JellyIcon";
 import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
+import { buttonClass } from "../ui/buttonStyles";
 
 interface MemoryTabProps {
   memInfo: SystemMemoryInfo | null;
@@ -61,13 +62,10 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
             </JellyIcon>
             <div>
               <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                系统物理内存深度优化调度引擎
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-700">
-                  Rust 内核版
-                </span>
+                内存优化
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                运用来自 Windows NT 内核指令，直接清理物理工作集与备用缓存（Standby List），大幅释放可用内存
+                清理进程工作集与系统备用缓存（Standby List），释放可用物理内存
               </p>
             </div>
           </div>
@@ -97,10 +95,10 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
                   <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                 </JellyIcon>
                 <span className="font-semibold text-emerald-800">
-                  管理员特权模式
+                  管理员模式
                 </span>
                 <span className="text-slate-500">
-                  — 已成功获取内核特权，待机缓存列表与系统文件缓存完全解锁
+                  — 所有清理项均可用
                 </span>
               </>
             ) : (
@@ -112,20 +110,20 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
                   普通权限模式
                 </span>
                 <span className="text-slate-500">
-                  — 支持全进程工作集回收；如需深度清空待机缓存，请提权重启
+                  — 可回收进程工作集；清空备用缓存需要管理员权限
                 </span>
               </>
             )}
           </div>
 
           {!memInfo?.is_admin && (
-            <TypewriterTooltip text="通过 UAC 提权重新唤醒客户端以解锁 Windows NT 内核全部清退指令" position="left">
+            <TypewriterTooltip text="以管理员身份重新启动本应用" position="left">
               <button
                 onClick={onRestartAdmin}
-                className="flex items-center justify-center gap-1.5 px-3 py-1 rounded-lg bg-primary bg-primary-hover text-white text-xs font-semibold shadow-xs transition-all cursor-pointer shrink-0 active:scale-95"
+                className={buttonClass("soft", "sm", "shrink-0")}
               >
                 <JellyIcon intensity="bouncy">
-                  <Zap className="w-3.5 h-3.5 text-amber-200 fill-current" />
+                  <ShieldCheck className="w-3.5 h-3.5" />
                 </JellyIcon>
                 <span>以管理员重启</span>
               </button>
@@ -242,10 +240,10 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                <span className="text-xs text-slate-600">系统分页虚拟文件</span>
+                <span className="text-xs text-slate-600 whitespace-nowrap">虚拟内存可用</span>
               </div>
-              <span className="text-xs font-bold text-indigo-700 font-mono">
-                {memInfo ? formatBytes(memInfo.avail_pagefile_bytes) : "--"} 可用 /{" "}
+              <span className="text-xs font-bold text-indigo-700 font-mono whitespace-nowrap">
+                {memInfo ? formatBytes(memInfo.avail_pagefile_bytes) : "--"} /{" "}
                 {memInfo ? formatBytes(memInfo.total_pagefile_bytes) : "--"}
               </span>
             </div>
@@ -253,35 +251,35 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
 
           {/* 3. 一键优化主操作区 */}
           <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-4">
-            <TypewriterTooltip text="执行 NT 内核原生内存修剪与缓存回收" position="top">
+            <TypewriterTooltip text="按下方勾选的清理项执行一次" position="top">
               <button
                 onClick={onOptimize}
                 disabled={isOptimizing}
-                className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-cyan-500 via-cyan-600 to-cyan-800 hover:from-cyan-400 hover:via-cyan-500 hover:to-cyan-700 text-white font-bold text-xs shadow-md shadow-cyan-900/10 flex items-center justify-center gap-2 transition-all transform active:scale-98 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group"
+                className={buttonClass("primary", "md", "w-full h-12 px-6 group")}
               >
                 {isOptimizing ? (
                   <>
-                    <RefreshCw className="w-4 h-4 animate-spin text-cyan-200" />
-                    <span>正在进行内核级深层优化……</span>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>正在优化…</span>
                   </>
                 ) : (
                   <>
                     <JellyIcon intensity="bouncy">
-                      <Zap className="w-4 h-4 text-amber-300 fill-current group-hover:scale-110 transition-transform" />
+                      <Zap className="w-4 h-4 fill-current" />
                     </JellyIcon>
-                    <span>⚡ 一键深度优化物理内存</span>
+                    <span>立即优化内存</span>
                   </>
                 )}
               </button>
             </TypewriterTooltip>
 
             <p className="text-[11px] text-slate-400 leading-relaxed text-center px-2">
-              💡 非普通 GC 伪释放，直接调度 NT 内核清退待机缓存与多余工作集。
+              将按下方「清理项」的勾选执行，开游戏前清理一次效果最明显。
             </p>
 
             {lastResult && (
               <div className="w-full p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between animate-in fade-in">
-                <span className="font-semibold">优化战报:</span>
+                <span className="font-semibold">优化结果：</span>
                 <span className="font-mono font-bold text-emerald-700">
                   +{formatBytes(lastResult.freed_bytes)} 释放
                 </span>
@@ -302,7 +300,7 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
               <Sliders className="w-4 h-4 text-cyan-600" />
             </JellyIcon>
             <span className="font-bold text-slate-900 text-sm">
-              高级内存清理项目细粒度配置 (7 大系统级动作)
+              清理项
             </span>
           </div>
           <div className="flex items-center gap-1 text-xs text-slate-400 font-medium">
@@ -503,7 +501,7 @@ export const MemoryTab: React.FC<MemoryTabProps> = ({
             <JellyIcon intensity="gentle">
               <Terminal className="w-4 h-4 text-cyan-600" />
             </JellyIcon>
-            <span>本次内核调用执行日志</span>
+            <span>执行日志</span>
           </div>
           <div className="p-3.5 rounded-xl bg-slate-900 text-slate-200 font-mono text-[11px] space-y-1 shadow-inner max-h-36 overflow-y-auto custom-scrollbar">
             {lastResult.logs.map((log, idx) => (

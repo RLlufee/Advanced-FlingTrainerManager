@@ -243,6 +243,28 @@ export function extractHotkey(title: string | undefined | null): string {
 }
 
 /**
+ * 将 "Ctrl+Num 1 – Infinite Health" 拆成键位数组与功能名，用于键帽式渲染。
+ * 只有前缀确实像键位组合时才拆分；否则 keys 为空，label 为原标题，避免把普通文字误渲染成键帽。
+ *   "Num 1 – 无限生命"        -> { keys: ["Num 1"], label: "无限生命" }
+ *   "Ctrl+Num 1 – Edit Gold"  -> { keys: ["Ctrl", "Num 1"], label: "Edit Gold" }
+ *   "Ctrl+Num + – Speed Up"   -> { keys: ["Ctrl", "Num +"], label: "Speed Up" }
+ *   "Infinite Health"         -> { keys: [], label: "Infinite Health" }
+ */
+export function splitHotkeyTitle(title: string | undefined | null): { keys: string[]; label: string } {
+  const raw = (title || "").trim();
+  const match = raw.match(/^(.{1,28}?)\s+[–—-]\s+(.+)$/);
+  if (!match) return { keys: [], label: raw };
+
+  const [, prefix, label] = match;
+  // 在 "+" 处拆分，但保留结尾的 "+"（小键盘加号，如 "Num +"）
+  const keys = prefix.split(/\s*\+\s*(?!$)/).map((k) => k.trim()).filter(Boolean);
+  const looksLikeKey = (k: string) => k.length <= 12 && /^[A-Za-z0-9 .+\-*/`',;=[\]]+$/.test(k);
+
+  if (keys.length === 0 || !keys.every(looksLikeKey)) return { keys: [], label: raw };
+  return { keys, label: label.trim() };
+}
+
+/**
  * 判断某个修改项是否属于二元开关类功能（Toggle）
  * 数值、倍率、编辑输入类通常不是单纯开关
  */

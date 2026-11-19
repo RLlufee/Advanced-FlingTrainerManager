@@ -24,39 +24,39 @@ interface TabItemConfig {
 const TABS: TabItemConfig[] = [
   {
     id: "memory",
-    label: "内存深度优化",
+    label: "内存优化",
     icon: Cpu,
     iconColor: "text-slate-400 group-hover:text-cyan-600",
     activeIconColor: "text-cyan-600",
     dotColor: "bg-cyan-500",
-    tooltipText: "基于 Windows NT 原生内核 API，深度释放工作集与待机缓存",
+    tooltipText: "释放进程工作集与系统备用缓存",
   },
   {
     id: "hardware",
-    label: "硬件全景规格",
+    label: "硬件信息",
     icon: Monitor,
     iconColor: "text-slate-400 group-hover:text-cyan-600",
     activeIconColor: "text-cyan-600",
     dotColor: "bg-cyan-500",
-    tooltipText: "极速采集 CPU、GPU、内存插槽与主板芯片级真实参数",
+    tooltipText: "查看 CPU、显卡、内存、主板与磁盘",
   },
   {
     id: "cleanup",
-    label: "系统与游戏清理",
+    label: "磁盘清理",
     icon: Sparkles,
     iconColor: "text-slate-400 group-hover:text-cyan-600",
     activeIconColor: "text-cyan-600",
     dotColor: "bg-cyan-500",
-    tooltipText: "深度扫描 DirectX 着色器缓存与游戏临时碎片，释放宝贵硬盘空间",
+    tooltipText: "清理着色器缓存与临时文件",
   },
   {
     id: "tools",
-    label: "实用百宝箱",
+    label: "系统工具",
     icon: Wrench,
     iconColor: "text-slate-400 group-hover:text-cyan-600",
     activeIconColor: "text-cyan-600",
     dotColor: "bg-cyan-500",
-    tooltipText: "快速唤起 Windows 原生诊断、手柄校准与系统底层控制面板",
+    tooltipText: "快速打开 Windows 诊断、手柄校准等工具",
   },
   {
     id: "about",
@@ -79,7 +79,7 @@ export const MoreSidebar: React.FC<MoreSidebarProps> = ({
         <JellyIcon intensity="medium">
           <Boxes className="w-4 h-4 text-primary" />
         </JellyIcon>
-        <span>百宝箱中心</span>
+        <span>工具箱</span>
       </div>
 
       <div className="space-y-1 relative">
@@ -140,26 +140,6 @@ export const MoreSidebar: React.FC<MoreSidebarProps> = ({
         })}
       </div>
 
-      <div className="flex-1" />
-
-      {/* 边栏底部信息 */}
-      <TypewriterTooltip
-        text="采用 Rust Windows-rs 零运行时开销原生调用，杜绝中间层性能损耗喵~"
-        position="top"
-        delayMs={200}
-      >
-        <div className="p-3 bg-slate-50 border border-slate-200/70 rounded-xl text-xs text-slate-500 space-y-1 cursor-help hover:border-cyan-200 transition-colors">
-          <div className="flex items-center justify-between">
-            <span className="font-medium text-slate-700">优化与清理引擎</span>
-            <span className="text-cyan-600 font-mono text-[10px] font-bold">
-              Advanced - Fling Trainer
-            </span>
-          </div>
-          <p className="text-[10px] text-slate-400 leading-relaxed">
-            Windows NT 原生内核 / CIM 采集
-          </p>
-        </div>
-      </TypewriterTooltip>
     </aside>
   );
 };

@@ -25,6 +25,7 @@ import {
   WallpaperGallery,
   WallpaperControls,
 } from "./wallpaper";
+import { buttonClass } from "../ui/buttonStyles";
 
 const IMAGE_EXTENSION = /\.(png|jpe?g|webp|bmp)$/i;
 
@@ -211,7 +212,7 @@ export const WallpaperSection: React.FC = () => {
               )}
             </div>
             <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-              开启后壁纸铺设于界面底层，展开配置抽屉可添加图库并启动「图层覆盖游乐场」喵~
+              壁纸铺在界面底层，可分别调节各层的透明度与模糊
             </p>
           </div>
         </div>
@@ -306,7 +307,7 @@ export const WallpaperSection: React.FC = () => {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isImporting}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-semibold text-white shadow-xs transition-opacity hover:opacity-90 disabled:opacity-50 cursor-pointer active:scale-95"
+                  className={buttonClass("primary", "sm")}
                 >
                   <ImagePlus className="h-3.5 w-3.5" />
                   <span>添加壁纸</span>

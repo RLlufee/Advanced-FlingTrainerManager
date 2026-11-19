@@ -3,6 +3,7 @@ import { Gamepad2, FolderInput, PlusCircle } from "lucide-react";
 import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
 import { JellyIcon } from "../ui/motion/JellyIcon";
 import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
+import { buttonClass } from "../ui/buttonStyles";
 
 export interface LaunchEmptyStateProps {
   isImporting: boolean;
@@ -26,34 +27,34 @@ export const LaunchEmptyState: React.FC<LaunchEmptyStateProps> = ({
               </div>
             </JellyIcon>
           </div>
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">未选择任何修改器</h2>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">选择一个修改器开始</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1.5 mb-6 leading-relaxed">
-            笨蛋主人，这里还没有选中的修改器喵！可以点击下方扫描电脑里已下载的修改器，或者去下载库挑选新游戏吧~
+            从左侧列表中选择，或导入电脑里已有的修改器，也可以去下载页获取新的。
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <TypewriterTooltip text="调出系统目录选择器，扫描并纳管历史已有修改器" position="top">
+            <TypewriterTooltip text="选择一个文件夹，扫描其中的修改器" position="top">
               <button
                 onClick={onImportExternal}
                 disabled={isImporting}
-                className="px-5 py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-semibold shadow-xs hover:shadow-md transition-all flex items-center gap-2 active:scale-95 disabled:opacity-50 cursor-pointer"
+                className={buttonClass("secondary", "md")}
               >
                 <JellyIcon intensity="gentle">
                   <FolderInput className={`w-4 h-4 text-primary ${isImporting ? "animate-bounce" : ""}`} />
                 </JellyIcon>
-                <span>{isImporting ? "正在扫描纳管..." : "批量导入已有修改器"}</span>
+                <span>{isImporting ? "正在扫描…" : "导入本地修改器"}</span>
               </button>
             </TypewriterTooltip>
 
             {onNavigateToDownload && (
-              <TypewriterTooltip text="浏览风灵月影千款热门游戏修改器并在本地一键下载" position="top">
+              <TypewriterTooltip text="浏览风灵月影官网的修改器" position="top">
                 <button
                   onClick={onNavigateToDownload}
-                  className="px-5 py-2.5 bg-primary bg-primary-hover text-white rounded-xl text-xs font-semibold shadow-md hover:shadow-lg transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+                  className={buttonClass("primary", "md")}
                 >
                   <JellyIcon intensity="gentle">
                     <PlusCircle className="w-4 h-4 text-white" />
                   </JellyIcon>
-                  <span>前往下载库下载修改器</span>
+                  <span>去下载页</span>
                 </button>
               </TypewriterTooltip>
             )}

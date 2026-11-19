@@ -41,7 +41,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <AlertCircle className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-100">界面渲染遇到了点小状况喵~</h2>
+              <h2 className="text-base font-bold text-slate-100">界面出现了错误</h2>
               <p className="text-xs text-slate-400 mt-1 leading-relaxed">
                 不用慌张，这只是一个局部的渲染拦截，程序依然在安全运行！
               </p>

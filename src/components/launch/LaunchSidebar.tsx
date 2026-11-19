@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Gamepad2,
   RefreshCw,
@@ -6,15 +6,102 @@ import {
   FolderTree,
   PlusCircle,
   X,
-  Radio,
+  ArrowUpCircle,
   FolderInput,
   Sparkles,
+  MoreHorizontal,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import type { InstalledTrainerRecord, TrainerUpdateInfo } from "../../services/trainerApi";
 import { GamePoster } from "../GamePoster";
 import { JellyIcon } from "../ui/motion/JellyIcon";
 import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
+import { buttonClass } from "../ui/buttonStyles";
+
+interface LibraryMenuItem {
+  key: string;
+  label: string;
+  busyLabel: string;
+  icon: React.ReactNode;
+  busy: boolean;
+  disabled?: boolean;
+  onSelect: () => void;
+}
+
+/** 已安装列表的"更多操作"菜单：把低频操作收进带文字标签的菜单，替代一排无标签小图标 */
+const LibraryMenu: React.FC<{ items: LibraryMenuItem[] }> = ({ items }) => {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const anyBusy = items.some((i) => i.busy);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        title="更多操作"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={`relative w-7 h-7 flex items-center justify-center rounded-lg transition-colors cursor-pointer ${
+          open
+            ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            : "text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800"
+        }`}
+      >
+        <MoreHorizontal className="w-4 h-4" />
+        {anyBusy && (
+          <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
+        )}
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            role="menu"
+            initial={{ opacity: 0, y: -4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
+            className="wallpaper-modal-target absolute right-0 top-full mt-1.5 z-30 w-52 p-1 rounded-xl bg-white dark:bg-[#131c31] border border-slate-200 dark:border-slate-700/80 shadow-lg shadow-slate-900/10 dark:shadow-black/40 origin-top-right"
+          >
+            {items.map((item) => (
+              <button
+                key={item.key}
+                role="menuitem"
+                disabled={item.disabled || item.busy}
+                onClick={() => {
+                  setOpen(false);
+                  item.onSelect();
+                }}
+                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left text-xs font-medium text-slate-700 dark:text-slate-200 enabled:hover:bg-slate-100 dark:enabled:hover:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:cursor-not-allowed cursor-pointer transition-colors"
+              >
+                <span className={`shrink-0 text-slate-400 dark:text-slate-500 ${item.busy ? "animate-spin" : ""}`}>
+                  {item.icon}
+                </span>
+                <span className="truncate">{item.busy ? item.busyLabel : item.label}</span>
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export interface LaunchSidebarProps {
   trainers: InstalledTrainerRecord[];
@@ -78,68 +165,57 @@ export const LaunchSidebar: React.FC<LaunchSidebarProps> = ({
           )}
         </div>
 
-        <div className="flex items-center justify-between px-1">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-            已安装 ({trainers.length})
+        <div className="flex items-center justify-between pl-1">
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            已安装 · {trainers.length}
           </span>
-          <div className="flex items-center gap-1">
-            <TypewriterTooltip text="批量扫描并导入外部已有修改器" position="top">
-              <button
-                onClick={onImportExternal}
-                disabled={isImporting}
-                className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors disabled:opacity-40 cursor-pointer"
-              >
-                <JellyIcon intensity="gentle">
-                  <FolderInput className={`w-3.5 h-3.5 ${isImporting ? "animate-bounce text-cyan-600" : ""}`} />
-                </JellyIcon>
-              </button>
-            </TypewriterTooltip>
-
-            <TypewriterTooltip text="联网对比官网，检测是否有最新版本" position="top">
-              <button
-                onClick={onCheckUpdates}
-                disabled={isCheckingUpdate || trainers.length === 0}
-                className="p-1 rounded text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors disabled:opacity-40 cursor-pointer"
-              >
-                <JellyIcon intensity="gentle">
-                  <Radio className={`w-3.5 h-3.5 ${isCheckingUpdate ? "animate-pulse text-amber-500" : ""}`} />
-                </JellyIcon>
-              </button>
-            </TypewriterTooltip>
-
-            <TypewriterTooltip text="一键联网补全缺少功能看板或封面" position="top">
-              <button
-                onClick={onEnrichAll}
-                disabled={isEnriching || trainers.length === 0}
-                className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors disabled:opacity-40 cursor-pointer"
-              >
-                <JellyIcon intensity="gentle">
-                  <Sparkles className={`w-3.5 h-3.5 ${isEnriching ? "animate-spin text-cyan-600" : ""}`} />
-                </JellyIcon>
-              </button>
-            </TypewriterTooltip>
-
-            <TypewriterTooltip text="刷新本地修改器列表" position="top">
+          <div className="flex items-center gap-0.5">
+            <TypewriterTooltip text="刷新列表" position="top">
               <button
                 onClick={onRefresh}
-                className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors cursor-pointer"
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                <JellyIcon intensity="gentle">
-                  <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-cyan-600" : ""}`} />
-                </JellyIcon>
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-cyan-600 dark:text-cyan-400" : ""}`} />
               </button>
             </TypewriterTooltip>
-
-            <TypewriterTooltip text="打开 trainers 便携存储根目录" position="top">
-              <button
-                onClick={onOpenTrainersRoot}
-                className="p-1 rounded text-slate-400 hover:text-cyan-600 hover:bg-slate-100 transition-colors cursor-pointer"
-              >
-                <JellyIcon intensity="gentle">
-                  <FolderTree className="w-3.5 h-3.5" />
-                </JellyIcon>
-              </button>
-            </TypewriterTooltip>
+            <LibraryMenu
+              items={[
+                {
+                  key: "import",
+                  label: "导入本地修改器…",
+                  busyLabel: "正在扫描…",
+                  icon: <FolderInput className="w-4 h-4" />,
+                  busy: isImporting,
+                  onSelect: onImportExternal,
+                },
+                {
+                  key: "update",
+                  label: "检查更新",
+                  busyLabel: "正在检查更新…",
+                  icon: <ArrowUpCircle className="w-4 h-4" />,
+                  busy: isCheckingUpdate,
+                  disabled: trainers.length === 0,
+                  onSelect: onCheckUpdates,
+                },
+                {
+                  key: "enrich",
+                  label: "补全封面与功能列表",
+                  busyLabel: "正在补全…",
+                  icon: <Sparkles className="w-4 h-4" />,
+                  busy: isEnriching,
+                  disabled: trainers.length === 0,
+                  onSelect: onEnrichAll,
+                },
+                {
+                  key: "folder",
+                  label: "打开修改器目录",
+                  busyLabel: "打开修改器目录",
+                  icon: <FolderTree className="w-4 h-4" />,
+                  busy: false,
+                  onSelect: onOpenTrainersRoot,
+                },
+              ]}
+            />
           </div>
         </div>
       </div>
@@ -152,10 +228,10 @@ export const LaunchSidebar: React.FC<LaunchSidebarProps> = ({
               <Gamepad2 className="w-8 h-8 mx-auto mb-2 text-slate-300 stroke-[1.5]" />
             </JellyIcon>
             <p className="text-xs font-medium">
-              {searchQuery ? "未匹配到相关修改器" : "暂未安装任何修改器"}
+              {searchQuery ? "没有匹配的修改器" : "还没有安装修改器"}
             </p>
-            <p className="text-[11px] text-slate-400 mt-1">
-              {searchQuery ? "请更换搜索词重试" : "去下载页挑几个喜欢的游戏吧喵~"}
+            <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+              {searchQuery ? "换个关键词试试" : "可以从下载页获取，或导入本地已有的修改器"}
             </p>
           </div>
         ) : (
@@ -234,34 +310,15 @@ export const LaunchSidebar: React.FC<LaunchSidebarProps> = ({
         )}
       </div>
 
-      {/* 边栏底部：导入与去下载 */}
-      <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 space-y-1.5">
-        <button
-          onClick={onImportExternal}
-          disabled={isImporting}
-          className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 shadow-2xs transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-        >
-          <JellyIcon intensity="bouncy">
-            <FolderInput className={`w-3.5 h-3.5 text-primary ${isImporting ? "animate-bounce" : ""}`} />
-          </JellyIcon>
-          <span>{isImporting ? "正在扫描纳管中..." : "批量导入已有修改器..."}</span>
-        </button>
-        {onNavigateToDownload && (
-          <button
-            onClick={onNavigateToDownload}
-            className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold text-primary-text bg-primary-soft hover:bg-primary-soft/80 border border-primary-border shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
-          >
-            <JellyIcon intensity="gentle">
-              <PlusCircle className="w-3.5 h-3.5 text-primary" />
-            </JellyIcon>
-            <span>从官网下载更多修改器...</span>
+      {/* 边栏底部：去下载 */}
+      {onNavigateToDownload && (
+        <div className="p-3 border-t border-slate-100 dark:border-slate-800">
+          <button onClick={onNavigateToDownload} className={buttonClass("secondary", "sm", "w-full")}>
+            <PlusCircle className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+            <span>下载更多修改器</span>
           </button>
-        )}
-        <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 px-1 pt-0.5">
-          <span>便携独立存储架构</span>
-          <span className="text-primary font-mono">trainers/</span>
         </div>
-      </div>
+      )}
     </aside>
   );
 };

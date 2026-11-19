@@ -30,10 +30,10 @@ export const ToolsTab: React.FC<ToolsTabProps> = ({ onOpenTool }) => {
           </JellyIcon>
           <div>
             <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-              游戏与系统诊断百宝箱
+              系统工具
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              快速唤起 Windows 原生系统诊断与游戏控制器校准工具，免去在控制面板中繁琐翻找
+              常用的 Windows 诊断与手柄校准工具，一键直达
             </p>
           </div>
         </div>

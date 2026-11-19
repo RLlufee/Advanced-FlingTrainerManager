@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { hardwareApi, HardwareOverview } from "../../services/hardwareApi";
 import { PaperContainer, PaperCard, JellyIcon, TypewriterTooltip } from "../ui/motion";
+import { buttonClass } from "../ui/buttonStyles";
 
 export const HardwareTab: React.FC = () => {
   const [hardware, setHardware] = useState<HardwareOverview | null>(null);
@@ -73,7 +74,7 @@ export const HardwareTab: React.FC = () => {
       .join(" · ");
 
     const text = [
-      `🎮 【电脑硬件与游戏运行配置规格单】`,
+      `【电脑配置单】`,
       `• 设备型号: ${hardware.manufacturer} ${hardware.model}`,
       `• 操作系统: ${hardware.os} (Build ${hardware.build})`,
       `• 处理器 (CPU): ${hardware.cpu} (${hardware.cores} 核 ${hardware.threads} 线程)`,
@@ -98,7 +99,7 @@ export const HardwareTab: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center h-80 text-slate-400 text-xs gap-3 select-none">
         <RefreshCw className="w-6 h-6 animate-spin text-cyan-600" />
-        <span>正在读取 Windows 硬件配置全景看板喵...</span>
+        <span>正在读取硬件信息…</span>
       </div>
     );
   }
@@ -166,10 +167,10 @@ export const HardwareTab: React.FC = () => {
               </JellyIcon>
             </TypewriterTooltip>
 
-            <TypewriterTooltip content="复制标准化 Markdown 格式配置清单，方便求助和交流喵~" position="bottom">
+            <TypewriterTooltip content="复制为 Markdown 配置单，方便求助或分享" position="bottom">
               <button
                 onClick={handleCopySpecSheet}
-                className="flex-1 md:flex-initial px-4 py-2 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                className={buttonClass("primary", "md", "flex-1 md:flex-initial")}
               >
                 {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{isCopied ? "配置单已复制！" : "复制电脑配置清单"}</span>

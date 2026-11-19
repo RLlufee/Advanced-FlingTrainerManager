@@ -207,7 +207,7 @@ export const MonetDynamicSection: React.FC = () => {
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
               {isDynamic
                 ? `当前生效：${currentAccent.name} · 点击可折叠/展开下方高级莫奈选项`
-                : "省心默认自动同步 Windows 系统主题色；选中后可展开「图片莫奈取色」与「启动页游戏取色」喵~"}
+                : "默认跟随 Windows 主题色；选中后可改用图片取色或游戏封面取色"}
             </p>
           </div>
         </div>
@@ -363,7 +363,7 @@ export const MonetDynamicSection: React.FC = () => {
                       {isExtractingMonet
                         ? "正在运行莫奈 Celebi 聚类算法提取色票并持久化落盘..."
                         : isDraggingOver
-                          ? "松开鼠标，立即用莫奈算法提取这张图的灵魂配色喵！"
+                          ? "松开鼠标，从这张图片提取配色"
                           : "拖拽一张或多张图片到这里，或点击选择本地壁纸 / 插画"}
                     </div>
                     <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
@@ -494,7 +494,7 @@ export const MonetDynamicSection: React.FC = () => {
                         )}
                       </div>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                        开启后，在「启动」页点击切换不同修改器时，实时提取该游戏封面原画的莫奈主题色并丝滑过渡换肤喵~
+                        开启后，在「启动」页切换修改器时，自动从游戏封面提取主题色
                       </p>
                     </div>
                   </div>

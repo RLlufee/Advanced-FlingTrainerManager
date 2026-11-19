@@ -16,6 +16,7 @@ import { trainerApi } from "../../services/trainerApi";
 import { GamePoster } from "../GamePoster";
 import { JellyIcon } from "../ui/motion/JellyIcon";
 import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
+import { buttonClass } from "../ui/buttonStyles";
 
 export interface LaunchHeroProps {
   trainer: InstalledTrainerRecord;
@@ -88,7 +89,7 @@ export const LaunchHero: React.FC<LaunchHeroProps> = ({
                 </span>
 
                 {updateInfo?.has_update && (
-                  <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/90 font-semibold flex items-center gap-1 shrink-0 whitespace-nowrap animate-pulse">
+                  <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/90 font-semibold flex items-center gap-1 shrink-0 whitespace-nowrap">
                     <Sparkles className="w-3 h-3 text-amber-500" />
                     <span>发现新版: {updateInfo.latest_version}</span>
                   </span>
@@ -149,82 +150,84 @@ export const LaunchHero: React.FC<LaunchHeroProps> = ({
 
         {/* 下层：核心大动作操作栏 */}
         <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-2.5">
-          {/* 一键启动修改器主按钮 */}
-          <TypewriterTooltip text="安全唤醒风灵月影修改器独立进程" position="top">
-            <button
-              onClick={onLaunchTrainer}
-              disabled={isLaunching}
-              className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-95 text-slate-950 rounded-xl text-xs font-bold shadow-md shadow-amber-500/20 hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              <JellyIcon intensity="bouncy">
-                <Zap className="w-4 h-4 fill-slate-950" />
-              </JellyIcon>
-              <span>{isLaunching ? "正在启动..." : "启动修改器"}</span>
-            </button>
-          </TypewriterTooltip>
+          {/*
+            主次层级：每个视图只有一个实心主按钮。
+            有 Steam AppID 时主操作是「一键双启」，单独启动修改器 / 游戏降为次级按钮；
+            没有 AppID 时主操作就是「启动修改器」。
+          */}
+          {trainer.steam_app_id ? (
+            <>
+              <TypewriterTooltip text="先启动 Steam 游戏，随后自动打开修改器" position="top">
+                <button
+                  onClick={onLaunchDual}
+                  disabled={isLaunching}
+                  className={buttonClass("primary", "md", "px-5")}
+                >
+                  <JellyIcon intensity="gentle">
+                    <Play className="w-4 h-4 fill-current" />
+                  </JellyIcon>
+                  <span>{isLaunching ? "正在启动…" : "一键双启"}</span>
+                </button>
+              </TypewriterTooltip>
 
-          {/* 一键双启 (游戏 + 修改器) */}
-          {trainer.steam_app_id && (
-            <TypewriterTooltip text="先启动 Steam 游戏，随后自动唤醒修改器" position="top">
+              <TypewriterTooltip text="只打开修改器（游戏已在运行时使用）" position="top">
+                <button
+                  onClick={onLaunchTrainer}
+                  disabled={isLaunching}
+                  className={buttonClass("secondary", "md")}
+                >
+                  <Zap className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                  <span>仅启动修改器</span>
+                </button>
+              </TypewriterTooltip>
+
+              <TypewriterTooltip text="通过 Steam 启动游戏，不打开修改器" position="top">
+                <button onClick={onLaunchSteamOnly} className={buttonClass("secondary", "md")}>
+                  <Gamepad2 className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                  <span>仅运行游戏</span>
+                </button>
+              </TypewriterTooltip>
+            </>
+          ) : (
+            <TypewriterTooltip text="打开风灵月影修改器" position="top">
               <button
-                onClick={onLaunchDual}
+                onClick={onLaunchTrainer}
                 disabled={isLaunching}
-                className="px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 active:scale-95 text-white rounded-xl text-xs font-semibold shadow-md shadow-cyan-600/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className={buttonClass("primary", "md", "px-5")}
               >
                 <JellyIcon intensity="gentle">
-                  <Play className="w-3.5 h-3.5 fill-white" />
+                  <Zap className="w-4 h-4 fill-current" />
                 </JellyIcon>
-                <span>一键双启</span>
+                <span>{isLaunching ? "正在启动…" : "启动修改器"}</span>
               </button>
             </TypewriterTooltip>
           )}
 
-          {/* 仅启动 Steam 游戏 */}
-          {trainer.steam_app_id && (
-            <TypewriterTooltip text="直接唤醒 Steam 客户端启动该游戏" position="top">
-              <button
-                onClick={onLaunchSteamOnly}
-                className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 border border-slate-200/80 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <JellyIcon intensity="gentle">
-                  <Gamepad2 className="w-3.5 h-3.5 text-sky-600" />
-                </JellyIcon>
-                <span>运行游戏</span>
-              </button>
-            </TypewriterTooltip>
-          )}
-
-          {/* 一键获取官方功能与封面数据 (当选项为空时突出呈现) */}
+          {/* 缺少功能数据时：补全按钮 */}
           {activeOptionCount === 0 && (
-            <TypewriterTooltip text="联网匹配风灵月影官方所有功能开关、热键说明与官方海报" position="top">
+            <TypewriterTooltip text="从风灵月影官网获取功能、热键说明和游戏封面" position="top">
               <button
                 onClick={onEnrichTrainer}
                 disabled={isEnriching}
-                className="px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-cyan-800 hover:from-cyan-500 hover:to-cyan-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md shadow-cyan-600/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                className={buttonClass("soft", "md")}
               >
-                <JellyIcon intensity="bouncy">
-                  <Sparkles className={`w-4 h-4 text-cyan-200 ${isEnriching ? "animate-spin" : ""}`} />
-                </JellyIcon>
-                <span>{isEnriching ? "正在匹配数据..." : "获取修改器数据"}</span>
+                <Sparkles className={`w-4 h-4 ${isEnriching ? "animate-spin" : ""}`} />
+                <span>{isEnriching ? "正在获取…" : "获取功能列表"}</span>
               </button>
             </TypewriterTooltip>
           )}
 
-          {/* 一键无感增量升级新版本按钮 */}
+          {/* 有新版本时：升级按钮（提醒色，但不与主按钮抢视觉） */}
           {updateInfo?.has_update && (
-            <TypewriterTooltip text={`检测到官网最新版本 ${updateInfo.latest_version}，点击一键覆盖升级`} position="top">
+            <TypewriterTooltip text={`官网已有新版本 ${updateInfo.latest_version}，升级后保留开关预设`} position="top">
               <button
                 onClick={onUpdateTrainer}
                 disabled={updatingId === trainer.id}
-                className="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-500/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 animate-pulse"
+                className={buttonClass("warning", "md")}
               >
-                <JellyIcon intensity="bouncy">
-                  <ArrowUpCircle className={`w-4 h-4 ${updatingId === trainer.id ? "animate-spin" : ""}`} />
-                </JellyIcon>
+                <ArrowUpCircle className={`w-4 h-4 ${updatingId === trainer.id ? "animate-spin" : ""}`} />
                 <span>
-                  {updatingId === trainer.id
-                    ? "正在升级中..."
-                    : `一键升级 (${updateInfo.latest_version})`}
+                  {updatingId === trainer.id ? "正在升级…" : `升级到 ${updateInfo.latest_version}`}
                 </span>
               </button>
             </TypewriterTooltip>

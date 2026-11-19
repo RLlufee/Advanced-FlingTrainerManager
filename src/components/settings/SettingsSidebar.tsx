@@ -144,12 +144,12 @@ export const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
 
       <div className="mt-auto p-3 border-t border-slate-100 dark:border-slate-800 text-[11px] text-slate-400 dark:text-slate-500 space-y-1">
         <TypewriterTooltip
-          text="设置项实时写入独立配置存储，重启客户端无缝还原喵~"
+          text="设置修改后立即保存，重启后保留"
           position="top"
           delayMs={250}
         >
           <div className="space-y-1 cursor-help hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <span>配置持久化</span>
               <span className="text-primary font-mono text-[10px] font-bold">
                 app_config.json

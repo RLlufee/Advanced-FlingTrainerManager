@@ -22,7 +22,7 @@ export const PlaygroundSliders: React.FC<PlaygroundSlidersProps> = ({
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-200/70 dark:border-slate-800">
       <div>
         <div className="flex items-center justify-between text-[11px] mb-1">
-          <span className="font-semibold text-slate-700 dark:text-slate-200">全域磨砂模糊 (Blur)</span>
+          <span className="font-semibold text-slate-700 dark:text-slate-200">背景模糊</span>
           <span className="font-mono text-slate-400">{backdropBlur} px</span>
         </div>
         <FluidSlider

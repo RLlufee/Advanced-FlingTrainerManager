@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { StorageStats } from "../../services/configApi";
 import { JellyIcon } from "../ui/motion/JellyIcon";
+import { buttonClass } from "../ui/buttonStyles";
 
 interface ExportPresetModalProps {
   exportJson: string | null;
@@ -216,7 +217,7 @@ export const MigrationModal: React.FC<MigrationModalProps> = ({
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">修改器存储路径迁移向导</h3>
               <p className="text-xs text-slate-400 dark:text-slate-500">
-                检测到您指定了新的根目录，请选择接下来的处理方案喵~
+                你选择了新的存储目录，请选择如何处理现有的修改器：
               </p>
             </div>
           </div>
@@ -307,19 +308,19 @@ export const MigrationModal: React.FC<MigrationModalProps> = ({
           <button
             onClick={onStartMigration}
             disabled={isMigrating}
-            className="px-4 py-2 bg-primary bg-primary-hover active:scale-95 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50 shadow-primary-glow"
+            className={buttonClass("primary", "md")}
           >
             {isMigrating ? (
               <>
                 <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>正在搬家迁移中...</span>
+                <span>正在迁移…</span>
               </>
             ) : (
               <>
                 <JellyIcon intensity="bouncy">
                   <Sparkles className="w-3.5 h-3.5" />
                 </JellyIcon>
-                <span>开始一键无损搬家</span>
+                <span>开始迁移</span>
               </>
             )}
           </button>

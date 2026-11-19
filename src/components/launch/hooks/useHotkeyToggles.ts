@@ -133,7 +133,7 @@ export function useHotkeyToggles({
         showToast(
           "info",
           enableAll
-            ? "已将所有二元开关项设为开启预设喵~"
+            ? "已将所有开关项加入预设"
             : "已清空当前修改器的全部开启预设"
         );
       } catch (e) {
@@ -153,7 +153,7 @@ export function useHotkeyToggles({
     if (enabledTitles.length === 0) {
       showToast(
         "info",
-        "笨蛋主人，你还没打开任何功能的开关呢喵！先在下方开启几个想要的功能吧~"
+        "还没有加入预设的功能，先在下方打开几个开关"
       );
       return;
     }
@@ -167,7 +167,7 @@ export function useHotkeyToggles({
       );
       showToast(
         "success",
-        `⚡ 模拟按键完成！已成功为您同步激活 ${count} 项预设功能喵~`
+        `已同步 ${count} 项预设功能`
       );
     } catch (e) {
       showToast("error", `模拟热键同步失败: ${e}`);

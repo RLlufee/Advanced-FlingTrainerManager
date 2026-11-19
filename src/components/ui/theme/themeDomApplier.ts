@@ -12,11 +12,14 @@ export function applyAccentToDom(accent: AccentColorConfig): void {
   root.style.setProperty("--color-primary", accent.primary);
   root.style.setProperty("--color-primary-hover", accent.hover);
   root.style.setProperty("--color-primary-active", accent.active);
-  root.style.setProperty("--color-primary-text", accent.text);
+  // text / soft / border / glow 只写入浅色基准值 (--accent-*-light)，由 index.css 的 :root 与 html.dark
+  // 规则派生出最终的 --color-primary-*。若直接内联写 --color-primary-text，内联样式优先级会压过
+  // html.dark 的提亮规则，导致深色模式下所有强调色文字都是暗青色配深底。
+  root.style.setProperty("--accent-text-light", accent.text);
   root.style.setProperty("--color-primary-rgb", accent.rgb);
-  root.style.setProperty("--color-primary-soft", accent.soft);
-  root.style.setProperty("--color-primary-border", accent.border);
-  root.style.setProperty("--color-primary-glow", accent.glow);
+  root.style.setProperty("--accent-soft-light", accent.soft);
+  root.style.setProperty("--accent-border-light", accent.border);
+  root.style.setProperty("--accent-glow-light", accent.glow);
   root.style.setProperty("--color-primary-gradient", accent.gradient);
   root.setAttribute("data-accent", accent.id);
 }

@@ -316,7 +316,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 export const useTheme = (): ThemeContextValue => {
   const ctx = useContext(ThemeContext);
   if (!ctx) {
-    throw new Error("useTheme 必须在 ThemeProvider 内部使用喵！");
+    throw new Error("useTheme 必须在 ThemeProvider 内部使用");
   }
   return ctx;
 };

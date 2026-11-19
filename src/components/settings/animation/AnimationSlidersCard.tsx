@@ -34,7 +34,7 @@ export const AnimationSlidersCard: React.FC = () => {
             全局动效速度倍率 (Animation Speed Multiplier)
           </span>
           <span className="font-mono font-bold text-cyan-700 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/60 px-2.5 py-0.5 rounded-md border border-cyan-200 dark:border-cyan-800">
-            {settings.speed_multiplier >= 30 ? "⚡ 瞬间完成 (>=30)" : `${settings.speed_multiplier.toFixed(2)}x`}
+            {settings.speed_multiplier >= 30 ? "瞬间完成" : `${settings.speed_multiplier.toFixed(2)}x`}
           </span>
         </div>
         <FluidSlider
@@ -45,7 +45,7 @@ export const AnimationSlidersCard: React.FC = () => {
           onChange={(val) => updateSettings({ speed_multiplier: val })}
           formatValue={(val) =>
             settings.speed_multiplier >= 30 && val >= 3.0
-              ? "⚡ 瞬间完成"
+              ? "瞬间完成"
               : `${val.toFixed(2)}x`
           }
           color="cyan"
@@ -67,7 +67,7 @@ export const AnimationSlidersCard: React.FC = () => {
           </span>
           <span className="font-mono font-bold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
             {(settings.tab_transition_duration ?? 180) === 0
-              ? "⚡ 即时直切 (0ms)"
+              ? "即时（0 ms）"
               : `${settings.tab_transition_duration ?? 180} ms (${((settings.tab_transition_duration ?? 180) / 1000).toFixed(2)}s)`}
           </span>
         </div>
@@ -78,7 +78,7 @@ export const AnimationSlidersCard: React.FC = () => {
           value={settings.tab_transition_duration ?? 180}
           onChange={(val) => updateSettings({ tab_transition_duration: val })}
           formatValue={(val) =>
-            val === 0 ? "⚡ 即时直切" : `${val} ms`
+            val === 0 ? "即时" : `${val} ms`
           }
           color="indigo"
           marks={[
@@ -128,19 +128,19 @@ export const AnimationSlidersCard: React.FC = () => {
             渲染帧率上限与高刷适配 (Target Frame Rate)
           </span>
           <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
-            {(settings.target_fps ?? 144) === 0 ? "⚡ 极速完全放飞 (无上限)" : `${settings.target_fps ?? 144} FPS`}
+            {(settings.target_fps ?? 144) === 0 ? "不限制" : `${settings.target_fps ?? 144} FPS`}
           </span>
         </div>
         <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-          已解除底层 WebView2 的 60Hz 节能锁频限制。配合高刷显示器与强劲多核 CPU，让页面与组件过渡丝滑如丝绸。
+          已解除 WebView2 默认的 60 Hz 帧率限制，高刷新率显示器上动画更流畅。
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
           {[
             { fps: 60, label: "60 FPS", desc: "节能稳妥" },
             { fps: 90, label: "90 FPS", desc: "均衡顺滑" },
             { fps: 120, label: "120 FPS", desc: "超高高刷" },
-            { fps: 144, label: "144 FPS", desc: "电竞旗舰" },
-            { fps: 0, label: "极速解锁", desc: "完全放飞" },
+            { fps: 144, label: "144 FPS", desc: "高刷" },
+            { fps: 0, label: "不限制", desc: "跟随显示器" },
           ].map((item) => {
             const isSelected = (settings.target_fps ?? 144) === item.fps;
             return (

@@ -17,6 +17,7 @@ import { cleanupApi, CleanupScanResult, CleanupRunResult } from "../../services/
 import { PaperContainer, PaperCard } from "../ui/motion/PaperFlutter";
 import { JellyIcon } from "../ui/motion/JellyIcon";
 import { TypewriterTooltip } from "../ui/motion/TypewriterTooltip";
+import { buttonClass } from "../ui/buttonStyles";
 
 export const CleanupTab: React.FC = () => {
   const [scanResult, setScanResult] = useState<CleanupScanResult | null>(null);
@@ -159,23 +160,23 @@ export const CleanupTab: React.FC = () => {
             </button>
           </TypewriterTooltip>
 
-          <TypewriterTooltip text="安全销毁选中的垃圾缓存文件，立即回收物理磁盘可用空间" position="top">
+          <TypewriterTooltip text="删除选中的缓存文件" position="top">
             <button
               onClick={handleClean}
               disabled={isCleaning || isScanning || selectedIds.length === 0 || selectedBytes === 0}
-              className="flex-1 md:flex-initial px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-95 text-white rounded-xl text-xs font-bold shadow-sm shadow-emerald-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              className={buttonClass("primary", "md", "flex-1 md:flex-initial px-5")}
             >
               {isCleaning ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>正在深度释放中...</span>
+                  <span>正在清理…</span>
                 </>
               ) : (
                 <>
                   <JellyIcon intensity="bouncy">
                     <Trash2 className="w-4 h-4" />
                   </JellyIcon>
-                  <span>立即释放 ({formatBytes(selectedBytes)})</span>
+                  <span>清理 {formatBytes(selectedBytes)}</span>
                 </>
               )}
             </button>
@@ -189,11 +190,11 @@ export const CleanupTab: React.FC = () => {
           <div className="flex items-center gap-2.5">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <div className="text-xs">
-              <span className="font-bold">🎉 清理大成功！</span> 已为您安全释放{" "}
+              <span className="font-bold">清理完成。</span>释放了{" "}
               <strong className="font-bold text-emerald-700 font-mono">
                 {formatBytes(runResult.freed_bytes)}
               </strong>{" "}
-              磁盘空间，成功清除了 {runResult.cleaned_files} 个文件喵~
+              ，共 {runResult.cleaned_files} 个文件。
               {runResult.failed_count > 0 && (
                 <span className="text-slate-400 ml-1">
                   (已自动跳过 {runResult.failed_count} 个当前正在被游戏或系统占用的文件)

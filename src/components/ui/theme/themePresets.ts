@@ -82,7 +82,7 @@ export const ACCENT_PRESETS: Record<
   },
   amber: {
     id: "amber",
-    name: "极客琥珀",
+    name: "琥珀暖橙",
     tagline: "热血电竞与暖阳能量光芒",
     primary: "#f59e0b",
     hover: "#d97706",

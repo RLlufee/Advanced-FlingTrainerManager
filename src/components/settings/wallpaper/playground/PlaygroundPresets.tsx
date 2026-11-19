@@ -23,28 +23,28 @@ export const PlaygroundPresets: React.FC<PlaygroundPresetsProps> = ({
           onClick={() => onApplyPreset("immersive")}
           className="px-2.5 py-1 rounded-lg text-[10px] font-semibold border border-primary/40 bg-white dark:bg-slate-800 hover:bg-primary-soft text-primary transition-colors cursor-pointer"
         >
-          🌟 全域极光沉浸
+          全部通透
         </button>
         <button
           type="button"
           onClick={() => onApplyPreset("classic")}
           className="px-2.5 py-1 rounded-lg text-[10px] font-semibold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
         >
-          📐 经典侧栏透视
+          侧栏通透
         </button>
         <button
           type="button"
           onClick={() => onApplyPreset("floating")}
           className="px-2.5 py-1 rounded-lg text-[10px] font-semibold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
         >
-          🃏 纯净卡片悬浮
+          卡片悬浮
         </button>
         <button
           type="button"
           onClick={() => onApplyPreset("minimal")}
           className="px-2.5 py-1 rounded-lg text-[10px] font-semibold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
         >
-          🧼 极简底衬渗透
+          仅底层通透
         </button>
       </div>
     </div>
